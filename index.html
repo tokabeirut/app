@@ -3466,13 +3466,41 @@ function api(params, cb) {
   xhr.onerror = function () { cb(new Error('network error')); };
   xhr.send();
 }
+// Apps Script Web Apps only send a browser-readable
+// Access-Control-Allow-Origin header on doGet responses (they're served via
+// a redirect through script.googleusercontent.com); doPost responses come
+// back with no CORS header at all. So a cross-origin POST actually runs
+// server-side and can return HTTP 200, but the browser still blocks the
+// page from reading the result — which showed up here as "error saving"
+// even though the save often went through. To fix this for real, most
+// writes are tunneled through a GET request instead (readable response,
+// same handler on the backend). Only payloads too big for a URL (receipt
+// uploads) still go over POST, as a fire-and-forget request.
 function apiPost(body, cb) {
-  var xhr = new XMLHttpRequest();
-  xhr.open('POST', API_URL, true);
-  xhr.setRequestHeader('Content-Type', 'text/plain'); // avoid preflight in Safari
-  xhr.onload = function () { try { cb(null, JSON.parse(xhr.responseText)); } catch (e) { cb(e); } };
-  xhr.onerror = function () { cb(new Error('network error')); };
-  xhr.send(JSON.stringify(body));
+  var json = JSON.stringify(body);
+  if (json.length < 6000) {
+    var url = API_URL + '?payload=' + encodeURIComponent(json);
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onload = function () { try { cb(null, JSON.parse(xhr.responseText)); } catch (e) { cb(e); } };
+    xhr.onerror = function () { cb(new Error('network error')); };
+    xhr.send();
+    return;
+  }
+  // Large payload (e.g. a receipt file) — can't fit in a URL, and a
+  // cross-origin POST response can't be read anyway, so fire it and
+  // forget it. The caller's normal post-save reload is what actually
+  // confirms the result.
+  fetch(API_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: json
+  }).then(function () {
+    cb(null, { ok: true });
+  }).catch(function (e) {
+    cb(e);
+  });
 }
 
 /* ---- load ---- */
