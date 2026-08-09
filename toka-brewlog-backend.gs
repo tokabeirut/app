@@ -913,6 +913,17 @@ function deleteExpenseDeposit_(data) {
 /* ---------- web app entry points ---------- */
 
 function doGet(e) {
+  // Writes tunneled through GET so the response is readable cross-origin
+  // (see the comment on handleAction_ above).
+  if (e && e.parameter && e.parameter.payload) {
+    var tunneledBody;
+    try {
+      tunneledBody = JSON.parse(e.parameter.payload);
+    } catch (payloadErr) {
+      return json_({ ok: false, error: 'bad json' });
+    }
+    return handleAction_(tunneledBody);
+  }
   var action = (e && e.parameter && e.parameter.action) || '';
   if (action === 'getBatches') {
     return json_({ ok: true, batches: readAll_() });
@@ -971,7 +982,20 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: 'bad json' });
   }
+  return handleAction_(body);
+}
 
+// Apps Script's Web App only sends a browser-readable
+// Access-Control-Allow-Origin header on doGet responses (they're served via
+// a redirect through script.googleusercontent.com); doPost responses are
+// served directly and come back with no CORS header at all, so cross-origin
+// POST requests execute fine server-side but the browser blocks the caller
+// from ever reading the result. To keep writes reliable from a page hosted
+// on a different origin (e.g. GitHub Pages), the frontend tunnels most
+// write payloads through a GET request instead (see apiPost() in the HTML
+// file) — doGet below forwards those into this same handler. doPost stays
+// in place for large payloads (receipt uploads) that don't fit in a URL.
+function handleAction_(body) {
   var action = body.action || '';
 
   // ---- expenses (see the block above readAllExpenses_ for why these keep
