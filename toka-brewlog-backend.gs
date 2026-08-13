@@ -952,6 +952,15 @@ function doGet(e) {
     var erVal = erSheet.getRange('A1').getValue();
     return json_({ ok: true, rate: erVal || 89550 });
   }
+  // Faucet timer's flow rate lives in the same "settings" sheet as the
+  // expense exchange rate above, just a different cell (B1 instead of A1)
+  // so the two unrelated numbers don't collide.
+  if (action === 'getFaucetRate') {
+    var frSs = SpreadsheetApp.getActiveSpreadsheet();
+    var frSheet = frSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || frSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    var frVal = frSheet.getRange('B1').getValue();
+    return json_({ ok: true, rate: frVal || 13.32 });
+  }
   if (action === 'getExpenseDeposits') {
     return getExpenseDeposits_();
   }
@@ -1009,6 +1018,13 @@ function handleAction_(body) {
     var srSs = SpreadsheetApp.getActiveSpreadsheet();
     var srSheet = srSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || srSs.insertSheet(EXPENSES_SETTINGS_SHEET);
     srSheet.getRange('A1').setValue(body.rate);
+    return json_({ ok: true });
+  }
+
+  if (action === 'setFaucetRate') {
+    var fsSs = SpreadsheetApp.getActiveSpreadsheet();
+    var fsSheet = fsSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || fsSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    fsSheet.getRange('B1').setValue(body.rate);
     return json_({ ok: true });
   }
 
@@ -1081,31 +1097,35 @@ function handleAction_(body) {
   }
 
   if (action === 'addExpense') {
-    var aeSheet = getExpensesSheet_();
-    var aeReceiptUrl = '', aeReceiptFileId = '';
-    if (body.receiptData && body.receiptName) {
-      var aeFolder = getOrCreateExpenseFolder_(EXPENSES_DRIVE_FOLDER);
-      var aeBlob = Utilities.newBlob(Utilities.base64Decode(body.receiptData.split(',')[1]), body.receiptType, body.receiptName);
-      var aeFile = aeFolder.createFile(aeBlob);
-      aeFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      aeReceiptUrl = aeFile.getUrl();
-      aeReceiptFileId = aeFile.getId();
+    try {
+      var aeSheet = getExpensesSheet_();
+      var aeReceiptUrl = '', aeReceiptFileId = '';
+      if (body.receiptData && body.receiptName) {
+        var aeFolder = getOrCreateExpenseFolder_(EXPENSES_DRIVE_FOLDER);
+        var aeBlob = Utilities.newBlob(Utilities.base64Decode(body.receiptData.split(',')[1]), body.receiptType, body.receiptName);
+        var aeFile = aeFolder.createFile(aeBlob);
+        aeFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        aeReceiptUrl = aeFile.getUrl();
+        aeReceiptFileId = aeFile.getId();
+      }
+      var aeId = Date.now();
+      aeSheet.appendRow([
+        aeId, body.date, body.buyer, body.category, body.name,
+        body.vendor || '', body.notes || '',
+        body.amountUSD, body.amountLBP, body.rateAtEntry,
+        aeReceiptUrl, aeReceiptFileId, body.receiptName || '', body.receiptType || '',
+        new Date().toISOString()
+      ]);
+      var aeHeadersNow = aeSheet.getRange(1, 1, 1, aeSheet.getLastColumn()).getValues()[0];
+      var aeExtraCols = ['linkedTo', 'autoNote'];
+      for (var aei = 0; aei < aeExtraCols.length; aei++) {
+        var aeCol = aeHeadersNow.indexOf(aeExtraCols[aei]);
+        if (aeCol >= 0) aeSheet.getRange(aeSheet.getLastRow(), aeCol + 1).setValue(body[aeExtraCols[aei]] || '');
+      }
+      return json_({ ok: true, id: aeId });
+    } catch (aeErr) {
+      return json_({ ok: false, error: String(aeErr) });
     }
-    var aeId = Date.now();
-    aeSheet.appendRow([
-      aeId, body.date, body.buyer, body.category, body.name,
-      body.vendor || '', body.notes || '',
-      body.amountUSD, body.amountLBP, body.rateAtEntry,
-      aeReceiptUrl, aeReceiptFileId, body.receiptName || '', body.receiptType || '',
-      new Date().toISOString()
-    ]);
-    var aeHeadersNow = aeSheet.getRange(1, 1, 1, aeSheet.getLastColumn()).getValues()[0];
-    var aeExtraCols = ['linkedTo', 'autoNote'];
-    for (var aei = 0; aei < aeExtraCols.length; aei++) {
-      var aeCol = aeHeadersNow.indexOf(aeExtraCols[aei]);
-      if (aeCol >= 0) aeSheet.getRange(aeSheet.getLastRow(), aeCol + 1).setValue(body[aeExtraCols[aei]] || '');
-    }
-    return json_({ ok: true, id: aeId });
   }
 
   // ---- feedback (tasting) ----
