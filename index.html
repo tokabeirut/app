@@ -3427,7 +3427,12 @@ var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzGwLJcLDOeg-Qorx
 var CFG_KEY = 'toka_batches_gs_url_v1';
 // A URL saved on this device (via the connect screen) always wins; otherwise
 // fall back to the baked-in default above so the app just works everywhere.
-var API_URL = localStorage.getItem(CFG_KEY) || DEFAULT_API_URL || '';
+// Wrapped in try/catch: some browsers/embedded views (private mode, in-app
+// browsers) block localStorage entirely and throw just from touching it —
+// without this, that throw would stop the whole script before it ever got
+// to use the baked-in default, leaving the setup screen stuck on screen.
+var API_URL = DEFAULT_API_URL || '';
+try { var savedApiUrl = localStorage.getItem(CFG_KEY); if (savedApiUrl) API_URL = savedApiUrl; } catch (e) {}
 var batches = [];
 var bottles = [];
 var infusions = [];
