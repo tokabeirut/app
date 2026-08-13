@@ -667,7 +667,7 @@
   .flavor-cell-line { white-space: nowrap; }
 
 /* ===== FAUCET TIMER PAGE (scoped to #view-faucet) ===== */
-#view-faucet .ft-page { max-width: 820px; }
+#view-faucet .ft-page { max-width: 820px; margin: 0 auto; padding: 0 48px 48px; }
 #view-faucet .ft-rate-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 14px; margin-bottom: 24px; }
 #view-faucet .ft-rate-label { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.76rem; }
 #view-faucet .ft-rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 5px 14px; font-family: 'DM Mono', monospace; font-size: 0.78rem; cursor: pointer; -webkit-transition: background 0.15s; transition: background 0.15s; }
@@ -692,6 +692,7 @@
 #view-faucet .ft-chart-table .col-secs { color: var(--ink-faint); }
 #view-faucet .ft-chart-table .col-min { color: var(--terra); }
 @media (max-width: 640px) {
+  #view-faucet .ft-page { padding: 0 20px 28px; }
   #view-faucet .ft-chart-table thead th, #view-faucet .ft-chart-table tbody td { padding: 11px 14px; }
 }
 
