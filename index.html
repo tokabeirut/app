@@ -7288,9 +7288,18 @@ function setBrewTarget(pid, v) {
   renderToday();
 }
 function setBrewDone(pid, done) {
+  // Just updates the draft \u2014 like every other field on this card, it isn't
+  // saved (or reflected in the collapsed "done" summary) until Save is
+  // clicked. See undoPlannedBrewDone below for the one place a done toggle
+  // *does* save immediately: the summary view's own "undo" button.
+  var p = findPlannedBrew(pid); if (!p) return;
+  p.done = !!done;
+  renderToday();
+}
+function undoPlannedBrewDone(pid) {
   var p = findPlannedBrew(pid); if (!p) return;
   var prev = p.done;
-  p.done = !!done;
+  p.done = false;
   renderToday();
   setSyncStatus('saving', 'saving\u2026');
   apiPost({ action: 'updatePlannedBrew', plan: p }, function (err, res) {
@@ -7367,10 +7376,10 @@ function brewBoxHtml(p) {
     else               { whenTxt = (-n) + ' days ago'; due = true; }
   }
 
-  if (p.done) {
+  if (planBrewOriginal[pid] && planBrewOriginal[pid].done) {
     return '<div class="plan-card brew-box collapsed" id="brewbox_' + pid + '">'
       + '<div class="brew-done">\u2713 Brewed' + (p.date ? (' \u00b7 planned for ' + fmtDate(p.date)) : '')
-      + '<button type="button" class="brew-undo" onclick="setBrewDone(\'' + pid + '\', false)">undo</button>'
+      + '<button type="button" class="brew-undo" onclick="undoPlannedBrewDone(\'' + pid + '\')">undo</button>'
       + '<button type="button" class="brew-undo" onclick="removePlannedBrew(\'' + pid + '\')">remove</button></div></div>';
   }
 
@@ -7528,11 +7537,18 @@ function setPlanInfField(pid, field, value) {
   renderToday();
 }
 function setPlanInfDone(pid, done) {
-  // Marking done/undone saves immediately \u2014 it's a status flag, not part of
-  // the editable draft that Save/Cancel govern.
+  // Just updates the draft \u2014 like every other field on this card, it isn't
+  // saved (or reflected in the collapsed "done" summary) until Save is
+  // clicked. See undoPlannedInfusionDone below for the one place a done
+  // toggle *does* save immediately: the summary view's own "undo" button.
+  var p = findPlanInf(pid); if (!p) return;
+  p.done = !!done;
+  renderToday();
+}
+function undoPlannedInfusionDone(pid) {
   var p = findPlanInf(pid); if (!p) return;
   var prev = p.done;
-  p.done = !!done;
+  p.done = false;
   renderToday();
   setSyncStatus('saving', 'saving\u2026');
   apiPost({ action: 'updatePlannedInfusion', plan: p }, function (err, res) {
@@ -7666,11 +7682,11 @@ function planInfBoxHtml(p) {
     else               { whenTxt = (-n) + ' days ago'; due = true; }
   }
 
-  if (p.done) {
+  if (planInfOriginal[pid] && planInfOriginal[pid].done) {
     var doneFlav = (p.flavours && p.flavours.length) ? (' \u00b7 ' + p.flavours.map(function (f) { return fmtText(f.name) + (f.g !== '' && f.g != null ? (' ' + fmtQty(f.g, 'g')) : ''); }).join(', ')) : '';
     return '<div class="plan-card brew-box collapsed" id="planinf_' + pid + '">'
       + '<div class="brew-done">\u2713 Infused' + (p.date ? (' \u00b7 planned for ' + fmtDate(p.date)) : '') + doneFlav
-      + '<button type="button" class="brew-undo" onclick="setPlanInfDone(\'' + pid + '\', false)">undo</button>'
+      + '<button type="button" class="brew-undo" onclick="undoPlannedInfusionDone(\'' + pid + '\')">undo</button>'
       + '<button type="button" class="brew-undo" onclick="removePlannedInfusion(\'' + pid + '\')">remove</button></div></div>';
   }
 
