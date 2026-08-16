@@ -531,19 +531,26 @@
   .pt-filter-apply-btn { padding: 6px 14px !important; font-size: 0.66rem !important; }
   .pt-gantt-section { padding: 26px 48px 6px; }
   .pt-gantt-section .content-title { font-size: 0.98rem; }
+  .pt-gantt-legend { display: -webkit-flex; display: flex; align-items: center; gap: 18px; margin: 2px 0 12px; }
+  .pt-legend-item { display: -webkit-flex; display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); }
+  .pt-legend-swatch { width: 16px; height: 10px; border-radius: 20px; box-sizing: border-box; }
+  .pt-legend-swatch.best { background: var(--ink-faint); }
+  .pt-legend-swatch.worst { background: transparent; border: 1.5px dashed var(--ink-faint); }
   .pt-gantt { display: -webkit-flex; display: flex; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); overflow: hidden; }
   .pt-gantt-labels { -webkit-flex-shrink: 0; flex-shrink: 0; width: 200px; border-right: 1px solid var(--border); }
   .pt-gantt-labels-head { height: 34px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .pt-gantt-label-row { height: 34px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 0 12px; font-size: 0.78rem; color: var(--ink); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .pt-gantt-label-row { height: 40px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 0 12px; font-size: 0.78rem; color: var(--ink); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
   .pt-gantt-label-row:last-child { border-bottom: none; }
   .pt-gantt-label-row:hover { background: #fcfaf7; }
   .pt-gantt-scroll { overflow-x: auto; -webkit-flex: 1; flex: 1; }
   .pt-gantt-header { height: 34px; position: relative; border-bottom: 1px solid var(--border); background: var(--surface2); }
   .pt-week-label { position: absolute; top: 0; height: 34px; line-height: 34px; padding-left: 6px; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); border-left: 1px solid var(--border); box-sizing: border-box; }
   .pt-gantt-rows { position: relative; }
-  .pt-gantt-row-bg { height: 34px; border-bottom: 1px solid var(--border); box-sizing: border-box; }
+  .pt-gantt-row-bg { height: 40px; border-bottom: 1px solid var(--border); box-sizing: border-box; }
   .pt-gantt-row-bg:last-child { border-bottom: none; }
-  .pt-bar { position: absolute; height: 20px; margin-top: 7px; border-radius: 20px; color: #fff; font-size: 0.68rem; line-height: 20px; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-sizing: border-box; box-shadow: 0 1px 2px rgba(30,27,24,0.15); }
+  .pt-bar { position: absolute; border-radius: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-sizing: border-box; }
+  .pt-bar-best { height: 14px; line-height: 14px; color: #fff; font-size: 0.6rem; padding: 0 8px; box-shadow: 0 1px 2px rgba(30,27,24,0.15); }
+  .pt-bar-worst { height: 14px; background: transparent !important; border: 1.5px dashed; }
   .pt-today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--terra); }
   .pt-today-tag { position: absolute; top: 2px; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--terra); background: var(--terra-pale); padding: 1px 5px; border-radius: 20px; -webkit-transform: translateX(-50%); transform: translateX(-50%); white-space: nowrap; }
   .pt-field-row { display: -webkit-flex; display: flex; gap: 10px; }
@@ -4347,7 +4354,6 @@ function saveInfusion() {
     vessel: val('i-vessel').trim(),
     volumeL: val('i-volume').trim(),
     startDate: start,
-    endDate: isEdit ? (origSnapshot.endDate || '') : '', // set only via the To Do "strain" checklist now
     flavours: readInfFlavors(),
     notes: val('i-notes').trim(),
     archived: isEdit ? origArchived : false
@@ -4636,7 +4642,7 @@ function selectedF1() {
   for (var j = 0; j < infusions.length; j++) {
     if (String(infusions[j].uid) === String(srcs[0].uid)) {
       var inf = infusions[j];
-      return { date: inf.startDate, vessel: inf.vessel, isInfusion: true, infEndDate: inf.endDate, f1Date: inf.relF1Date };
+      return { date: inf.startDate, vessel: inf.vessel, isInfusion: true, infEndDate: infusionEndDate(inf), f1Date: inf.relF1Date };
     }
   }
   return null;
@@ -5060,6 +5066,15 @@ function bottlesSourcedFromInfusion(infUid) {
     if (bb.archived) return false;
     return String(firstUid(bb.relF1Uid)) === String(infUid);
   });
+}
+// An infusion's "strained" date isn't its own stored field — straining and
+// bottling happen back to back, so it's just the bottling date of whichever
+// bottle(s) ended up sourced from it. Blank until that bottle exists.
+function infusionEndDate(inf) {
+  var srcBottles = bottlesSourcedFromInfusion(inf.uid);
+  if (!srcBottles.length) return '';
+  var dates = srcBottles.map(function (bb) { return bb.bottlingDate; }).filter(Boolean).sort();
+  return dates.length ? dates[0] : '';
 }
 // Inverse lookup: given a bottle, resolve the Infusion it's sourced from (if
 // its first source is an Infusion rather than a direct F1 vessel).
@@ -5699,7 +5714,7 @@ function bottleFermSegments(b, f2d) {
   if (first) for (var i = 0; i < infusions.length; i++) { if (String(infusions[i].uid) === String(first)) { inf = infusions[i]; break; } }
   if (inf) {
     var f1d = (inf.relF1Date && inf.startDate) ? daysBetween(inf.relF1Date, inf.startDate) : null;
-    var infEnd = inf.endDate || b.bottlingDate;
+    var infEnd = b.bottlingDate; // strain happens right before bottling, so this bottle's own date is the strain date
     var infd = (inf.startDate && infEnd) ? daysBetween(inf.startDate, infEnd) : null;
     return { f1d: f1d, infd: infd, f2d: f2d };
   }
@@ -5779,7 +5794,8 @@ function bottleInfusionTipFor(vesselUid) {
   if (inf.vessel) L.push('Vessel: ' + inf.vessel);
   if (inf.volumeL !== '' && inf.volumeL != null) L.push('Volume: ' + fmtQty(inf.volumeL, 'L'));
   if (inf.startDate) L.push('Started: ' + fmtDate(inf.startDate));
-  if (inf.endDate) L.push('Strained: ' + fmtDate(inf.endDate));
+  var infEndTip = infusionEndDate(inf);
+  if (infEndTip) L.push('Strained: ' + fmtDate(infEndTip));
   var spices = infusionSpicesText(inf);
   if (spices && spices !== '—') L.push('Spices: ' + spices);
   var sumHtml = L.length ? '<div class="tt-sum">' + esc(L.join('\n')).replace(/\n/g, '<br>') + '</div>' : '';
@@ -6898,7 +6914,9 @@ function todayActiveInf() {
   var out = [];
   for (var i = 0; i < infusions.length; i++) {
     var inf = infusions[i];
-    if (inf.archived || !inf.startDate || inf.endDate) continue; // endDate set => already strained
+    // A sourced bottle already existing => this infusion has been strained
+    // and bottled, so it drops off the list automatically.
+    if (inf.archived || !inf.startDate || bottlesSourcedFromInfusion(inf.uid).length) continue;
     out.push(inf);
   }
   out.sort(function (a, c) { return String(a.startDate) < String(c.startDate) ? -1 : (String(a.startDate) > String(c.startDate) ? 1 : 0); });
@@ -7294,34 +7312,15 @@ function todayBrewPlan() {
   return h + '</div>';
 }
 
-/* ---- strain infusion schedule ---- */
-// Checking an infusion off stamps today's date to its endDate and saves it, so
-// it drops out of the in-progress + strain lists automatically.
-function markStrained(u) {
-  var inf = null;
-  for (var i = 0; i < infusions.length; i++) { if (String(infusions[i].uid) === String(u)) { inf = infusions[i]; break; } }
-  if (!inf) return;
-  var prev = inf.endDate || '';
-  inf.endDate = todayISO();          // optimistic
-  renderToday();
-  var copy = JSON.parse(JSON.stringify(inf));
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'updateInfusion', infusion: copy }, function (err, res) {
-    if (err || !res || !res.ok) {
-      inf.endDate = prev;            // revert on failure
-      renderToday();
-      setSyncStatus('error', 'update failed');
-      alert('Could not save the strain date. Check your connection and try again.');
-      return;
-    }
-    setSyncStatus('live', 'connected · google sheets');
-  });
-}
+/* ---- strain infusion schedule ----
+   No manual checkbox here — an infusion drops off this list automatically
+   once its bottle is recorded on the Bottling page (see todayActiveInf),
+   since strain and bottle happen back to back anyway. ---- */
 function todayStrainInf() {
   var active = todayActiveInf();
   var h = '<div class="an-section"><div class="sec-title">Strain infusion vessels</div>';
   if (!active.length) return h + '<div class="sec-note">Strain reminders show up here while an infusion is steeping.</div><div class="an-empty">Nothing steeping right now.</div></div>';
-  h += '<div class="sec-note">Check one off once it’s strained — today’s date is saved to its Strained field and it leaves the list.</div><ul class="task-list">';
+  h += '<div class="sec-note">Leaves this list automatically once the resulting bottle is recorded on the Bottling page.</div><ul class="task-list">';
   for (var i = 0; i < active.length; i++) {
     var inf = active[i];
     var elapsed = daysBetween(inf.startDate, todayISO()); if (elapsed == null || elapsed < 0) elapsed = 0;
@@ -7335,7 +7334,6 @@ function todayStrainInf() {
     var spicesTxt = infusionSpicesText(inf);
     var flav = (spicesTxt && spicesTxt !== '—') ? (' · ' + esc(spicesTxt)) : '';
     h += '<li class="task-item fridge-item' + (dueS ? ' due' : '') + '">'
-       + '<input type="checkbox" class="task-check" onchange="markStrained(\'' + esc(inf.uid) + '\')" title="Mark as strained" />'
        + '<span class="task-when">' + whenTxt + '</span>'
        + '<span class="task-what"><span class="task-id">' + esc(label) + '</span> &mdash; day ' + day + ' of ' + getInfDays() + flav + '</span></li>';
   }
@@ -7398,7 +7396,7 @@ function todayFridge() {
    scenarios; a task with no dependency keeps its own independently-set date
    regardless of what happens around it.
    ========================================================================= */
-var PT_ROW_H = 34;
+var PT_ROW_H = 40;
 var PT_DAY_W = 26;
 var PT_PALETTE = ['#c0542a', '#3a7d6e', '#7a6cc0', '#a3763f', '#4f6b78', '#8a6a2f', '#a34a4a', '#5c7a3d'];
 // Deterministic color per category name, so the same category always gets
@@ -7511,7 +7509,7 @@ function onPtDateWorstChange() {
   ptWorstDirty = true;
 }
 // Looks up a task's fully-resolved (dependency-chain-aware) best/worst dates
-// — the same values ptGanttSectionHtml would actually plot for it — rather
+// — the same values ptGanttCombinedHtml would actually plot for it — rather
 // than its own raw stored dateBest/dateWorst, so a chain of dependencies
 // resolves correctly too.
 function ptEffectiveDatesFor(taskId) {
@@ -7888,15 +7886,25 @@ function ptTaskListHtml(tasks) {
   return h + '</tbody></table></div></div>';
 }
 
-/* ---- render: one Gantt-style timeline for a scenario ('best'|'worst') ---- */
-function ptGanttSectionHtml(title, schedule, scenario) {
-  var h = '<div class="pt-gantt-section"><div class="content-head"><div class="content-title">' + esc(title) + '</div></div>';
+/* ---- render: one combined Gantt-style timeline showing both scenarios ----
+   Each task gets two thin bars sharing a row: a filled bar for the best
+   case, and a dashed outline bar for the worst case. The outline is
+   skipped entirely when the two scenarios land on the same dates, so a
+   task with no schedule risk just shows a single solid bar. ---- */
+function ptGanttCombinedHtml(schedule) {
+  var h = '<div class="pt-gantt-section"><div class="content-head"><div class="content-title">Timeline</div></div>'
+    + '<div class="pt-gantt-legend">'
+    + '<span class="pt-legend-item"><span class="pt-legend-swatch best"></span>Best case</span>'
+    + '<span class="pt-legend-item"><span class="pt-legend-swatch worst"></span>Worst case</span>'
+    + '</div>';
   if (!schedule.length) return h + '<div class="an-empty">Nothing to plot yet.</div></div>';
   var minD = null, maxD = null;
   for (var i = 0; i < schedule.length; i++) {
-    var s = schedule[i][scenario];
-    if (minD == null || String(s.start) < String(minD)) minD = s.start;
-    if (maxD == null || String(s.end) > String(maxD)) maxD = s.end;
+    var sb = schedule[i].best, sw = schedule[i].worst;
+    if (minD == null || String(sb.start) < String(minD)) minD = sb.start;
+    if (String(sw.start) < String(minD)) minD = sw.start;
+    if (maxD == null || String(sb.end) > String(maxD)) maxD = sb.end;
+    if (String(sw.end) > String(maxD)) maxD = sw.end;
   }
   minD = addDaysIso(minD, -1);   // pad a day either side so edge bars aren't flush against the border
   maxD = addDaysIso(maxD, 1);
@@ -7923,14 +7931,22 @@ function ptGanttSectionHtml(title, schedule, scenario) {
   var labelsHtml = '<div class="pt-gantt-labels-head"></div>';
   var barsHtml = '', rowBgHtml = '';
   for (var j = 0; j < schedule.length; j++) {
-    var row = schedule[j], t = row.task, sc = row[scenario];
+    var row = schedule[j], t = row.task, best = row.best, worst = row.worst;
     var color = ptCategoryColor(t.category);
-    var left = xOf(sc.start);
-    var w = Math.max(PT_DAY_W * 0.8, xOf(sc.end) - left);
     var leadSuffix = (t.leads && t.leads.length) ? (' \u00b7 Lead: ' + t.leads.join(', ')) : '';
     labelsHtml += '<div class="pt-gantt-label-row" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + '"><span class="pt-cat-dot" style="background:' + color + '"></span>' + esc(t.text) + '</div>';
     rowBgHtml += '<div class="pt-gantt-row-bg"></div>';
-    barsHtml += '<div class="pt-bar" style="left:' + left + 'px; width:' + w + 'px; top:' + (j * PT_ROW_H) + 'px; background:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 ' + esc(fmtDate(sc.start)) + ' \u2192 ' + esc(fmtDate(sc.end)) + '">' + esc(t.text) + '</div>';
+
+    var leftB = xOf(best.start);
+    var wB = Math.max(PT_DAY_W * 0.8, xOf(best.end) - leftB);
+    barsHtml += '<div class="pt-bar pt-bar-best" style="left:' + leftB + 'px; width:' + wB + 'px; top:' + (j * PT_ROW_H + 4) + 'px; background:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 best case \u00b7 ' + esc(fmtDate(best.start)) + ' \u2192 ' + esc(fmtDate(best.end)) + '">' + esc(t.text) + '</div>';
+
+    var differs = (String(worst.start) !== String(best.start)) || (String(worst.end) !== String(best.end));
+    if (differs) {
+      var leftW = xOf(worst.start);
+      var wW = Math.max(PT_DAY_W * 0.8, xOf(worst.end) - leftW);
+      barsHtml += '<div class="pt-bar pt-bar-worst" style="left:' + leftW + 'px; width:' + wW + 'px; top:' + (j * PT_ROW_H + 22) + 'px; border-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 worst case \u00b7 ' + esc(fmtDate(worst.start)) + ' \u2192 ' + esc(fmtDate(worst.end)) + '"></div>';
+    }
   }
   h += '<div class="pt-gantt">'
     + '<div class="pt-gantt-labels">' + labelsHtml + '</div>'
@@ -7956,8 +7972,7 @@ function renderProduction() {
   for (var fi = 0; fi < filtered.length; fi++) filteredIds[filtered[fi].id] = true;
   var filteredSchedule = schedule.filter(function (r) { return filteredIds[r.task.id]; });
   var h = '<div class="pt-list-wrap">' + ptTaskListHtml(filtered) + '</div>';
-  h += ptGanttSectionHtml('Best case', filteredSchedule, 'best');
-  h += ptGanttSectionHtml('Worst case', filteredSchedule, 'worst');
+  h += ptGanttCombinedHtml(filteredSchedule);
   body.innerHTML = h;
   var sub = document.getElementById('production-sub');
   if (sub) {
@@ -8799,7 +8814,7 @@ function ovStageStart(tier) {
   return tier.group.bottles[0].bottlingDate || '';
 }
 function ovStageExplicitEnd(tier) {
-  if (tier.type === 'infusion') return tier.obj.endDate || '';
+  if (tier.type === 'infusion') return infusionEndDate(tier.obj) || '';
   if (tier.type === 'bottle') return tier.group.bottles[0].fridgeDate || '';
   return ''; // batches have no explicit "moved on" date of their own
 }

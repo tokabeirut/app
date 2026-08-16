@@ -77,8 +77,10 @@ var VESSEL_ORDER = [
 ];
 
 // Columns for the bottling (second fermentation) sheet.
+// batch_date_ref was dropped (redundant — the batch's date is looked up
+// live from batch_pk_fk instead of being duplicated into its own column).
 var BOTTLE_HEADERS = [
-  'bottle_pk', 'bottle_id', 'batch_pk_fk', 'batch_id_ref', 'batch_date_ref',
+  'bottle_pk', 'bottle_id', 'batch_pk_fk', 'batch_id_ref',
   'bottling_date', 'fridge_date', 'volume_ml',
   'sugar_g', 'yeast_mg',
   'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
@@ -91,8 +93,7 @@ var MAX_FLAVORS = 4;
 var BOTTLE_RENAME_MIGRATIONS = [
   ['uid', 'bottle_pk'],
   ['rel_f1_uid', 'batch_pk_fk'],
-  ['rel_f1_id', 'batch_id_ref'],
-  ['rel_f1_date', 'batch_date_ref']
+  ['rel_f1_id', 'batch_id_ref']
 ];
 
 /* ---------- sheet helpers ---------- */
@@ -307,6 +308,16 @@ function readAll_() {
   return out;
 }
 
+// Looks up each batch's date by its batch_pk, so bottles/infusions can
+// resolve their source batch's date live instead of storing their own
+// duplicate copy of it in a batch_date_ref column.
+function batchDatesByUid_() {
+  var batches = readAll_();
+  var map = {};
+  for (var i = 0; i < batches.length; i++) map[batches[i].uid] = batches[i].date;
+  return map;
+}
+
 // Generic "find the row whose primary-key column equals val" helper,
 // shared by the batches, bottles and readings sheets (each has its own
 // pk column name: batch_pk / bottle_pk / reading_pk).
@@ -362,7 +373,6 @@ function buildBottleRow_(b, ncols, map) {
   set('bottle_id', b.bottleId || '');
   set('batch_pk_fk', b.relF1Uid || '');
   set('batch_id_ref', b.relF1Id || '');
-  set('batch_date_ref', b.relF1Date || '');
   set('bottling_date', b.bottlingDate || '');
   set('fridge_date', b.fridgeDate || '');
   set('volume_ml', plain_(b.volumeMl));
@@ -394,6 +404,7 @@ function readAllBottles_() {
   var map = headerMap_(sh);
   var data = sh.getDataRange().getValues();
   function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var batchDates = batchDatesByUid_();
 
   var out = [];
   for (var i = 1; i < data.length; i++) {
@@ -407,12 +418,13 @@ function readAllBottles_() {
         flavours.push({ name: nm, g: gr });
       }
     }
+    var relUid = g(r, 'batch_pk_fk');
     out.push({
       uid: String(g(r, 'bottle_pk')),
       bottleId: g(r, 'bottle_id'),
-      relF1Uid: g(r, 'batch_pk_fk'),
+      relF1Uid: relUid,
       relF1Id: g(r, 'batch_id_ref'),
-      relF1Date: ymd_(g(r, 'batch_date_ref')),
+      relF1Date: batchDates[relUid] || '',
       bottlingDate: ymd_(g(r, 'bottling_date')),
       fridgeDate: ymd_(g(r, 'fridge_date')),
       volumeMl: g(r, 'volume_ml'),
@@ -431,9 +443,14 @@ function readAllBottles_() {
 
 /* ---------- infusions (spice steep between F1 and bottling) ---------- */
 
+// batch_date_ref was dropped here too (redundant/duplicated column) — the
+// batch's date is now looked up live from batch_pk_fk instead.
+// end_date was dropped too — straining and bottling happen back to back,
+// so the frontend now derives an infusion's strain date from whichever
+// bottle ended up sourced from it, instead of tracking it separately here.
 var INFUSION_HEADERS = [
-  'infusion_pk', 'infusion_id', 'batch_pk_fk', 'batch_id_ref', 'batch_date_ref',
-  'vessel', 'volume_l', 'start_date', 'end_date',
+  'infusion_pk', 'infusion_id', 'batch_pk_fk', 'batch_id_ref',
+  'vessel', 'volume_l', 'start_date',
   'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
   'flavor3_name', 'flavor3_g', 'flavor4_name', 'flavor4_g',
   'notes', 'archived'
@@ -474,11 +491,9 @@ function buildInfusionRow_(b, ncols, map) {
   set('infusion_id', b.id || '');
   set('batch_pk_fk', b.relF1Uid || '');
   set('batch_id_ref', b.relF1Id || '');
-  set('batch_date_ref', b.relF1Date || '');
   set('vessel', b.vessel || '');
   set('volume_l', (b.volumeL == null ? '' : b.volumeL));
   set('start_date', b.startDate || '');
-  set('end_date', b.endDate || '');
   var fl = b.flavours || [];
   for (var f = 0; f < MAX_FLAVORS; f++) {
     var item = fl[f] || {};
@@ -503,6 +518,7 @@ function readAllInfusions_() {
   var map = headerMap_(sh);
   var data = sh.getDataRange().getValues();
   function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var batchDates = batchDatesByUid_();
 
   var out = [];
   for (var i = 1; i < data.length; i++) {
@@ -516,16 +532,16 @@ function readAllInfusions_() {
         flavours.push({ name: nm, g: gr });
       }
     }
+    var relUid = g(r, 'batch_pk_fk');
     out.push({
       uid: String(g(r, 'infusion_pk')),
       id: g(r, 'infusion_id'),
-      relF1Uid: g(r, 'batch_pk_fk'),
+      relF1Uid: relUid,
       relF1Id: g(r, 'batch_id_ref'),
-      relF1Date: ymd_(g(r, 'batch_date_ref')),
+      relF1Date: batchDates[relUid] || '',
       vessel: g(r, 'vessel'),
       volumeL: g(r, 'volume_l'),
       startDate: ymd_(g(r, 'start_date')),
-      endDate: ymd_(g(r, 'end_date')),
       flavours: flavours,
       notes: g(r, 'notes'),
       archived: truthy_(g(r, 'archived'))
@@ -1280,4 +1296,47 @@ function handleAction_(body) {
   }
 
   return json_({ ok: false, error: 'unknown action' });
+}
+
+/**
+ * One-time cleanup: deletes columns that are no longer part of the schema
+ * and aren't read or written anywhere in this file —
+ *   infusions: batch_date_ref (there were two), legacy rel_f1_date,
+ *              end_date (the strain date is now derived from whichever
+ *              bottle got sourced from the infusion, since straining and
+ *              bottling happen back to back — see infusionEndDate() on
+ *              the frontend)
+ *   bottles:   batch_date_ref, legacy rel_f1_date, feedback (leftover from
+ *              an older layout — feedback now lives in its own sheet, see
+ *              FEEDBACK_SHEET)
+ * The batch's date is looked up live from batch_pk_fk now (see
+ * batchDatesByUid_), so none of the *_date_ref copies are needed going
+ * forward either.
+ *
+ * Run this once from the Apps Script editor (select it in the Run
+ * dropdown at the top, then click Run) after deploying this version —
+ * it's safe to run more than once, it just no-ops if nothing matches.
+ * Delete this function afterward if you'd rather not keep one-off cleanup
+ * scripts sitting in the file — it has no ongoing purpose once it's run.
+ */
+function oneTimeCleanupRedundantColumns() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var toRemove = {
+    infusions: ['batch_date_ref', 'rel_f1_date', 'end_date'],
+    bottles: ['batch_date_ref', 'rel_f1_date', 'feedback']
+  };
+  var removed = [];
+  Object.keys(toRemove).forEach(function (sheetName) {
+    var sh = ss.getSheetByName(sheetName);
+    if (!sh || sh.getLastColumn() === 0) return;
+    var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    var names = toRemove[sheetName];
+    for (var c = hdr.length - 1; c >= 0; c--) {
+      if (names.indexOf(String(hdr[c]).trim()) !== -1) {
+        sh.deleteColumn(c + 1);
+        removed.push(sheetName + '!' + hdr[c]);
+      }
+    }
+  });
+  Logger.log('Removed columns: ' + (removed.length ? removed.join(', ') : 'none found'));
 }
