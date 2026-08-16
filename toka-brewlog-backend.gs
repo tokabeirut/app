@@ -36,8 +36,9 @@ var FEEDBACK_SHEET = 'feedback';
 var PRODUCTION_SHEET = 'production_tasks';
 var CHECKLIST_SHEET = 'daily_checklist';
 var PLANNED_INFUSIONS_SHEET = 'planned_infusions';
+var PLANNED_BREWS_SHEET = 'planned_brews';
 
-var VERSION = '28 (planned infusions added)';
+var VERSION = '29 (planned brews synced)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -724,7 +725,7 @@ function readAllChecklist_() {
    it separate avoids half-populated rows in the real production data. */
 
 var PLANNED_INFUSION_HEADERS = [
-  'plan_pk', 'plan_date', 'liters', 'vessel',
+  'plan_pk', 'plan_date', 'liters', 'source_f1_pk', 'vessel',
   'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
   'flavor3_name', 'flavor3_g', 'flavor4_name', 'flavor4_g',
   'done'
@@ -761,6 +762,7 @@ function buildPlannedInfusionRow_(p, ncols, map) {
   set('plan_pk', p.id || '');
   set('plan_date', p.date || '');
   set('liters', (p.liters == null ? '' : p.liters));
+  set('source_f1_pk', p.sourceF1Uid || '');
   set('vessel', p.vessel || '');
   var fl = p.flavours || [];
   for (var f = 0; f < MAX_FLAVORS; f++) {
@@ -795,8 +797,90 @@ function readAllPlannedInfusions_() {
       id: String(g(r, 'plan_pk')),
       date: ymd_(g(r, 'plan_date')),
       liters: g(r, 'liters'),
+      sourceF1Uid: String(g(r, 'source_f1_pk') || ''),
       vessel: g(r, 'vessel'),
       flavours: flavours,
+      done: truthy_(g(r, 'done'))
+    });
+  }
+  return out;
+}
+
+/* ---------- planned brews (Daily operations page) ----------
+   The "time to brew the next batch" cards — a target date, target volume,
+   a free-text note per ingredient line, and a done flag. Same reasoning as
+   planned infusions above: kept as its own sheet since it's a plan, not a
+   real batch row yet, and needs to be visible from any device (not just
+   the one it was typed on). */
+
+var PLANNED_BREW_HEADERS = [
+  'brew_pk', 'brew_date', 'target_l',
+  'note_hot', 'note_tea', 'note_sugar', 'note_cold', 'note_starter',
+  'done'
+];
+
+function getPlannedBrewsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(PLANNED_BREWS_SHEET);
+  if (!sh) sh = ss.insertSheet(PLANNED_BREWS_SHEET);
+
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, sh.getMaxRows(), PLANNED_BREW_HEADERS.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, PLANNED_BREW_HEADERS.length).setValues([PLANNED_BREW_HEADERS]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  for (var h = 0; h < PLANNED_BREW_HEADERS.length; h++) {
+    if (hdr.indexOf(PLANNED_BREW_HEADERS[h]) === -1) {
+      var c = sh.getLastColumn() + 1;
+      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
+      sh.getRange(1, c).setValue(PLANNED_BREW_HEADERS[h]);
+      hdr.push(PLANNED_BREW_HEADERS[h]);
+    }
+  }
+  return sh;
+}
+
+function buildPlannedBrewRow_(p, ncols, map) {
+  p = p || {};
+  var row = [];
+  for (var i = 0; i < ncols; i++) row.push('');
+  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
+  var notes = p.notes || {};
+  set('brew_pk', p.id || '');
+  set('brew_date', p.date || '');
+  set('target_l', (p.targetVolume == null ? '' : p.targetVolume));
+  set('note_hot', notes.hot || '');
+  set('note_tea', notes.tea || '');
+  set('note_sugar', notes.sugar || '');
+  set('note_cold', notes.cold || '');
+  set('note_starter', notes.starter || '');
+  set('done', p.done ? 'yes' : '');
+  return row;
+}
+
+// No explicit sort — the frontend sorts by planned date itself.
+function readAllPlannedBrews_() {
+  var sh = getPlannedBrewsSheet_();
+  var map = headerMap_(sh);
+  var data = sh.getDataRange().getValues();
+  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!g(r, 'brew_pk')) continue;
+    out.push({
+      id: String(g(r, 'brew_pk')),
+      date: ymd_(g(r, 'brew_date')),
+      targetVolume: g(r, 'target_l'),
+      notes: {
+        hot: g(r, 'note_hot'),
+        tea: g(r, 'note_tea'),
+        sugar: g(r, 'note_sugar'),
+        cold: g(r, 'note_cold'),
+        starter: g(r, 'note_starter')
+      },
       done: truthy_(g(r, 'done'))
     });
   }
@@ -1125,6 +1209,9 @@ function doGet(e) {
   if (action === 'getPlannedInfusions') {
     return json_({ ok: true, plannedInfusions: readAllPlannedInfusions_() });
   }
+  if (action === 'getPlannedBrews') {
+    return json_({ ok: true, plannedBrews: readAllPlannedBrews_() });
+  }
   if (action === 'getProductionTasks') {
     return json_({ ok: true, productionTasks: readAllProductionTasks_() });
   }
@@ -1165,7 +1252,8 @@ function doGet(e) {
       feedback: readAllFeedback_(),
       productionTasks: readAllProductionTasks_(),
       dailyChecklist: readAllChecklist_(),
-      plannedInfusions: readAllPlannedInfusions_()
+      plannedInfusions: readAllPlannedInfusions_(),
+      plannedBrews: readAllPlannedBrews_()
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
@@ -1368,6 +1456,28 @@ function handleAction_(body) {
     var pidr = findRowByKey_(pish, pimap, 'plan_pk', body.id);
     if (pidr === -1) return json_({ ok: false, error: 'not found' });
     pish.deleteRow(pidr);
+    return json_({ ok: true });
+  }
+
+  // ---- planned brew actions (Daily operations page) ----
+  if (action === 'createPlannedBrew' || action === 'updatePlannedBrew' || action === 'deletePlannedBrew') {
+    var pbsh = getPlannedBrewsSheet_();
+    var pbmap = headerMap_(pbsh);
+    var pbncols = pbsh.getLastColumn();
+    if (action === 'createPlannedBrew') {
+      pbsh.appendRow(buildPlannedBrewRow_(body.plan || {}, pbncols, pbmap));
+      return json_({ ok: true });
+    }
+    if (action === 'updatePlannedBrew') {
+      var pbb = body.plan || {};
+      var pbrow = findRowByKey_(pbsh, pbmap, 'brew_pk', pbb.id);
+      if (pbrow === -1) return json_({ ok: false, error: 'not found' });
+      pbsh.getRange(pbrow, 1, 1, pbncols).setValues([buildPlannedBrewRow_(pbb, pbncols, pbmap)]);
+      return json_({ ok: true });
+    }
+    var pbdr = findRowByKey_(pbsh, pbmap, 'brew_pk', body.id);
+    if (pbdr === -1) return json_({ ok: false, error: 'not found' });
+    pbsh.deleteRow(pbdr);
     return json_({ ok: true });
   }
 
