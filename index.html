@@ -424,6 +424,8 @@
   .prep-list { margin: 0 0 16px 18px; padding: 0; }
   .prep-list li { margin-bottom: 7px; line-height: 1.55; color: var(--ink); }
   .brew-check { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 9px; margin-top: 14px; cursor: pointer; color: var(--ink); }
+  .plan-form-actions { display: -webkit-flex; display: flex; gap: 10px; margin-top: 16px; }
+  .plan-form-actions .btn-primary, .plan-form-actions .btn-ghost { -webkit-flex: 1; flex: 1; }
   .brew-check input { width: 16px; height: 16px; cursor: pointer; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .brew-done { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 15px; color: var(--ink-faint); }
   .brew-undo { background: none; border: none; color: var(--terra); cursor: pointer; text-decoration: underline; font: inherit; padding: 0; }
@@ -3582,6 +3584,16 @@ var productionTasks = [];
 var dailyChecklist = [];
 var plannedInfusions = [];
 var plannedBrews = [];
+// Planned infusions/brews are edited as a local draft (Save/Cancel below)
+// instead of autosaving on every keystroke like the rest of the app. These
+// track, per plan id: whether it's never made it to the sheet yet
+// (*Unsaved), and the last-known-saved copy to revert to on Cancel
+// (*Original).
+var planInfUnsaved = {};
+var planInfOriginal = {};
+var planBrewUnsaved = {};
+var planBrewOriginal = {};
+function clonePlan(p) { return JSON.parse(JSON.stringify(p)); }
 var ptBackendWarned = false;
 var feedbackByKey = {};
 var fbLabelByKey = {};
@@ -3729,6 +3741,10 @@ function loadAll(cb) {
     dailyChecklist = res.dailyChecklist || [];
     plannedInfusions = res.plannedInfusions || [];
     plannedBrews = res.plannedBrews || [];
+    planInfUnsaved = {}; planInfOriginal = {};
+    for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
+    planBrewUnsaved = {}; planBrewOriginal = {};
+    for (var pbi = 0; pbi < plannedBrews.length; pbi++) planBrewOriginal[plannedBrews[pbi].id] = clonePlan(plannedBrews[pbi]);
     feedbackByKey = {};
     for (var i = 0; i < feedback.length; i++) feedbackByKey[feedback[i].key] = feedback[i];
     setSyncStatus('live', 'connected \u00b7 google sheets');
@@ -6276,6 +6292,8 @@ function loadPlannedInfusions(cb) {
   api({ action: 'getPlannedInfusions' }, function (err, res) {
     if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
     plannedInfusions = res.plannedInfusions || [];
+    planInfUnsaved = {}; planInfOriginal = {};
+    for (var i = 0; i < plannedInfusions.length; i++) planInfOriginal[plannedInfusions[i].id] = clonePlan(plannedInfusions[i]);
     if (typeof renderToday === 'function') renderToday();
     if (cb) cb(null);
   });
@@ -6284,6 +6302,8 @@ function loadPlannedBrews(cb) {
   api({ action: 'getPlannedBrews' }, function (err, res) {
     if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
     plannedBrews = res.plannedBrews || [];
+    planBrewUnsaved = {}; planBrewOriginal = {};
+    for (var i = 0; i < plannedBrews.length; i++) planBrewOriginal[plannedBrews[i].id] = clonePlan(plannedBrews[i]);
     if (typeof renderToday === 'function') renderToday();
     if (cb) cb(null);
   });
@@ -7240,24 +7260,14 @@ function brewCalc(b, V) {
   };
 }
 // Planned brews are synced to the planned_brews sheet (findPlannedBrew below
-// looks up the live object in the plannedBrews global array), so the target
-// volume, done flag, and per-line notes are all visible from any device —
-// not just whichever one they were typed on.
+// looks up the live object in the plannedBrews global array). Editing is a
+// local draft until "Save" is clicked (see savePlannedBrewCard/
+// cancelPlannedBrewCard below) so a half-finished edit never gets pushed to
+// the sheet by accident \u2014 the "I\u2019ve brewed this batch" checkbox is the one
+// exception, since it's a status flag rather than part of the draft.
 function findPlannedBrew(pid) {
   for (var i = 0; i < plannedBrews.length; i++) { if (plannedBrews[i].id === pid) return plannedBrews[i]; }
   return null;
-}
-function savePlannedBrew(p) {
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'updatePlannedBrew', plan: p }, function (err, res) {
-    if (err || !res || !res.ok) {
-      setSyncStatus('error', 'save failed');
-      alert('Could not save that change. Check your connection and try again.');
-      loadPlannedBrews();  // resync from the sheet since the local copy may now be stale
-      return;
-    }
-    setSyncStatus('live', 'connected · google sheets');
-  });
 }
 function brewTarget(p) {
   var v = parseFloat(p.targetVolume);
@@ -7268,20 +7278,30 @@ function setBrewTarget(pid, v) {
   v = parseFloat(v); if (isNaN(v) || v <= 0) return;
   p.targetVolume = v;
   renderToday();
-  savePlannedBrew(p);
 }
 function setBrewDone(pid, done) {
   var p = findPlannedBrew(pid); if (!p) return;
+  var prev = p.done;
   p.done = !!done;
   renderToday();
-  savePlannedBrew(p);
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: 'updatePlannedBrew', plan: p }, function (err, res) {
+    if (err || !res || !res.ok) {
+      p.done = prev;
+      renderToday();
+      setSyncStatus('error', 'update failed');
+      alert('Could not save that change. Check your connection and try again.');
+      return;
+    }
+    planBrewOriginal[pid] = clonePlan(p);
+    setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
 }
 function rn(s) { return '<span class="prep-num">' + s + '</span>'; }
 function setPlanNote(pid, field, value) {
   var p = findPlannedBrew(pid); if (!p) return;
   if (!p.notes) p.notes = {};
   p.notes[field] = value;
-  savePlannedBrew(p);
 }
 function planRow(p, field, item, amtHtml) {
   var note = (p.notes && p.notes[field]) || '';
@@ -7294,6 +7314,35 @@ function toggleBrewBox(uid) {
   el.classList.toggle('collapsed');
   lsSet('toka_brew_open_' + uid, el.classList.contains('collapsed') ? '0' : '1');
 }
+function savePlannedBrewCard(pid) {
+  var p = findPlannedBrew(pid); if (!p) return;
+  var isNew = !!planBrewUnsaved[pid];
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: isNew ? 'createPlannedBrew' : 'updatePlannedBrew', plan: p }, function (err, res) {
+    if (err || !res || !res.ok) {
+      setSyncStatus('error', 'save failed');
+      alert('Could not save that plan. Check your connection and try again.');
+      return;
+    }
+    delete planBrewUnsaved[pid];
+    planBrewOriginal[pid] = clonePlan(p);
+    renderToday();
+    setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
+}
+function cancelPlannedBrewCard(pid) {
+  if (planBrewUnsaved[pid]) {
+    plannedBrews = plannedBrews.filter(function (x) { return x.id !== pid; });
+    delete planBrewUnsaved[pid];
+    renderToday();
+    return;
+  }
+  var orig = planBrewOriginal[pid]; if (!orig) return;
+  for (var i = 0; i < plannedBrews.length; i++) {
+    if (plannedBrews[i].id === pid) { plannedBrews[i] = clonePlan(orig); break; }
+  }
+  renderToday();
+}
 // p = a manually-added planned brew: { id, date, targetVolume, notes, done }.
 // There's no source F1 batch behind this \u2014 the user just picked a date they
 // want to brew on, so day-countdown/due-ness is computed straight from that
@@ -7303,10 +7352,11 @@ function brewBoxHtml(p) {
   var n = daysBetween(todayISO(), p.date); // p.date - today, in days
   var whenTxt = 'pick a date', due = false;
   if (n != null) {
-    if (n > 1)        whenTxt = 'in ' + n + ' days';
-    else if (n === 1) whenTxt = 'tomorrow';
-    else if (n === 0) whenTxt = 'today';
-    else              { whenTxt = ((-n) === 1 ? '1 day overdue' : (-n) + ' days overdue'); due = true; }
+    if (n > 1)         whenTxt = 'in ' + n + ' days';
+    else if (n === 1)  whenTxt = 'tomorrow';
+    else if (n === 0)  whenTxt = 'today';
+    else if (n === -1) { whenTxt = 'yesterday'; due = true; }
+    else               { whenTxt = (-n) + ' days ago'; due = true; }
   }
 
   if (p.done) {
@@ -7323,7 +7373,7 @@ function brewBoxHtml(p) {
   h += '<div class="brew-head" onclick="toggleBrewBox(\'' + pid + '\')">';
   h += '<span class="brew-tri" aria-hidden="true">\u25B8</span>';
   h += '<div class="brew-head-text">';
-  h += '<div class="plan-headline' + (due ? ' due' : '') + '">Brew this batch <span class="plan-when">' + whenTxt + '</span></div>';
+  h += '<div class="plan-headline' + (due ? ' due' : '') + '">Brew a new batch <span class="plan-when">' + whenTxt + '</span></div>';
   h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlannedBrewDate(\'' + pid + '\', this.value)" /></div>';
   h += '</div>';
   h += '<button type="button" class="brew-undo" onclick="event.stopPropagation(); removePlannedBrew(\'' + pid + '\')" title="Remove this planned brew">&times;</button>';
@@ -7353,42 +7403,43 @@ function brewBoxHtml(p) {
   h += '</tbody></table>';
 
   h += '<label class="brew-check"><input type="checkbox" onchange="setBrewDone(\'' + pid + '\', this.checked)" /> I\u2019ve brewed this batch</label>';
+  h += '<div class="plan-form-actions"><button type="button" class="btn-primary" onclick="savePlannedBrewCard(\'' + pid + '\')">Save</button>'
+     + '<button type="button" class="btn-ghost" onclick="cancelPlannedBrewCard(\'' + pid + '\')">Cancel</button></div>';
   h += '</div>'; // brew-body
   return h + '</div>'; // plan-card
 }
 /* Planned brews live in the planned_brews sheet (see plannedBrews global +
    loadPlannedBrews above) \u2014 added one at a time with "+", each carrying its
-   own target date, independent of any First Fermentation batch. Same
-   optimistic-update-with-revert sync pattern as planned infusions. */
+   own target date, independent of any First Fermentation batch. New brews
+   stay a local-only draft (planBrewUnsaved) until "Save" is clicked. */
 function addPlannedBrew() {
   var p = { id: uid(), date: todayISO(), targetVolume: 200, notes: { hot: '', tea: '', sugar: '', cold: '', starter: '' }, done: false };
-  plannedBrews.push(p);          // optimistic
+  plannedBrews.push(p);          // local draft only
+  planBrewUnsaved[p.id] = true;
   lsSet('toka_brew_open_' + p.id, '1');   // expand it right away so the fields are visible without an extra click
   renderToday();
-  setSyncStatus('saving', 'saving\u2026');
-  apiPost({ action: 'createPlannedBrew', plan: p }, function (err, res) {
-    if (err || !res || !res.ok) {
-      plannedBrews = plannedBrews.filter(function (x) { return x.id !== p.id; });   // revert
-      renderToday();
-      setSyncStatus('error', 'save failed');
-      alert('Could not save that plan. Check your connection and try again.');
-      return;
-    }
-    setSyncStatus('live', 'connected \u00b7 google sheets');
-  });
 }
 function removePlannedBrew(pid) {
+  if (planBrewUnsaved[pid]) {
+    // never made it to the sheet \u2014 nothing to confirm, nothing to delete server-side
+    plannedBrews = plannedBrews.filter(function (x) { return x.id !== pid; });
+    delete planBrewUnsaved[pid];
+    renderToday();
+    return;
+  }
   if (typeof confirm === 'function' && !confirm('Remove this planned brew?')) return;
   var idx = -1;
   for (var i = 0; i < plannedBrews.length; i++) { if (plannedBrews[i].id === pid) { idx = i; break; } }
   if (idx === -1) return;
   var removed = plannedBrews[idx];
   plannedBrews.splice(idx, 1);   // optimistic
+  delete planBrewOriginal[pid];
   renderToday();
   setSyncStatus('saving', 'saving\u2026');
   apiPost({ action: 'deletePlannedBrew', id: pid }, function (err, res) {
     if (err || !res || !res.ok) {
       plannedBrews.splice(idx, 0, removed);   // revert
+      planBrewOriginal[pid] = clonePlan(removed);
       renderToday();
       setSyncStatus('error', 'delete failed');
       alert('Could not remove that plan. Check your connection and try again.');
@@ -7401,7 +7452,6 @@ function setPlannedBrewDate(pid, v) {
   var p = findPlannedBrew(pid); if (!p) return;
   p.date = v || todayISO();
   renderToday();
-  savePlannedBrew(p);
 }
 function todayBrewPlan() {
   var recipeOpen = lsGet('toka_recipe_open') === '1';
@@ -7447,18 +7497,6 @@ function findPlanInf(pid) {
   for (var i = 0; i < plannedInfusions.length; i++) { if (plannedInfusions[i].id === pid) return plannedInfusions[i]; }
   return null;
 }
-function savePlanInf(p) {
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'updatePlannedInfusion', plan: p }, function (err, res) {
-    if (err || !res || !res.ok) {
-      setSyncStatus('error', 'save failed');
-      alert('Could not save that change. Check your connection and try again.');
-      loadPlannedInfusions();  // resync from the sheet since the local copy may now be stale
-      return;
-    }
-    setSyncStatus('live', 'connected · google sheets');
-  });
-}
 function addPlanInfFlavor(pid) {
   var p = findPlanInf(pid); if (!p) return;
   if (!p.flavours) p.flavours = [];
@@ -7470,7 +7508,6 @@ function removePlanInfFlavor(pid, idx) {
   var p = findPlanInf(pid); if (!p || !p.flavours) return;
   p.flavours.splice(idx, 1);
   renderToday();
-  savePlanInf(p);
 }
 function setPlanInfFlavor(pid, idx, field, value) {
   var p = findPlanInf(pid); if (!p) return;
@@ -7478,69 +7515,109 @@ function setPlanInfFlavor(pid, idx, field, value) {
   while (p.flavours.length <= idx) p.flavours.push({ name: '', g: null });
   if (field === 'name') p.flavours[idx].name = value;
   else p.flavours[idx].g = (value === '' ? null : parseFloat(value));
-  savePlanInf(p);
 }
 function setPlanInfField(pid, field, value) {
   var p = findPlanInf(pid); if (!p) return;
   if (field === 'liters') p[field] = (value === '' ? null : parseFloat(value));
   else p[field] = value;
   renderToday();
-  savePlanInf(p);
 }
 function setPlanInfDone(pid, done) {
+  // Marking done/undone saves immediately \u2014 it's a status flag, not part of
+  // the editable draft that Save/Cancel govern.
   var p = findPlanInf(pid); if (!p) return;
+  var prev = p.done;
   p.done = !!done;
   renderToday();
-  savePlanInf(p);
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: 'updatePlannedInfusion', plan: p }, function (err, res) {
+    if (err || !res || !res.ok) {
+      p.done = prev;
+      renderToday();
+      setSyncStatus('error', 'update failed');
+      alert('Could not save that change. Check your connection and try again.');
+      return;
+    }
+    planInfOriginal[pid] = clonePlan(p);
+    setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
 }
 function togglePlanInfBox(pid) {
   var el = document.getElementById('planinf_' + pid); if (!el) return;
   el.classList.toggle('collapsed');
   lsSet('toka_planinf_open_' + pid, el.classList.contains('collapsed') ? '0' : '1');
 }
-function addPlannedInfusion() {
-  var p = { id: uid(), date: todayISO(), liters: null, sourceF1Uid: '', vessel: '', flavours: [{ name: '', g: null }], done: false };
-  plannedInfusions.push(p);          // optimistic
-  lsSet('toka_planinf_open_' + p.id, '1');   // expand it right away so the fields are visible without an extra click
-  renderToday();
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'createPlannedInfusion', plan: p }, function (err, res) {
+function savePlannedInfusionCard(pid) {
+  var p = findPlanInf(pid); if (!p) return;
+  var isNew = !!planInfUnsaved[pid];
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: isNew ? 'createPlannedInfusion' : 'updatePlannedInfusion', plan: p }, function (err, res) {
     if (err || !res || !res.ok) {
-      plannedInfusions = plannedInfusions.filter(function (x) { return x.id !== p.id; });   // revert
-      renderToday();
       setSyncStatus('error', 'save failed');
       alert('Could not save that plan. Check your connection and try again.');
       return;
     }
-    setSyncStatus('live', 'connected · google sheets');
+    delete planInfUnsaved[pid];
+    planInfOriginal[pid] = clonePlan(p);
+    renderToday();
+    setSyncStatus('live', 'connected \u00b7 google sheets');
   });
 }
+function cancelPlannedInfusionCard(pid) {
+  if (planInfUnsaved[pid]) {
+    plannedInfusions = plannedInfusions.filter(function (x) { return x.id !== pid; });
+    delete planInfUnsaved[pid];
+    renderToday();
+    return;
+  }
+  var orig = planInfOriginal[pid]; if (!orig) return;
+  for (var i = 0; i < plannedInfusions.length; i++) {
+    if (plannedInfusions[i].id === pid) { plannedInfusions[i] = clonePlan(orig); break; }
+  }
+  renderToday();
+}
+function addPlannedInfusion() {
+  var p = { id: uid(), date: todayISO(), liters: null, sourceF1Uid: '', vessel: '', flavours: [{ name: '', g: null }], done: false };
+  plannedInfusions.push(p);          // local draft only
+  planInfUnsaved[p.id] = true;
+  lsSet('toka_planinf_open_' + p.id, '1');   // expand it right away so the fields are visible without an extra click
+  renderToday();
+}
 function removePlannedInfusion(pid) {
+  if (planInfUnsaved[pid]) {
+    // never made it to the sheet \u2014 nothing to confirm, nothing to delete server-side
+    plannedInfusions = plannedInfusions.filter(function (x) { return x.id !== pid; });
+    delete planInfUnsaved[pid];
+    renderToday();
+    return;
+  }
   if (typeof confirm === 'function' && !confirm('Remove this planned infusion?')) return;
   var idx = -1;
   for (var i = 0; i < plannedInfusions.length; i++) { if (plannedInfusions[i].id === pid) { idx = i; break; } }
   if (idx === -1) return;
   var removed = plannedInfusions[idx];
   plannedInfusions.splice(idx, 1);   // optimistic
+  delete planInfOriginal[pid];
   renderToday();
-  setSyncStatus('saving', 'saving…');
+  setSyncStatus('saving', 'saving\u2026');
   apiPost({ action: 'deletePlannedInfusion', id: pid }, function (err, res) {
     if (err || !res || !res.ok) {
       plannedInfusions.splice(idx, 0, removed);   // revert
+      planInfOriginal[pid] = clonePlan(removed);
       renderToday();
       setSyncStatus('error', 'delete failed');
       alert('Could not remove that plan. Check your connection and try again.');
       return;
     }
-    setSyncStatus('live', 'connected · google sheets');
+    setSyncStatus('live', 'connected \u00b7 google sheets');
   });
 }
-// "First fermentation source" — which active F1 batch the infusion will be
+// "First fermentation source" \u2014 which active F1 batch the infusion will be
 // drawn from. Same option list/label as the real Infusion drawer's source
 // picker (f1OptionsHtml), just single-select since this is a lightweight
 // plan rather than a real multi-vessel record.
 function planInfF1OptionsHtml(selectedUid) {
-  var opts = '<option value="">— none selected —</option>';
+  var opts = '<option value="">\u2014 none selected \u2014</option>';
   var sorted = batches.slice().sort(cmpBatches);
   for (var i = 0; i < sorted.length; i++) {
     var b = sorted[i];
@@ -7549,7 +7626,7 @@ function planInfF1OptionsHtml(selectedUid) {
   }
   return opts;
 }
-// "Infusion vessel" — the physical container the spice-steeping itself will
+// "Infusion vessel" \u2014 the physical container the spice-steeping itself will
 // happen in (Tank/Jar, in the usual order), same select+"Other" fallback
 // pattern as the real Infusion drawer's Vessel/container field.
 function planInfVesselFieldHtml(pid, vessel) {
@@ -7557,7 +7634,7 @@ function planInfVesselFieldHtml(pid, vessel) {
   var upper = String(vessel || '').trim().toUpperCase();
   var isKnown = vessel && list.indexOf(upper) !== -1;
   var selVal = !vessel ? '' : (isKnown ? upper : '__other__');
-  var opts = '<option value="">— select vessel —</option>';
+  var opts = '<option value="">\u2014 select vessel \u2014</option>';
   for (var i = 0; i < list.length; i++) opts += '<option value="' + esc(list[i]) + '"' + (selVal === list[i] ? ' selected' : '') + '>' + esc(list[i]) + '</option>';
   opts += '<option value="__other__"' + (selVal === '__other__' ? ' selected' : '') + '>Other (type below)</option>';
   return '<select onchange="onPlanInfVesselSelect(\'' + pid + '\', this.value)">' + opts + '</select>'
@@ -7577,16 +7654,17 @@ function planInfBoxHtml(p) {
   var n = daysBetween(todayISO(), p.date); // p.date - today, in days
   var whenTxt = 'pick a date', due = false;
   if (n != null) {
-    if (n > 1)        whenTxt = 'in ' + n + ' days';
-    else if (n === 1) whenTxt = 'tomorrow';
-    else if (n === 0) whenTxt = 'today';
-    else              { whenTxt = ((-n) === 1 ? '1 day overdue' : (-n) + ' days overdue'); due = true; }
+    if (n > 1)         whenTxt = 'in ' + n + ' days';
+    else if (n === 1)  whenTxt = 'tomorrow';
+    else if (n === 0)  whenTxt = 'today';
+    else if (n === -1) { whenTxt = 'yesterday'; due = true; }
+    else               { whenTxt = (-n) + ' days ago'; due = true; }
   }
 
   if (p.done) {
-    var doneFlav = (p.flavours && p.flavours.length) ? (' · ' + p.flavours.map(function (f) { return fmtText(f.name) + (f.g !== '' && f.g != null ? (' ' + fmtQty(f.g, 'g')) : ''); }).join(', ')) : '';
+    var doneFlav = (p.flavours && p.flavours.length) ? (' \u00b7 ' + p.flavours.map(function (f) { return fmtText(f.name) + (f.g !== '' && f.g != null ? (' ' + fmtQty(f.g, 'g')) : ''); }).join(', ')) : '';
     return '<div class="plan-card brew-box collapsed" id="planinf_' + pid + '">'
-      + '<div class="brew-done">✓ Infused' + (p.date ? (' · planned for ' + fmtDate(p.date)) : '') + doneFlav
+      + '<div class="brew-done">\u2713 Infused' + (p.date ? (' \u00b7 planned for ' + fmtDate(p.date)) : '') + doneFlav
       + '<button type="button" class="brew-undo" onclick="setPlanInfDone(\'' + pid + '\', false)">undo</button>'
       + '<button type="button" class="brew-undo" onclick="removePlannedInfusion(\'' + pid + '\')">remove</button></div></div>';
   }
@@ -7594,9 +7672,9 @@ function planInfBoxHtml(p) {
   var open = lsGet('toka_planinf_open_' + pid) !== '0';   // open by default, until explicitly collapsed
   var h = '<div class="plan-card brew-box' + (open ? '' : ' collapsed') + '" id="planinf_' + pid + '">';
   h += '<div class="brew-head" onclick="togglePlanInfBox(\'' + pid + '\')">';
-  h += '<span class="brew-tri" aria-hidden="true">▸</span>';
+  h += '<span class="brew-tri" aria-hidden="true">\u25B8</span>';
   h += '<div class="brew-head-text">';
-  h += '<div class="plan-headline' + (due ? ' due' : '') + '">Infuse a batch <span class="plan-when">' + whenTxt + '</span></div>';
+  h += '<div class="plan-headline' + (due ? ' due' : '') + '">Infuse a new batch <span class="plan-when">' + whenTxt + '</span></div>';
   h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlanInfField(\'' + pid + '\', \'date\', this.value)" /></div>';
   h += '</div>';
   h += '<button type="button" class="brew-undo" onclick="event.stopPropagation(); removePlannedInfusion(\'' + pid + '\')" title="Remove this planned infusion">&times;</button>';
@@ -7612,6 +7690,8 @@ function planInfBoxHtml(p) {
   h += '<div class="form-group"><label>Spices</label><div id="planinf-flavours-' + pid + '">' + planFlavorRowsHtml(pid, p.flavours) + '</div>'
      + '<button type="button" class="btn-ghost btn-add-flavour" onclick="addPlanInfFlavor(\'' + pid + '\')">+ add spice</button></div>';
   h += '<label class="brew-check"><input type="checkbox" onchange="setPlanInfDone(\'' + pid + '\', this.checked)" /> Infusion done</label>';
+  h += '<div class="plan-form-actions"><button type="button" class="btn-primary" onclick="savePlannedInfusionCard(\'' + pid + '\')">Save</button>'
+     + '<button type="button" class="btn-ghost" onclick="cancelPlannedInfusionCard(\'' + pid + '\')">Cancel</button></div>';
   h += '</div>'; // brew-body
   return h + '</div>'; // plan-card
 }
