@@ -35,8 +35,9 @@ var READINGS_SHEET = 'readings';
 var FEEDBACK_SHEET = 'feedback';
 var PRODUCTION_SHEET = 'production_tasks';
 var CHECKLIST_SHEET = 'daily_checklist';
+var PLANNED_INFUSIONS_SHEET = 'planned_infusions';
 
-var VERSION = '27 (expenses page merged in)';
+var VERSION = '28 (planned infusions added)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -714,6 +715,94 @@ function readAllChecklist_() {
   return out;
 }
 
+/* ---------- planned infusions (Daily operations page) ----------
+   A forward-looking counterpart to the infusions sheet: the user jots down
+   an infusion they intend to do on some future date (litres, vessel, spice
+   list) and checks it off once it's actually been done. It's deliberately
+   its own sheet rather than an early row in `infusions` — a plan isn't a
+   real infusion yet (no lineage links, no strain/bottle chain), so keeping
+   it separate avoids half-populated rows in the real production data. */
+
+var PLANNED_INFUSION_HEADERS = [
+  'plan_pk', 'plan_date', 'liters', 'vessel',
+  'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
+  'flavor3_name', 'flavor3_g', 'flavor4_name', 'flavor4_g',
+  'done'
+];
+
+function getPlannedInfusionsSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(PLANNED_INFUSIONS_SHEET);
+  if (!sh) sh = ss.insertSheet(PLANNED_INFUSIONS_SHEET);
+
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, sh.getMaxRows(), PLANNED_INFUSION_HEADERS.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, PLANNED_INFUSION_HEADERS.length).setValues([PLANNED_INFUSION_HEADERS]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  for (var h = 0; h < PLANNED_INFUSION_HEADERS.length; h++) {
+    if (hdr.indexOf(PLANNED_INFUSION_HEADERS[h]) === -1) {
+      var c = sh.getLastColumn() + 1;
+      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
+      sh.getRange(1, c).setValue(PLANNED_INFUSION_HEADERS[h]);
+      hdr.push(PLANNED_INFUSION_HEADERS[h]);
+    }
+  }
+  return sh;
+}
+
+function buildPlannedInfusionRow_(p, ncols, map) {
+  p = p || {};
+  var row = [];
+  for (var i = 0; i < ncols; i++) row.push('');
+  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
+  set('plan_pk', p.id || '');
+  set('plan_date', p.date || '');
+  set('liters', (p.liters == null ? '' : p.liters));
+  set('vessel', p.vessel || '');
+  var fl = p.flavours || [];
+  for (var f = 0; f < MAX_FLAVORS; f++) {
+    var item = fl[f] || {};
+    set('flavor' + (f + 1) + '_name', item.name || '');
+    set('flavor' + (f + 1) + '_g', (item.g == null ? '' : item.g));
+  }
+  set('done', p.done ? 'yes' : '');
+  return row;
+}
+
+// No explicit sort here — the frontend sorts by planned date itself (same
+// as it already does for planned brews), so plain append order is fine.
+function readAllPlannedInfusions_() {
+  var sh = getPlannedInfusionsSheet_();
+  var map = headerMap_(sh);
+  var data = sh.getDataRange().getValues();
+  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!g(r, 'plan_pk')) continue;
+    var flavours = [];
+    for (var f = 0; f < MAX_FLAVORS; f++) {
+      var nm = g(r, 'flavor' + (f + 1) + '_name');
+      var gr = g(r, 'flavor' + (f + 1) + '_g');
+      if ((nm !== '' && nm != null) || (gr !== '' && gr != null)) {
+        flavours.push({ name: nm, g: gr });
+      }
+    }
+    out.push({
+      id: String(g(r, 'plan_pk')),
+      date: ymd_(g(r, 'plan_date')),
+      liters: g(r, 'liters'),
+      vessel: g(r, 'vessel'),
+      flavours: flavours,
+      done: truthy_(g(r, 'done'))
+    });
+  }
+  return out;
+}
+
 /* ---------- feedback (tasting) ---------- */
 
 var FEEDBACK_HEADERS = [
@@ -1033,6 +1122,9 @@ function doGet(e) {
   if (action === 'getChecklist') {
     return json_({ ok: true, checklist: readAllChecklist_() });
   }
+  if (action === 'getPlannedInfusions') {
+    return json_({ ok: true, plannedInfusions: readAllPlannedInfusions_() });
+  }
   if (action === 'getProductionTasks') {
     return json_({ ok: true, productionTasks: readAllProductionTasks_() });
   }
@@ -1072,7 +1164,8 @@ function doGet(e) {
       readings: readAllReadings_(),
       feedback: readAllFeedback_(),
       productionTasks: readAllProductionTasks_(),
-      dailyChecklist: readAllChecklist_()
+      dailyChecklist: readAllChecklist_(),
+      plannedInfusions: readAllPlannedInfusions_()
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
@@ -1253,6 +1346,28 @@ function handleAction_(body) {
     var cldr = findRowByKey_(clsh, clmap, 'item_pk', body.id);
     if (cldr === -1) return json_({ ok: false, error: 'not found' });
     clsh.deleteRow(cldr);
+    return json_({ ok: true });
+  }
+
+  // ---- planned infusion actions (Daily operations page) ----
+  if (action === 'createPlannedInfusion' || action === 'updatePlannedInfusion' || action === 'deletePlannedInfusion') {
+    var pish = getPlannedInfusionsSheet_();
+    var pimap = headerMap_(pish);
+    var pincols = pish.getLastColumn();
+    if (action === 'createPlannedInfusion') {
+      pish.appendRow(buildPlannedInfusionRow_(body.plan || {}, pincols, pimap));
+      return json_({ ok: true });
+    }
+    if (action === 'updatePlannedInfusion') {
+      var pib = body.plan || {};
+      var pirow = findRowByKey_(pish, pimap, 'plan_pk', pib.id);
+      if (pirow === -1) return json_({ ok: false, error: 'not found' });
+      pish.getRange(pirow, 1, 1, pincols).setValues([buildPlannedInfusionRow_(pib, pincols, pimap)]);
+      return json_({ ok: true });
+    }
+    var pidr = findRowByKey_(pish, pimap, 'plan_pk', body.id);
+    if (pidr === -1) return json_({ ok: false, error: 'not found' });
+    pish.deleteRow(pidr);
     return json_({ ok: true });
   }
 

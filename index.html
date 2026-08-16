@@ -3580,6 +3580,7 @@ var readings = [];
 var feedback = [];
 var productionTasks = [];
 var dailyChecklist = [];
+var plannedInfusions = [];
 var ptBackendWarned = false;
 var feedbackByKey = {};
 var fbLabelByKey = {};
@@ -3715,7 +3716,7 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist], function () { if (cb) cb(); });
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions], function () { if (cb) cb(); });
       return;
     }
     batches = res.batches || [];
@@ -3725,6 +3726,7 @@ function loadAll(cb) {
     feedback = res.feedback || [];
     productionTasks = (res.productionTasks || []).map(normPtTask);
     dailyChecklist = res.dailyChecklist || [];
+    plannedInfusions = res.plannedInfusions || [];
     feedbackByKey = {};
     for (var i = 0; i < feedback.length; i++) feedbackByKey[feedback[i].key] = feedback[i];
     setSyncStatus('live', 'connected \u00b7 google sheets');
@@ -6268,6 +6270,14 @@ function loadChecklist(cb) {
     if (cb) cb(null);
   });
 }
+function loadPlannedInfusions(cb) {
+  api({ action: 'getPlannedInfusions' }, function (err, res) {
+    if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
+    plannedInfusions = res.plannedInfusions || [];
+    if (typeof renderToday === 'function') renderToday();
+    if (cb) cb(null);
+  });
+}
 function loadProductionTasks(cb) {
   api({ action: 'getProductionTasks' }, function (err, res) {
     if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
@@ -7345,6 +7355,176 @@ function todayBrewPlan() {
     return h + '<div class="an-empty">No brews planned yet. Click "+ add planned brew" and pick a date.</div></div>';
   }
   for (var i = 0; i < plans.length; i++) h += brewBoxHtml(plans[i]);
+  return h + '</div>';
+}
+
+/* ---- planned infusions (Daily operations page) ----
+   A forward-looking counterpart to todayStrainInf() below: this is for an
+   infusion the user intends to do on some future date, before it's a real
+   row in the infusions sheet — litres, vessel, and a spice list (reusing
+   the same flavor-row markup as the Infusion drawer, under plan-prefixed
+   names so it doesn't collide with infFlavorRowHtml/flavorRowHtml). Synced
+   to its own planned_infusions sheet, same optimistic-update-with-revert
+   pattern as the free-text checklist above. Checking "Infusion done" just
+   flags the plan as done — it's a manual note, not linked to a real
+   infusion row. ---- */
+var PLAN_INF_MAX_FLAVORS = 4;
+function planFlavorRowHtml(pid, idx, name, grams) {
+  return '<div class="flavor-row">'
+    + '<input type="text" class="fl-name" placeholder="spice" value="' + esc(name || '') + '" data-hist-field="spiceName" autocomplete="off" onchange="setPlanInfFlavor(\'' + pid + '\', ' + idx + ', \'name\', this.value)" />'
+    + '<input type="number" class="fl-g" min="0" step="any" placeholder="e.g. 2" value="' + esc(grams == null ? '' : grams) + '" onchange="setPlanInfFlavor(\'' + pid + '\', ' + idx + ', \'g\', this.value)" />'
+    + '<span class="unit-suffix">g</span>'
+    + '<button type="button" class="fl-rm" onclick="removePlanInfFlavor(\'' + pid + '\', ' + idx + ')" title="Remove">&times;</button>'
+    + '</div>';
+}
+function planFlavorRowsHtml(pid, flavours) {
+  var list = (flavours && flavours.length) ? flavours : [{ name: '', g: null }];
+  var h = '';
+  for (var i = 0; i < list.length; i++) h += planFlavorRowHtml(pid, i, list[i].name, list[i].g);
+  return h;
+}
+function findPlanInf(pid) {
+  for (var i = 0; i < plannedInfusions.length; i++) { if (plannedInfusions[i].id === pid) return plannedInfusions[i]; }
+  return null;
+}
+function savePlanInf(p) {
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'updatePlannedInfusion', plan: p }, function (err, res) {
+    if (err || !res || !res.ok) {
+      setSyncStatus('error', 'save failed');
+      alert('Could not save that change. Check your connection and try again.');
+      loadPlannedInfusions();  // resync from the sheet since the local copy may now be stale
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
+}
+function addPlanInfFlavor(pid) {
+  var p = findPlanInf(pid); if (!p) return;
+  if (!p.flavours) p.flavours = [];
+  if (p.flavours.length >= PLAN_INF_MAX_FLAVORS) { alert('Up to ' + PLAN_INF_MAX_FLAVORS + ' spices per infusion.'); return; }
+  p.flavours.push({ name: '', g: null });
+  renderToday();
+}
+function removePlanInfFlavor(pid, idx) {
+  var p = findPlanInf(pid); if (!p || !p.flavours) return;
+  p.flavours.splice(idx, 1);
+  renderToday();
+  savePlanInf(p);
+}
+function setPlanInfFlavor(pid, idx, field, value) {
+  var p = findPlanInf(pid); if (!p) return;
+  if (!p.flavours) p.flavours = [];
+  while (p.flavours.length <= idx) p.flavours.push({ name: '', g: null });
+  if (field === 'name') p.flavours[idx].name = value;
+  else p.flavours[idx].g = (value === '' ? null : parseFloat(value));
+  savePlanInf(p);
+}
+function setPlanInfField(pid, field, value) {
+  var p = findPlanInf(pid); if (!p) return;
+  if (field === 'liters') p[field] = (value === '' ? null : parseFloat(value));
+  else p[field] = value;
+  renderToday();
+  savePlanInf(p);
+}
+function setPlanInfDone(pid, done) {
+  var p = findPlanInf(pid); if (!p) return;
+  p.done = !!done;
+  renderToday();
+  savePlanInf(p);
+}
+function togglePlanInfBox(pid) {
+  var el = document.getElementById('planinf_' + pid); if (!el) return;
+  el.classList.toggle('collapsed');
+  lsSet('toka_planinf_open_' + pid, el.classList.contains('collapsed') ? '0' : '1');
+}
+function addPlannedInfusion() {
+  var p = { id: uid(), date: todayISO(), liters: null, vessel: '', flavours: [{ name: '', g: null }], done: false };
+  plannedInfusions.push(p);          // optimistic
+  renderToday();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'createPlannedInfusion', plan: p }, function (err, res) {
+    if (err || !res || !res.ok) {
+      plannedInfusions = plannedInfusions.filter(function (x) { return x.id !== p.id; });   // revert
+      renderToday();
+      setSyncStatus('error', 'save failed');
+      alert('Could not save that plan. Check your connection and try again.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
+}
+function removePlannedInfusion(pid) {
+  if (typeof confirm === 'function' && !confirm('Remove this planned infusion?')) return;
+  var idx = -1;
+  for (var i = 0; i < plannedInfusions.length; i++) { if (plannedInfusions[i].id === pid) { idx = i; break; } }
+  if (idx === -1) return;
+  var removed = plannedInfusions[idx];
+  plannedInfusions.splice(idx, 1);   // optimistic
+  renderToday();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'deletePlannedInfusion', id: pid }, function (err, res) {
+    if (err || !res || !res.ok) {
+      plannedInfusions.splice(idx, 0, removed);   // revert
+      renderToday();
+      setSyncStatus('error', 'delete failed');
+      alert('Could not remove that plan. Check your connection and try again.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
+}
+function planInfBoxHtml(p) {
+  var pid = p.id;
+  var n = daysBetween(todayISO(), p.date); // p.date - today, in days
+  var whenTxt = 'pick a date', due = false;
+  if (n != null) {
+    if (n > 1)        whenTxt = 'in ' + n + ' days';
+    else if (n === 1) whenTxt = 'tomorrow';
+    else if (n === 0) whenTxt = 'today';
+    else              { whenTxt = ((-n) === 1 ? '1 day overdue' : (-n) + ' days overdue'); due = true; }
+  }
+
+  if (p.done) {
+    var doneFlav = (p.flavours && p.flavours.length) ? (' · ' + p.flavours.map(function (f) { return fmtText(f.name) + (f.g !== '' && f.g != null ? (' ' + fmtQty(f.g, 'g')) : ''); }).join(', ')) : '';
+    return '<div class="plan-card brew-box collapsed" id="planinf_' + pid + '">'
+      + '<div class="brew-done">✓ Infused' + (p.date ? (' · planned for ' + fmtDate(p.date)) : '') + doneFlav
+      + '<button type="button" class="brew-undo" onclick="setPlanInfDone(\'' + pid + '\', false)">undo</button>'
+      + '<button type="button" class="brew-undo" onclick="removePlannedInfusion(\'' + pid + '\')">remove</button></div></div>';
+  }
+
+  var open = lsGet('toka_planinf_open_' + pid) === '1';
+  var h = '<div class="plan-card brew-box' + (open ? '' : ' collapsed') + '" id="planinf_' + pid + '">';
+  h += '<div class="brew-head" onclick="togglePlanInfBox(\'' + pid + '\')">';
+  h += '<span class="brew-tri" aria-hidden="true">▸</span>';
+  h += '<div class="brew-head-text">';
+  h += '<div class="plan-headline' + (due ? ' due' : '') + '">Infuse a vessel <span class="plan-when">' + whenTxt + '</span></div>';
+  h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlanInfField(\'' + pid + '\', \'date\', this.value)" /></div>';
+  h += '</div>';
+  h += '<button type="button" class="brew-undo" onclick="event.stopPropagation(); removePlannedInfusion(\'' + pid + '\')" title="Remove this planned infusion">&times;</button>';
+  h += '</div>';
+
+  h += '<div class="brew-body">';
+  h += '<div class="plan-vol"><label>Volume</label>'
+     + '<input type="number" min="0" step="any" placeholder="e.g. 20" value="' + esc(p.liters == null ? '' : p.liters) + '" onchange="setPlanInfField(\'' + pid + '\', \'liters\', this.value)" />'
+     + '<span class="plan-vol-unit">L</span></div>';
+  h += '<div class="form-group"><label>Vessel</label>'
+     + '<input type="text" value="' + esc(p.vessel || '') + '" data-hist-field="vessel" autocomplete="off" onchange="setPlanInfField(\'' + pid + '\', \'vessel\', this.value)" /></div>';
+  h += '<div class="form-group"><label>Spices</label><div id="planinf-flavours-' + pid + '">' + planFlavorRowsHtml(pid, p.flavours) + '</div>'
+     + '<button type="button" class="btn-ghost btn-add-flavour" onclick="addPlanInfFlavor(\'' + pid + '\')">+ add spice</button></div>';
+  h += '<label class="brew-check"><input type="checkbox" onchange="setPlanInfDone(\'' + pid + '\', this.checked)" /> Infusion done</label>';
+  h += '</div>'; // brew-body
+  return h + '</div>'; // plan-card
+}
+function todayPlanInf() {
+  var h = '<div class="an-section"><div class="sec-title">Plan an infusion</div>';
+  h += '<div class="sec-note">Jot down an infusion you’re planning to do — date, volume, vessel, and spices — and check it off once it’s done.</div>';
+  h += '<button type="button" class="btn-ghost" onclick="addPlannedInfusion()" style="margin-bottom:10px;">+ add planned infusion</button>';
+  var plans = plannedInfusions.slice().sort(function (a, c) { return String(a.date || '') < String(c.date || '') ? -1 : 1; });
+  if (!plans.length) {
+    return h + '<div class="an-empty">No infusions planned yet. Click "+ add planned infusion" and pick a date.</div></div>';
+  }
+  for (var i = 0; i < plans.length; i++) h += planInfBoxHtml(plans[i]);
   return h + '</div>';
 }
 
@@ -9263,7 +9443,7 @@ function renderOverview() {
 
 function renderToday() {
   var body = document.getElementById('today-body'); if (!body) return;
-  body.innerHTML = todayBrewPlan() + todayStrainInf() + todayFridge();
+  body.innerHTML = todayBrewPlan() + todayPlanInf() + todayStrainInf() + todayFridge();
   var sub = document.getElementById('today-sub');
   if (sub) sub.textContent = fmtDate(todayISO()) + ' \u00b7 ' + todayActiveF1().length + ' fermenting \u00b7 ' + todayActiveInf().length + ' infusing \u00b7 ' + todayActiveF2().length + ' carbonating';
   renderChecklist();
