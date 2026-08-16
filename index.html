@@ -1505,6 +1505,11 @@
       <select id="pt-depends-on" onchange="onPtDependsOnChange()"></select>
       <div class="hint">Best/worst case below are set to match automatically — edit them if this task's own dates should differ.</div>
     </div>
+    <div class="form-group">
+      <label>Group with</label>
+      <select id="pt-group-with"></select>
+      <div class="hint">Puts this task on the same row as another, e.g. for tasks that follow on from each other. Tasks linked via "Depends on" above are grouped onto one row automatically — this is only for grouping tasks by hand.</div>
+    </div>
     <div class="form-section">
       <div class="form-section-title">Dates</div>
       <div class="pt-field-row">
@@ -7473,6 +7478,7 @@ function normPtTask(x) {
     category: String(x.category || ''),
     leads: normPtLeads(x.leads != null ? x.leads : x.lead),
     dependsOn: String(x.dependsOn || ''),
+    groupKey: String(x.groupKey || ''),
     dateBest: db, dateWorst: dw,
     done: !!x.done
   };
@@ -7512,6 +7518,43 @@ function ptComputeSchedule(tasks) {
     out.push({ task: t, best: { start: effBest, end: effBest }, worst: { start: effWorst, end: effWorst } });
   }
   return out;
+}
+
+/* ---- grouping: tasks that follow on from each other share one Gantt row ----
+   An explicit groupKey (set via the "Group with" drawer field) always wins.
+   Otherwise a task auto-groups with whichever dependsOn chain it belongs
+   to, by walking back to that chain's root (the task with no dependsOn)
+   and using that root task's own id as the shared key — so a chain of
+   linked tasks lands on one row with no setup needed, and a standalone
+   task with nothing pointing at it just gets a row of its own. */
+function ptEffectiveGroupKey(t, byId, seen) {
+  if (t.groupKey) return t.groupKey;
+  seen = seen || {};
+  if (seen[t.id]) return t.id;   // cycle guard — shouldn't happen, falls back to its own row
+  seen[t.id] = true;
+  var dep = t.dependsOn && byId[t.dependsOn];
+  if (!dep) return t.id;
+  return ptEffectiveGroupKey(dep, byId, seen);
+}
+// Buckets already-scheduled rows (task + resolved best/worst) into groups,
+// preserving each group's first appearance order, and sorts the rows
+// within a group chronologically so a chain reads left-to-right correctly.
+function ptGroupSchedule(scheduleRows) {
+  var byId = {};
+  for (var i = 0; i < scheduleRows.length; i++) byId[scheduleRows[i].task.id] = scheduleRows[i].task;
+  var groups = {}, order = [];
+  for (var j = 0; j < scheduleRows.length; j++) {
+    var row = scheduleRows[j];
+    var gk = ptEffectiveGroupKey(row.task, byId);
+    if (!groups[gk]) { groups[gk] = []; order.push(gk); }
+    groups[gk].push(row);
+  }
+  for (var k = 0; k < order.length; k++) {
+    groups[order[k]].sort(function (a, b) {
+      return String(a.best.start) < String(b.best.start) ? -1 : (String(a.best.start) > String(b.best.start) ? 1 : 0);
+    });
+  }
+  return order.map(function (gk) { return groups[gk]; });
 }
 
 /* ---- CRUD + drawer (synced to the production_tasks sheet) ----
@@ -7586,6 +7629,18 @@ function openPtDrawer(id) {
   }
   depSel.innerHTML = depOpts;
   depSel.value = t ? t.dependsOn : '';
+  var groupSel = document.getElementById('pt-group-with');
+  var groupOpts = '<option value="">— none (auto-group by dependency chain) —</option>';
+  for (var gi = 0; gi < productionTasks.length; gi++) {
+    var gt = productionTasks[gi];
+    if (gt.id === (t && t.id)) continue; // a task can't group with itself
+    groupOpts += '<option value="' + esc(gt.id) + '">' + esc(gt.text || '(untitled task)') + '</option>';
+  }
+  groupSel.innerHTML = groupOpts;
+  // The stored groupKey is a resolved value (usually another task's own
+  // id) rather than a live reference, so this just shows that task
+  // selected if it's still around — it's fine if nothing matches exactly.
+  groupSel.value = (t && t.groupKey) ? t.groupKey : '';
   document.getElementById('pt-date-best').value = t ? t.dateBest : today;
   document.getElementById('pt-date-worst').value = t ? t.dateWorst : today;
   ptWorstDirty = t ? (t.dateBest !== t.dateWorst) : false;
@@ -7605,12 +7660,25 @@ function savePtTaskForm() {
   var db = val('pt-date-best') || todayISO();
   var dw = val('pt-date-worst') || db;
   var leads = PT_LEAD_OPTIONS.filter(function (name) { return document.getElementById(ptLeadCheckboxId(name)).checked; });
+  // "Group with" picks another task by id, but what actually gets stored
+  // is that task's own *effective* group key — usually just its id, but if
+  // that task is itself already grouped (e.g. mid-chain), this correctly
+  // joins the whole existing group instead of starting a new one.
+  var groupWithId = val('pt-group-with');
+  var groupKey = '';
+  if (groupWithId) {
+    var groupById = {};
+    for (var gwi = 0; gwi < productionTasks.length; gwi++) groupById[productionTasks[gwi].id] = productionTasks[gwi];
+    var groupWithTask = groupById[groupWithId];
+    if (groupWithTask) groupKey = ptEffectiveGroupKey(groupWithTask, groupById);
+  }
   var data = {
     text: text,
     details: val('pt-details').trim(),
     category: val('pt-category').trim(),
     leads: leads,
     dependsOn: val('pt-depends-on'),
+    groupKey: groupKey,
     dateBest: db,
     dateWorst: dw,
     done: !!document.getElementById('pt-done').checked
@@ -7623,6 +7691,7 @@ function savePtTaskForm() {
         prevSnapshot = JSON.parse(JSON.stringify(productionTasks[i]));
         var merged = productionTasks[i];
         merged.text = data.text; merged.details = data.details; merged.category = data.category; merged.leads = data.leads; merged.dependsOn = data.dependsOn;
+        merged.groupKey = data.groupKey;
         merged.dateBest = data.dateBest; merged.dateWorst = data.dateWorst;
         merged.done = data.done;
         productionTasks[i] = task = normPtTask(merged);
@@ -7959,35 +8028,52 @@ function ptGanttCombinedHtml(schedule) {
     var tx = xOf(today);
     todayHtml = '<div class="pt-today-line" style="left:' + tx + 'px;"></div><div class="pt-today-tag" style="left:' + tx + 'px;">Today</div>';
   }
+  // Tasks that follow on from each other (linked via "Depends on", or
+  // grouped by hand) share one row \u2014 see ptGroupSchedule.
+  var groupedRows = ptGroupSchedule(schedule);
   var labelsHtml = '<div class="pt-gantt-labels-head"></div>';
   var barsHtml = '', rowBgHtml = '';
-  for (var j = 0; j < schedule.length; j++) {
-    var row = schedule[j], t = row.task, best = row.best, worst = row.worst;
-    var color = ptCategoryColor(t.category);
-    var leadSuffix = (t.leads && t.leads.length) ? (' \u00b7 Lead: ' + t.leads.join(', ')) : '';
-    labelsHtml += '<div class="pt-gantt-label-row" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + '"><span class="pt-cat-dot" style="background:' + color + '"></span><span class="pt-gantt-label-text">' + esc(t.text) + '</span></div>';
+  for (var j = 0; j < groupedRows.length; j++) {
+    var groupRows = groupedRows[j];
+    var firstTask = groupRows[0].task;
+    var labelText = groupRows.map(function (r) { return r.task.text || '(untitled task)'; }).join(' \u2192 ');
+    var titleText = groupRows.map(function (r) {
+      var lead = (r.task.leads && r.task.leads.length) ? (' \u00b7 Lead: ' + r.task.leads.join(', ')) : '';
+      return (r.task.text || '(untitled task)') + lead;
+    }).join(' \u2192 ');
+    var cats = {};
+    for (var ci = 0; ci < groupRows.length; ci++) cats[groupRows[ci].task.category || ''] = true;
+    var catKeys = Object.keys(cats);
+    var dotColor = (catKeys.length === 1) ? ptCategoryColor(catKeys[0]) : '#9a9088';
+    labelsHtml += '<div class="pt-gantt-label-row" onclick="openPtDrawer(\'' + esc(firstTask.id) + '\')" title="' + esc(titleText) + '"><span class="pt-cat-dot" style="background:' + dotColor + '"></span><span class="pt-gantt-label-text">' + esc(labelText) + '</span></div>';
     rowBgHtml += '<div class="pt-gantt-row-bg"></div>';
 
-    // Option A: one continuous bar \u2014 solid for the best-case span, with a
-    // hashed/faded tail appended for the extra worst-case buffer when the
-    // two scenarios don't land on the same dates.
-    var barTop = j * PT_ROW_H + (PT_ROW_H - 20) / 2;
-    var leftB = xOf(best.start);
-    var wB = Math.max(PT_DAY_W * 0.8, xOf(best.end) - leftB);
-    var differs = (String(worst.start) !== String(best.start)) || (String(worst.end) !== String(best.end));
-    barsHtml += '<div class="pt-bar pt-bar-best' + (differs ? ' has-tail' : '') + '" style="left:' + leftB + 'px; width:' + wB + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 best case \u00b7 ' + esc(fmtDate(best.start)) + ' \u2192 ' + esc(fmtDate(best.end)) + '">' + esc(t.text) + '</div>';
+    for (var k = 0; k < groupRows.length; k++) {
+      var row = groupRows[k], t = row.task, best = row.best, worst = row.worst;
+      var color = ptCategoryColor(t.category);
+      var leadSuffix = (t.leads && t.leads.length) ? (' \u00b7 Lead: ' + t.leads.join(', ')) : '';
 
-    if (differs) {
-      var leftT = leftB + wB;   // start exactly where the best-case bar visually ends, even if it hit the min-width clamp
-      var wT = Math.max(PT_DAY_W * 0.5, xOf(worst.end) - leftT);
-      barsHtml += '<div class="pt-bar pt-bar-tail" style="left:' + leftT + 'px; width:' + wT + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 worst case \u00b7 ' + esc(fmtDate(worst.start)) + ' \u2192 ' + esc(fmtDate(worst.end)) + '"></div>';
+      // Option A: one continuous bar \u2014 solid for the best-case span, with a
+      // hashed/faded tail appended for the extra worst-case buffer when the
+      // two scenarios don't land on the same dates.
+      var barTop = j * PT_ROW_H + (PT_ROW_H - 20) / 2;
+      var leftB = xOf(best.start);
+      var wB = Math.max(PT_DAY_W * 0.8, xOf(best.end) - leftB);
+      var differs = (String(worst.start) !== String(best.start)) || (String(worst.end) !== String(best.end));
+      barsHtml += '<div class="pt-bar pt-bar-best' + (differs ? ' has-tail' : '') + '" style="left:' + leftB + 'px; width:' + wB + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 best case \u00b7 ' + esc(fmtDate(best.start)) + ' \u2192 ' + esc(fmtDate(best.end)) + '">' + esc(t.text) + '</div>';
+
+      if (differs) {
+        var leftT = leftB + wB;   // start exactly where the best-case bar visually ends, even if it hit the min-width clamp
+        var wT = Math.max(PT_DAY_W * 0.5, xOf(worst.end) - leftT);
+        barsHtml += '<div class="pt-bar pt-bar-tail" style="left:' + leftT + 'px; width:' + wT + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 worst case \u00b7 ' + esc(fmtDate(worst.start)) + ' \u2192 ' + esc(fmtDate(worst.end)) + '"></div>';
+      }
     }
   }
   h += '<div class="pt-gantt">'
     + '<div class="pt-gantt-labels">' + labelsHtml + '</div>'
     + '<div class="pt-gantt-scroll"><div class="pt-gantt-track" style="width:' + totalPx + 'px;">'
     + '<div class="pt-gantt-header" style="width:' + totalPx + 'px;">' + weekLabels + '</div>'
-    + '<div class="pt-gantt-rows" style="width:' + totalPx + 'px; height:' + (schedule.length * PT_ROW_H) + 'px;">' + rowBgHtml + todayHtml + barsHtml + '</div>'
+    + '<div class="pt-gantt-rows" style="width:' + totalPx + 'px; height:' + (groupedRows.length * PT_ROW_H) + 'px;">' + rowBgHtml + todayHtml + barsHtml + '</div>'
     + '</div></div>'
     + '</div></div>';
   return h;

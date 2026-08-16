@@ -794,7 +794,7 @@ function findFeedbackRowByKey_(sh, map, key) {
    optionally depending on any other task, picked manually) ---------- */
 
 var PRODUCTION_HEADERS = [
-  'task_pk', 'text', 'details', 'category', 'lead', 'depends_on',
+  'task_pk', 'text', 'details', 'category', 'lead', 'depends_on', 'group_key',
   'date_best', 'date_worst',
   'done', 'sort_order'
 ];
@@ -835,6 +835,7 @@ function buildProductionRow_(t, ncols, map) {
   set('category', t.category || '');
   set('lead', (t.leads && t.leads.length) ? t.leads.join(', ') : '');
   set('depends_on', t.dependsOn || '');
+  set('group_key', t.groupKey || '');
   set('date_best', t.dateBest || '');
   set('date_worst', t.dateWorst || '');
   set('done', t.done ? 'yes' : '');
@@ -865,6 +866,7 @@ function readAllProductionTasks_() {
       category: g(r, 'category'),
       leads: String(g(r, 'lead') || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
       dependsOn: String(g(r, 'depends_on') || ''),
+      groupKey: String(g(r, 'group_key') || ''),
       dateBest: ymd_(g(r, 'date_best')),
       dateWorst: ymd_(g(r, 'date_worst')),
       done: truthy_(g(r, 'done')),
