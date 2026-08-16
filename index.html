@@ -424,8 +424,10 @@
   .prep-list { margin: 0 0 16px 18px; padding: 0; }
   .prep-list li { margin-bottom: 7px; line-height: 1.55; color: var(--ink); }
   .brew-check { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 9px; margin-top: 14px; cursor: pointer; color: var(--ink); }
-  .plan-form-actions { display: -webkit-flex; display: flex; gap: 10px; margin-top: 16px; }
-  .plan-form-actions .btn-primary, .plan-form-actions .btn-ghost { -webkit-flex: 1; flex: 1; }
+  .plan-form-actions { display: -webkit-flex; display: flex; -webkit-justify-content: flex-end; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .plan-form-actions .btn-primary, .plan-form-actions .btn-ghost { padding: 6px 12px; font-size: 0.62rem; }
+  .plan-done-inline { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 5px; margin-left: 12px; font-size: 0.76rem; color: var(--ink-faint); cursor: pointer; vertical-align: middle; }
+  .plan-done-inline input { width: 15px; height: 15px; cursor: pointer; margin: 0; }
   .brew-check input { width: 16px; height: 16px; cursor: pointer; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .brew-done { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 15px; color: var(--ink-faint); }
   .brew-undo { background: none; border: none; color: var(--terra); cursor: pointer; text-decoration: underline; font: inherit; padding: 0; }
@@ -7374,7 +7376,8 @@ function brewBoxHtml(p) {
   h += '<span class="brew-tri" aria-hidden="true">\u25B8</span>';
   h += '<div class="brew-head-text">';
   h += '<div class="plan-headline' + (due ? ' due' : '') + '">Brew a new batch <span class="plan-when">' + whenTxt + '</span></div>';
-  h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlannedBrewDate(\'' + pid + '\', this.value)" /></div>';
+  h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlannedBrewDate(\'' + pid + '\', this.value)" />'
+     + '<label class="plan-done-inline" onclick="event.stopPropagation()" title="Mark this batch as brewed"><input type="checkbox"' + (p.done ? ' checked' : '') + ' onchange="setBrewDone(\'' + pid + '\', this.checked)" /> done</label></div>';
   h += '</div>';
   h += '<button type="button" class="brew-undo" onclick="event.stopPropagation(); removePlannedBrew(\'' + pid + '\')" title="Remove this planned brew">&times;</button>';
   h += '</div>';
@@ -7402,7 +7405,6 @@ function brewBoxHtml(p) {
   h += planRow(p, 'starter', 'Starter liquid', fmtQty(round1(c.starter), 'L'));
   h += '</tbody></table>';
 
-  h += '<label class="brew-check"><input type="checkbox" onchange="setBrewDone(\'' + pid + '\', this.checked)" /> I\u2019ve brewed this batch</label>';
   h += '<div class="plan-form-actions"><button type="button" class="btn-primary" onclick="savePlannedBrewCard(\'' + pid + '\')">Save</button>'
      + '<button type="button" class="btn-ghost" onclick="cancelPlannedBrewCard(\'' + pid + '\')">Cancel</button></div>';
   h += '</div>'; // brew-body
@@ -7675,7 +7677,8 @@ function planInfBoxHtml(p) {
   h += '<span class="brew-tri" aria-hidden="true">\u25B8</span>';
   h += '<div class="brew-head-text">';
   h += '<div class="plan-headline' + (due ? ' due' : '') + '">Infuse a new batch <span class="plan-when">' + whenTxt + '</span></div>';
-  h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlanInfField(\'' + pid + '\', \'date\', this.value)" /></div>';
+  h += '<div class="plan-src">planned for <input type="date" value="' + esc(p.date || '') + '" onclick="event.stopPropagation()" onchange="setPlanInfField(\'' + pid + '\', \'date\', this.value)" />'
+     + '<label class="plan-done-inline" onclick="event.stopPropagation()" title="Mark this infusion as done"><input type="checkbox"' + (p.done ? ' checked' : '') + ' onchange="setPlanInfDone(\'' + pid + '\', this.checked)" /> done</label></div>';
   h += '</div>';
   h += '<button type="button" class="brew-undo" onclick="event.stopPropagation(); removePlannedInfusion(\'' + pid + '\')" title="Remove this planned infusion">&times;</button>';
   h += '</div>';
@@ -7689,7 +7692,6 @@ function planInfBoxHtml(p) {
   h += '<div class="form-group" id="planinf-vessel-wrap-' + pid + '"><label>Infusion vessel</label>' + planInfVesselFieldHtml(pid, p.vessel) + '</div>';
   h += '<div class="form-group"><label>Spices</label><div id="planinf-flavours-' + pid + '">' + planFlavorRowsHtml(pid, p.flavours) + '</div>'
      + '<button type="button" class="btn-ghost btn-add-flavour" onclick="addPlanInfFlavor(\'' + pid + '\')">+ add spice</button></div>';
-  h += '<label class="brew-check"><input type="checkbox" onchange="setPlanInfDone(\'' + pid + '\', this.checked)" /> Infusion done</label>';
   h += '<div class="plan-form-actions"><button type="button" class="btn-primary" onclick="savePlannedInfusionCard(\'' + pid + '\')">Save</button>'
      + '<button type="button" class="btn-ghost" onclick="cancelPlannedInfusionCard(\'' + pid + '\')">Cancel</button></div>';
   h += '</div>'; // brew-body
