@@ -549,22 +549,29 @@
   .pt-legend-item { display: -webkit-flex; display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); }
   .pt-legend-swatch { width: 16px; height: 10px; border-radius: 20px; box-sizing: border-box; }
   .pt-legend-swatch.best { background: var(--ink-faint); }
-  .pt-legend-swatch.worst { background: transparent; border: 1.5px dashed var(--ink-faint); }
+  .pt-legend-swatch.worst { background: repeating-linear-gradient(135deg, var(--ink-faint) 0 3px, transparent 3px 6px); opacity: 0.6; }
   .pt-gantt { display: -webkit-flex; display: flex; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); overflow: hidden; }
-  .pt-gantt-labels { -webkit-flex-shrink: 0; flex-shrink: 0; width: 200px; border-right: 1px solid var(--border); }
+  /* Labels column widened +70% (200px -> 340px) and wrapped instead of
+     ellipsis-truncated, since task text can run long. Capped at 2 lines so
+     a very long name still clips cleanly rather than desyncing the row
+     grid from the bar track beside it. */
+  .pt-gantt-labels { -webkit-flex-shrink: 0; flex-shrink: 0; width: 340px; border-right: 1px solid var(--border); }
   .pt-gantt-labels-head { height: 34px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .pt-gantt-label-row { height: 40px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 0 12px; font-size: 0.78rem; color: var(--ink); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .pt-gantt-label-row { height: 52px; display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; padding: 10px 12px; font-size: 0.78rem; color: var(--ink); border-bottom: 1px solid var(--border); cursor: pointer; box-sizing: border-box; }
+  .pt-gantt-label-row .pt-cat-dot { margin-top: 3px; }
+  .pt-gantt-label-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.35; word-break: break-word; }
   .pt-gantt-label-row:last-child { border-bottom: none; }
   .pt-gantt-label-row:hover { background: #fcfaf7; }
   .pt-gantt-scroll { overflow-x: auto; -webkit-flex: 1; flex: 1; }
   .pt-gantt-header { height: 34px; position: relative; border-bottom: 1px solid var(--border); background: var(--surface2); }
   .pt-week-label { position: absolute; top: 0; height: 34px; line-height: 34px; padding-left: 6px; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); border-left: 1px solid var(--border); box-sizing: border-box; }
   .pt-gantt-rows { position: relative; }
-  .pt-gantt-row-bg { height: 40px; border-bottom: 1px solid var(--border); box-sizing: border-box; }
+  .pt-gantt-row-bg { height: 52px; border-bottom: 1px solid var(--border); box-sizing: border-box; }
   .pt-gantt-row-bg:last-child { border-bottom: none; }
-  .pt-bar { position: absolute; border-radius: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-sizing: border-box; }
-  .pt-bar-best { height: 14px; line-height: 14px; color: #fff; font-size: 0.6rem; padding: 0 8px; box-shadow: 0 1px 2px rgba(30,27,24,0.15); }
-  .pt-bar-worst { height: 14px; background: transparent !important; border: 1.5px dashed; }
+  .pt-bar { position: absolute; height: 20px; line-height: 20px; color: #fff; font-size: 0.68rem; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-sizing: border-box; box-shadow: 0 1px 2px rgba(30,27,24,0.15); }
+  .pt-bar-best { border-radius: 20px; }
+  .pt-bar-best.has-tail { border-radius: 20px 0 0 20px; }
+  .pt-bar-tail { border-radius: 0 20px 20px 0; box-shadow: none; opacity: 0.55; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.6) 0 5px, transparent 5px 10px); }
   .pt-today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--terra); }
   .pt-today-tag { position: absolute; top: 2px; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--terra); background: var(--terra-pale); padding: 1px 5px; border-radius: 20px; -webkit-transform: translateX(-50%); transform: translateX(-50%); white-space: nowrap; }
   .pt-field-row { display: -webkit-flex; display: flex; gap: 10px; }
@@ -7420,7 +7427,7 @@ function todayFridge() {
    scenarios; a task with no dependency keeps its own independently-set date
    regardless of what happens around it.
    ========================================================================= */
-var PT_ROW_H = 40;
+var PT_ROW_H = 52;
 var PT_DAY_W = 26;
 var PT_PALETTE = ['#c0542a', '#3a7d6e', '#7a6cc0', '#a3763f', '#4f6b78', '#8a6a2f', '#a34a4a', '#5c7a3d'];
 // Deterministic color per category name, so the same category always gets
@@ -7958,18 +7965,22 @@ function ptGanttCombinedHtml(schedule) {
     var row = schedule[j], t = row.task, best = row.best, worst = row.worst;
     var color = ptCategoryColor(t.category);
     var leadSuffix = (t.leads && t.leads.length) ? (' \u00b7 Lead: ' + t.leads.join(', ')) : '';
-    labelsHtml += '<div class="pt-gantt-label-row" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + '"><span class="pt-cat-dot" style="background:' + color + '"></span>' + esc(t.text) + '</div>';
+    labelsHtml += '<div class="pt-gantt-label-row" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + '"><span class="pt-cat-dot" style="background:' + color + '"></span><span class="pt-gantt-label-text">' + esc(t.text) + '</span></div>';
     rowBgHtml += '<div class="pt-gantt-row-bg"></div>';
 
+    // Option A: one continuous bar \u2014 solid for the best-case span, with a
+    // hashed/faded tail appended for the extra worst-case buffer when the
+    // two scenarios don't land on the same dates.
+    var barTop = j * PT_ROW_H + (PT_ROW_H - 20) / 2;
     var leftB = xOf(best.start);
     var wB = Math.max(PT_DAY_W * 0.8, xOf(best.end) - leftB);
-    barsHtml += '<div class="pt-bar pt-bar-best" style="left:' + leftB + 'px; width:' + wB + 'px; top:' + (j * PT_ROW_H + 4) + 'px; background:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 best case \u00b7 ' + esc(fmtDate(best.start)) + ' \u2192 ' + esc(fmtDate(best.end)) + '">' + esc(t.text) + '</div>';
-
     var differs = (String(worst.start) !== String(best.start)) || (String(worst.end) !== String(best.end));
+    barsHtml += '<div class="pt-bar pt-bar-best' + (differs ? ' has-tail' : '') + '" style="left:' + leftB + 'px; width:' + wB + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 best case \u00b7 ' + esc(fmtDate(best.start)) + ' \u2192 ' + esc(fmtDate(best.end)) + '">' + esc(t.text) + '</div>';
+
     if (differs) {
-      var leftW = xOf(worst.start);
-      var wW = Math.max(PT_DAY_W * 0.8, xOf(worst.end) - leftW);
-      barsHtml += '<div class="pt-bar pt-bar-worst" style="left:' + leftW + 'px; width:' + wW + 'px; top:' + (j * PT_ROW_H + 22) + 'px; border-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 worst case \u00b7 ' + esc(fmtDate(worst.start)) + ' \u2192 ' + esc(fmtDate(worst.end)) + '"></div>';
+      var leftT = leftB + wB;   // start exactly where the best-case bar visually ends, even if it hit the min-width clamp
+      var wT = Math.max(PT_DAY_W * 0.5, xOf(worst.end) - leftT);
+      barsHtml += '<div class="pt-bar pt-bar-tail" style="left:' + leftT + 'px; width:' + wT + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 worst case \u00b7 ' + esc(fmtDate(worst.start)) + ' \u2192 ' + esc(fmtDate(worst.end)) + '"></div>';
     }
   }
   h += '<div class="pt-gantt">'
