@@ -34,11 +34,12 @@ var INFUSIONS_SHEET = 'infusions';
 var READINGS_SHEET = 'readings';
 var FEEDBACK_SHEET = 'feedback';
 var PRODUCTION_SHEET = 'production_tasks';
+var CHECKLIST_SHEET = 'daily_checklist';
 
 var VERSION = '27 (expenses page merged in)';
 
 var HEADERS = [
-  'batch_pk', 'batch_id', 'batch_date', 'vessel', 'total_l',
+  'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
   'sugar_kg', 'sugar_source',
   'tea_g', 'tea_type', 'steep',
   'hot_l', 'cold_l', 'water_source',
@@ -67,7 +68,8 @@ var RENAME_MIGRATIONS = [
   ['scoby_value', 'scoby_g'],
   ['uid', 'batch_pk'],
   ['id', 'batch_id'],
-  ['date', 'batch_date']
+  ['date', 'batch_date'],
+  ['batch_date', 'creation_date']
 ];
 
 // Vessel display order. Used as the same-date tie-breaker.
@@ -246,7 +248,7 @@ function buildRow_(b, ncols, map) {
 
   set('batch_pk', b.uid || '');
   set('batch_id', b.id || '');
-  set('batch_date', b.date || '');
+  set('creation_date', b.date || '');
   set('vessel', b.vessel || '');
   set('total_l', plain_(b.totalVolume));       // L (auto = hot+cold+starter, editable)
   set('sugar_kg', plain_(b.sugar));            // kg
@@ -287,7 +289,7 @@ function readAll_() {
     out.push({
       uid: String(g(r, 'batch_pk')),
       id: g(r, 'batch_id'),
-      date: ymd_(g(r, 'batch_date')),
+      date: ymd_(g(r, 'creation_date')),
       vessel: g(r, 'vessel'),
       totalVolume: g(r, 'total_l'),
       sugar: g(r, 'sugar_kg'),
@@ -450,10 +452,15 @@ function readAllBottles_() {
 // bottle ended up sourced from it, instead of tracking it separately here.
 var INFUSION_HEADERS = [
   'infusion_pk', 'infusion_id', 'batch_pk_fk', 'batch_id_ref',
-  'vessel', 'volume_l', 'start_date',
+  'vessel', 'volume_l', 'infusion_date',
   'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
   'flavor3_name', 'flavor3_g', 'flavor4_name', 'flavor4_g',
   'notes', 'archived'
+];
+
+// Column renames applied to an existing infusions sheet: [old, new].
+var INFUSION_RENAME_MIGRATIONS = [
+  ['start_date', 'infusion_date']
 ];
 
 function getInfusionsSheet_() {
@@ -466,6 +473,10 @@ function getInfusionsSheet_() {
     sh.getRange(1, 1, 1, INFUSION_HEADERS.length).setValues([INFUSION_HEADERS]);
     sh.setFrozenRows(1);
     return sh;
+  }
+
+  for (var irn = 0; irn < INFUSION_RENAME_MIGRATIONS.length; irn++) {
+    migrateRename_(sh, INFUSION_RENAME_MIGRATIONS[irn][0], INFUSION_RENAME_MIGRATIONS[irn][1]);
   }
 
   // Ensure any newly added columns exist (forward-compatible).
@@ -493,7 +504,7 @@ function buildInfusionRow_(b, ncols, map) {
   set('batch_id_ref', b.relF1Id || '');
   set('vessel', b.vessel || '');
   set('volume_l', (b.volumeL == null ? '' : b.volumeL));
-  set('start_date', b.startDate || '');
+  set('infusion_date', b.startDate || '');
   var fl = b.flavours || [];
   for (var f = 0; f < MAX_FLAVORS; f++) {
     var item = fl[f] || {};
@@ -541,7 +552,7 @@ function readAllInfusions_() {
       relF1Date: batchDates[relUid] || '',
       vessel: g(r, 'vessel'),
       volumeL: g(r, 'volume_l'),
-      startDate: ymd_(g(r, 'start_date')),
+      startDate: ymd_(g(r, 'infusion_date')),
       flavours: flavours,
       notes: g(r, 'notes'),
       archived: truthy_(g(r, 'archived'))
@@ -554,14 +565,16 @@ function readAllInfusions_() {
 /* ---------- readings (testing data) ---------- */
 
 var READING_HEADERS = [
-  'reading_pk', 'batch_bottle_fk', 'batch_id', 'test_date', 'brix', 'ph', 'temp', 'notes'
+  'reading_pk', 'vessel_fk', 'vessel_id', 'test_date', 'brix', 'ph', 'temp', 'notes'
 ];
 
 // Column renames applied to an existing readings sheet: [old, new].
 var READING_RENAME_MIGRATIONS = [
   ['uid', 'reading_pk'],
   ['batch_uid', 'batch_bottle_fk'],
-  ['date', 'test_date']
+  ['date', 'test_date'],
+  ['batch_bottle_fk', 'vessel_fk'],
+  ['batch_id', 'vessel_id']
 ];
 
 function getReadingsSheet_() {
@@ -599,8 +612,8 @@ function buildReadingRow_(r, ncols, map) {
   for (var i = 0; i < ncols; i++) row.push('');
   function set(name, value) { if (map[name] != null) row[map[name]] = value; }
   set('reading_pk', r.uid || '');
-  set('batch_bottle_fk', r.batchUid || '');
-  set('batch_id', r.batchId || '');
+  set('vessel_fk', r.batchUid || '');
+  set('vessel_id', r.batchId || '');
   set('test_date', r.date || '');
   set('brix', plain_(r.brix));
   set('ph', plain_(r.ph));
@@ -626,11 +639,11 @@ function readAllReadings_() {
   var out = [];
   for (var i = 1; i < data.length; i++) {
     var r = data[i];
-    if (!g(r, 'reading_pk') && !g(r, 'batch_bottle_fk') && !g(r, 'test_date')) continue;
+    if (!g(r, 'reading_pk') && !g(r, 'vessel_fk') && !g(r, 'test_date')) continue;
     out.push({
       uid: String(g(r, 'reading_pk')),
-      batchUid: g(r, 'batch_bottle_fk'),
-      batchId: g(r, 'batch_id'),
+      batchUid: g(r, 'vessel_fk'),
+      batchId: g(r, 'vessel_id'),
       date: ymd_(g(r, 'test_date')),
       brix: g(r, 'brix'),
       ph: g(r, 'ph'),
@@ -639,6 +652,65 @@ function readAllReadings_() {
     });
   }
   out.sort(sortReadings_);
+  return out;
+}
+
+/* ---------- daily checklist (free-text to-do list on the Today page) ---------- */
+
+var CHECKLIST_HEADERS = ['item_pk', 'text', 'done'];
+
+function getChecklistSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(CHECKLIST_SHEET);
+  if (!sh) sh = ss.insertSheet(CHECKLIST_SHEET);
+
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, sh.getMaxRows(), CHECKLIST_HEADERS.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, CHECKLIST_HEADERS.length).setValues([CHECKLIST_HEADERS]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  for (var h = 0; h < CHECKLIST_HEADERS.length; h++) {
+    if (hdr.indexOf(CHECKLIST_HEADERS[h]) === -1) {
+      var c = sh.getLastColumn() + 1;
+      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
+      sh.getRange(1, c).setValue(CHECKLIST_HEADERS[h]);
+      hdr.push(CHECKLIST_HEADERS[h]);
+    }
+  }
+  return sh;
+}
+
+function buildChecklistRow_(it, ncols, map) {
+  it = it || {};
+  var row = [];
+  for (var i = 0; i < ncols; i++) row.push('');
+  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
+  set('item_pk', it.id || '');
+  set('text', it.text || '');
+  set('done', it.done ? 'yes' : '');
+  return row;
+}
+
+// No explicit sort — row order is append order, same as the old
+// localStorage array's push order, so items stay in the order they were
+// added.
+function readAllChecklist_() {
+  var sh = getChecklistSheet_();
+  var map = headerMap_(sh);
+  var data = sh.getDataRange().getValues();
+  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!g(r, 'item_pk') && !g(r, 'text')) continue;
+    out.push({
+      id: String(g(r, 'item_pk')),
+      text: g(r, 'text'),
+      done: truthy_(g(r, 'done'))
+    });
+  }
   return out;
 }
 
@@ -956,6 +1028,9 @@ function doGet(e) {
   if (action === 'getFeedback') {
     return json_({ ok: true, feedback: readAllFeedback_() });
   }
+  if (action === 'getChecklist') {
+    return json_({ ok: true, checklist: readAllChecklist_() });
+  }
   if (action === 'getProductionTasks') {
     return json_({ ok: true, productionTasks: readAllProductionTasks_() });
   }
@@ -994,7 +1069,8 @@ function doGet(e) {
       infusions: readAllInfusions_(),
       readings: readAllReadings_(),
       feedback: readAllFeedback_(),
-      productionTasks: readAllProductionTasks_()
+      productionTasks: readAllProductionTasks_(),
+      dailyChecklist: readAllChecklist_()
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
@@ -1153,6 +1229,28 @@ function handleAction_(body) {
     var frow = findRowByKey_(fsh, fmap, 'key', fb.key);
     if (frow === -1) fsh.appendRow(buildFeedbackRow_(fb, fncols, fmap));
     else fsh.getRange(frow, 1, 1, fncols).setValues([buildFeedbackRow_(fb, fncols, fmap)]);
+    return json_({ ok: true });
+  }
+
+  // ---- daily checklist actions (free-text to-do list) ----
+  if (action === 'createChecklistItem' || action === 'updateChecklistItem' || action === 'deleteChecklistItem') {
+    var clsh = getChecklistSheet_();
+    var clmap = headerMap_(clsh);
+    var clncols = clsh.getLastColumn();
+    if (action === 'createChecklistItem') {
+      clsh.appendRow(buildChecklistRow_(body.item || {}, clncols, clmap));
+      return json_({ ok: true });
+    }
+    if (action === 'updateChecklistItem') {
+      var clb = body.item || {};
+      var clrow = findRowByKey_(clsh, clmap, 'item_pk', clb.id);
+      if (clrow === -1) return json_({ ok: false, error: 'not found' });
+      clsh.getRange(clrow, 1, 1, clncols).setValues([buildChecklistRow_(clb, clncols, clmap)]);
+      return json_({ ok: true });
+    }
+    var cldr = findRowByKey_(clsh, clmap, 'item_pk', body.id);
+    if (cldr === -1) return json_({ ok: false, error: 'not found' });
+    clsh.deleteRow(cldr);
     return json_({ ok: true });
   }
 

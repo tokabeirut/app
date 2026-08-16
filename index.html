@@ -158,6 +158,20 @@
      column its text needs to wrap within the cell instead of forcing the
      column wider. */
   td.flav-cell, td.flav-cell .flav-inner { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
+  /* Infusion table: short id/date/vessel/volume columns kept tight (close
+     to their content's own width), with the freed-up space handed to
+     Notes instead. */
+  .infusion-table { table-layout: fixed; }
+  .infusion-table th:nth-child(1), .infusion-table td:nth-child(1) { width: 12%; }
+  .infusion-table th:nth-child(2), .infusion-table td:nth-child(2) { width: 11%; }
+  .infusion-table th:nth-child(3), .infusion-table td:nth-child(3) { width: 9%; }
+  .infusion-table th:nth-child(4), .infusion-table td:nth-child(4) { width: 8%; }
+  .infusion-table th:nth-child(5), .infusion-table td:nth-child(5) { width: 7%; }
+  .infusion-table th:nth-child(6), .infusion-table td:nth-child(6) { width: 19%; }
+  .infusion-table th:nth-child(7), .infusion-table td:nth-child(7) { width: 30%; }
+  /* Fixed px, not %: this column holds 4 icon buttons (lineage/edit/archive/
+     delete) that need real room, same reasoning as the Bottling table above. */
+  .infusion-table th:nth-child(8), .infusion-table td:nth-child(8) { width: 116px; }
   /* Second fermentation: separate rows bottled on different dates */
   #view-bottling tbody tr.date-start td { border-top: 2px solid var(--terra-light); }
   #view-f1 .clip-inner { -webkit-line-clamp: 1; }
@@ -1139,7 +1153,7 @@
       <table>
         <thead>
           <tr>
-            <th>Batch ID</th><th>Creation date</th><th>Vessel</th>
+            <th>Batch ID</th><th>Created on</th><th>Vessel</th>
             <th>Sugar</th><th>Sugar source</th>
             <th>Tea</th><th>Tea type</th><th>Steep</th>
             <th>Hot water</th><th>Cold water</th><th>Water source</th>
@@ -1161,7 +1175,7 @@
         <table>
           <thead>
             <tr>
-              <th>Batch ID</th><th>Creation date</th><th>Vessel</th>
+              <th>Batch ID</th><th>Created on</th><th>Vessel</th>
               <th>Sugar</th><th>Sugar source</th>
               <th>Tea</th><th>Tea type</th><th>Steep</th>
               <th>Hot water</th><th>Cold water</th><th>Water source</th>
@@ -1190,7 +1204,7 @@
       <table class="bottling-table">
         <thead>
           <tr>
-            <th>Bottle ID</th><th>Batch ID</th><th>Bottled</th><th>Fridged</th>
+            <th>Bottle ID</th><th>Batch ID</th><th>Bottled on</th><th>Fridged</th>
             <th>Volume</th>
             <th>Sugar</th><th>Yeast</th><th>Spices</th><th>Qty</th><th>Notes</th><th></th>
           </tr>
@@ -1210,7 +1224,7 @@
         <table class="bottling-table">
           <thead>
             <tr>
-              <th>Bottle ID</th><th>Batch ID</th><th>Bottled</th><th>Fridged</th>
+              <th>Bottle ID</th><th>Batch ID</th><th>Bottled on</th><th>Fridged</th>
               <th>Volume</th>
               <th>Sugar</th><th>Yeast</th><th>Spices</th><th>Qty</th><th>Notes</th><th></th>
             </tr>
@@ -2195,10 +2209,10 @@
   </div>
   <div class="table-wrap">
     <div class="table-scroll">
-      <table>
+      <table class="infusion-table">
         <thead>
           <tr>
-            <th>Infusion ID</th><th>Batch ID</th><th>Vessel</th><th>Volume</th><th>Started</th>
+            <th>Infusion ID</th><th>Batch ID</th><th>Infused from</th><th>Vessel</th><th>Volume</th>
             <th>Spices</th><th>Notes</th><th></th>
           </tr>
         </thead>
@@ -2214,10 +2228,10 @@
     </div>
     <div class="table-wrap">
       <div class="table-scroll">
-        <table>
+        <table class="infusion-table">
           <thead>
             <tr>
-              <th>Infusion ID</th><th>Batch ID</th><th>Vessel</th><th>Volume</th><th>Started</th>
+              <th>Infusion ID</th><th>Batch ID</th><th>Infused from</th><th>Vessel</th><th>Volume</th>
               <th>Spices</th><th>Notes</th><th></th>
             </tr>
           </thead>
@@ -3553,6 +3567,7 @@ var infusions = [];
 var readings = [];
 var feedback = [];
 var productionTasks = [];
+var dailyChecklist = [];
 var ptBackendWarned = false;
 var feedbackByKey = {};
 var fbLabelByKey = {};
@@ -3688,7 +3703,7 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks], function () { if (cb) cb(); });
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist], function () { if (cb) cb(); });
       return;
     }
     batches = res.batches || [];
@@ -3697,6 +3712,7 @@ function loadAll(cb) {
     readings = res.readings || [];
     feedback = res.feedback || [];
     productionTasks = (res.productionTasks || []).map(normPtTask);
+    dailyChecklist = res.dailyChecklist || [];
     feedbackByKey = {};
     for (var i = 0; i < feedback.length; i++) feedbackByKey[feedback[i].key] = feedback[i];
     setSyncStatus('live', 'connected \u00b7 google sheets');
@@ -4422,9 +4438,9 @@ function infusionRowHtml(inf) {
   return '<tr data-uid="' + esc(inf.uid) + '">'
     + cellEd(esc(inf.id), { type: 'infusion', uid: inf.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + '<td class="id-cell muted src-cell">' + bottleSourceCellHtml(inf, true) + '</td>'
+    + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
     + cellEd(esc(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
     + cellEd((inf.volumeL !== '' && inf.volumeL != null) ? fmtQty(inf.volumeL, 'L') : '—', { type: 'infusion', uid: inf.uid, field: 'volumeL', input: 'number', cls: 'num' })
-    + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
     + cellEd(infusionSpicesText(inf), { type: 'infusion', uid: inf.uid, field: 'flavours', input: 'spices', cls: 'spices-cell' })
     + cellEd('<div class="clip-inner muted">' + (inf.notes ? esc(inf.notes) : '—') + '</div>', { type: 'infusion', uid: inf.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
@@ -6229,6 +6245,14 @@ function loadFeedback(cb) {
     feedbackByKey = {};
     for (var i = 0; i < feedback.length; i++) feedbackByKey[feedback[i].key] = feedback[i];
     if (typeof renderTasting === 'function') renderTasting();
+    if (cb) cb(null);
+  });
+}
+function loadChecklist(cb) {
+  api({ action: 'getChecklist' }, function (err, res) {
+    if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
+    dailyChecklist = res.checklist || [];
+    if (typeof renderChecklist === 'function') renderChecklist();
     if (cb) cb(null);
   });
 }
@@ -9148,15 +9172,15 @@ function renderToday() {
   renderChecklist();
 }
 
-/* ---- daily checklist (free-text, check-off-able, kept on this device) ---- */
-var CHECKLIST_KEY = 'toka_daily_checklist_v1';
-function getChecklist() {
-  try { return JSON.parse(lsGet(CHECKLIST_KEY) || '[]'); } catch (e) { return []; }
-}
-function setChecklist(list) { lsSet(CHECKLIST_KEY, JSON.stringify(list)); }
+/* ---- daily checklist (free-text, check-off-able, synced via Google Sheets) ----
+   dailyChecklist is populated by loadAll()/loadChecklist() alongside the
+   other sheet-backed arrays. Each mutation updates it optimistically and
+   re-renders immediately, then saves to the sheet in the background —
+   reverting the local change if the save fails, same pattern as
+   markFridged() above. ---- */
 function renderChecklist() {
   var el = document.getElementById('daily-checklist-list'); if (!el) return;
-  var list = getChecklist();
+  var list = dailyChecklist;
   if (!list.length) { el.innerHTML = '<div class="daily-checklist-empty">Nothing on the list yet.</div>'; return; }
   el.innerHTML = list.map(function (it) {
     return '<div class="daily-checklist-item' + (it.done ? ' done' : '') + '">'
@@ -9170,20 +9194,58 @@ function addChecklistItem() {
   var input = document.getElementById('daily-checklist-input');
   var text = (input.value || '').trim();
   if (!text) return;
-  var list = getChecklist();
-  list.push({ id: 'c' + Date.now() + Math.random().toString(36).slice(2, 6), text: text, done: false });
-  setChecklist(list);
+  var item = { id: uid(), text: text, done: false };
+  dailyChecklist.push(item);          // optimistic
   input.value = '';
   renderChecklist();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'createChecklistItem', item: item }, function (err, res) {
+    if (err || !res || !res.ok) {
+      dailyChecklist = dailyChecklist.filter(function (i) { return i.id !== item.id; });   // revert
+      renderChecklist();
+      setSyncStatus('error', 'save failed');
+      alert('Could not save that item. Check your connection and try again.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
 }
 function toggleChecklistItem(id, done) {
-  var list = getChecklist();
-  var it = list.filter(function (i) { return i.id === id; })[0];
-  if (it) { it.done = done; setChecklist(list); renderChecklist(); }
+  var it = dailyChecklist.filter(function (i) { return i.id === id; })[0];
+  if (!it) return;
+  var prev = it.done;
+  it.done = done;                     // optimistic
+  renderChecklist();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'updateChecklistItem', item: it }, function (err, res) {
+    if (err || !res || !res.ok) {
+      it.done = prev;                 // revert
+      renderChecklist();
+      setSyncStatus('error', 'update failed');
+      alert('Could not save that change. Check your connection and try again.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
 }
 function deleteChecklistItem(id) {
-  setChecklist(getChecklist().filter(function (i) { return i.id !== id; }));
+  var idx = -1;
+  for (var i = 0; i < dailyChecklist.length; i++) { if (dailyChecklist[i].id === id) { idx = i; break; } }
+  if (idx === -1) return;
+  var removed = dailyChecklist[idx];
+  dailyChecklist.splice(idx, 1);      // optimistic
   renderChecklist();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'deleteChecklistItem', id: id }, function (err, res) {
+    if (err || !res || !res.ok) {
+      dailyChecklist.splice(idx, 0, removed);   // revert, back at the same spot
+      renderChecklist();
+      setSyncStatus('error', 'delete failed');
+      alert('Could not remove that item. Check your connection and try again.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
 }
 
 /* ===== FAUCET TIMER ==================================================
