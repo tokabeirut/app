@@ -7535,7 +7535,9 @@ function setPlanInfDone(pid, done) {
   // The done checkbox is a status flag, not part of the editable draft \u2014 it
   // saves itself immediately (both ways: checking it off AND the summary
   // view's "undo" button call this same function), independent of the
-  // Save/Cancel buttons that govern the other fields.
+  // Save/Cancel buttons that govern the other fields. Checking it off (and
+  // not just unchecking a mistake) also promotes the plan into a real
+  // Infusion record \u2014 see promotePlannedInfusionToRecord below.
   var p = findPlanInf(pid); if (!p) return;
   var prev = p.done;
   p.done = !!done;
@@ -7549,8 +7551,45 @@ function setPlanInfDone(pid, done) {
       alert('Could not save that change. Check your connection and try again.');
       return;
     }
+    if (p.done && !prev && !p.linkedInfusionUid) promotePlannedInfusionToRecord(p);
     planInfOriginal[pid] = clonePlan(p);
     setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
+}
+// Checking a planned infusion off as done also creates the matching record
+// on the real Infusion page \u2014 the plan already captures everything an
+// infusion record needs (date, volume, F1 source, vessel, spices), so this
+// just carries that data over instead of making you retype it. Runs once
+// per plan (guarded by linkedInfusionUid in setPlanInfDone above) so
+// unchecking/rechecking "done" later doesn't create duplicates. If the
+// create call fails, the plan itself is already saved as done \u2014 this is a
+// best-effort convenience layered on top, not something worth blocking or
+// rolling back over.
+function promotePlannedInfusionToRecord(p) {
+  var src = null;
+  for (var i = 0; i < batches.length; i++) { if (String(batches[i].uid) === String(p.sourceF1Uid)) { src = batches[i]; break; } }
+  var b = {
+    uid: uid(),
+    id: 'INF-' + dateCode(p.date) + (p.vessel ? ('-' + vesselAbbrev(p.vessel)) : ''),
+    relF1Uid: p.sourceF1Uid || '',
+    relF1Id: src ? (src.id || '') : '',
+    relF1Date: src ? (src.date || '') : '',
+    vessel: p.vessel || '',
+    volumeL: (p.liters == null ? '' : p.liters),
+    startDate: p.date || todayISO(),
+    flavours: (p.flavours || []).filter(function (f) { return f && (f.name || (f.g !== '' && f.g != null)); }),
+    notes: '',
+    archived: false
+  };
+  apiPost({ action: 'createInfusion', infusion: b }, function (err, res) {
+    if (err || !res || !res.ok) {
+      alert('Marked as infused, but couldn\u2019t automatically create the matching Infusion record. You can add it manually on the Infusion page.');
+      return;
+    }
+    p.linkedInfusionUid = b.uid;
+    planInfOriginal[p.id] = clonePlan(p);
+    apiPost({ action: 'updatePlannedInfusion', plan: p }, function () {}); // persist the link, best-effort
+    loadInfusions();
   });
 }
 function togglePlanInfBox(pid) {
@@ -7588,7 +7627,7 @@ function cancelPlannedInfusionCard(pid) {
   renderToday();
 }
 function addPlannedInfusion() {
-  var p = { id: uid(), date: todayISO(), liters: null, sourceF1Uid: '', vessel: '', flavours: [{ name: '', g: null }], done: false };
+  var p = { id: uid(), date: todayISO(), liters: null, sourceF1Uid: '', vessel: '', flavours: [{ name: '', g: null }], done: false, linkedInfusionUid: '' };
   plannedInfusions.push(p);          // local draft only
   planInfUnsaved[p.id] = true;
   lsSet('toka_planinf_open_' + p.id, '1');   // expand it right away so the fields are visible without an extra click

@@ -677,7 +677,8 @@ var DAILY_OPS_HEADERS = [
   'plan_date', 'volume_l', 'source_f1_pk', 'vessel',
   'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
   'flavor3_name', 'flavor3_g', 'flavor4_name', 'flavor4_g',
-  'note_hot', 'note_tea', 'note_sugar', 'note_cold', 'note_starter'
+  'note_hot', 'note_tea', 'note_sugar', 'note_cold', 'note_starter',
+  'linked_infusion_pk'
 ];
 
 function getDailyOpsSheet_() {
@@ -763,6 +764,7 @@ function buildPlannedInfusionRow_(p, ncols, map) {
     set('flavor' + (f + 1) + '_g', (item.g == null ? '' : item.g));
   }
   set('done', p.done ? 'yes' : '');
+  set('linked_infusion_pk', p.linkedInfusionUid || '');
   return row;
 }
 
@@ -793,7 +795,8 @@ function readAllPlannedInfusions_() {
       sourceF1Uid: String(g(r, 'source_f1_pk') || ''),
       vessel: g(r, 'vessel'),
       flavours: flavours,
-      done: truthy_(g(r, 'done'))
+      done: truthy_(g(r, 'done')),
+      linkedInfusionUid: String(g(r, 'linked_infusion_pk') || '')
     });
   }
   return out;
