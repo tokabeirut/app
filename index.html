@@ -2419,7 +2419,15 @@ var expenses = [];
 var selectedCat = 'ingredients';
 var sortKey  = 'date';
 var sortDir  = -1;
-var rate     = parseFloat(localStorage.getItem(RATE_KEY) || '89550');
+// Guarded like every other localStorage touch in this file (see lsGet/lsSet
+// below) — some browser environments (private-mode Safari, certain
+// restricted webviews) throw just from touching localStorage at all. Since
+// this line runs at the top level (not inside a function), an unguarded
+// throw here would abort the *entire* rest of the script before it finishes
+// loading — silently leaving every var declared further down (including
+// things like planInfOriginal) undefined for the whole session.
+var rate;
+try { rate = parseFloat(localStorage.getItem(RATE_KEY) || '89550'); } catch (e) { rate = 89550; }
 var pendingFile = null;
 var lastAutoNote = ''; // tracks the auto-generated "linked entry" note so it can be replaced/removed cleanly
 
@@ -2513,7 +2521,7 @@ function loadExpensesData() {
   api({ action: 'getExpenseRate' }, function(err, rateRes) {
     if (!err && rateRes && rateRes.ok && rateRes.rate) {
       rate = rateRes.rate;
-      localStorage.setItem(RATE_KEY, rate);
+      try { localStorage.setItem(RATE_KEY, rate); } catch (e) {}
       updateRateBadge();
     }
     api({ action: 'getExpenses' }, function(err2, res) {
@@ -2550,7 +2558,7 @@ function saveRateModal() {
   var v = parseFloat(document.getElementById('exp-rate-input').value);
   if (!isNaN(v) && v > 0) {
     rate = v;
-    localStorage.setItem(RATE_KEY, rate);
+    try { localStorage.setItem(RATE_KEY, rate); } catch (e) {}
     updateRateBadge();
     renderAll();
     apiPost({ action: 'setExpenseRate', rate: rate }, function() {});
@@ -3612,14 +3620,14 @@ function saveConfig() {
   if (!url || url.indexOf('script.google.com') === -1) { err.style.display = 'block'; return; }
   err.style.display = 'none';
   API_URL = url;
-  localStorage.setItem(CFG_KEY, url);
+  try { localStorage.setItem(CFG_KEY, url); } catch (e) {}
   hideConfig();
   revealApp();
   loadData();
 }
 function resetConfig() {
   if (!confirm('Reconnect to a different Google Sheet? The page will reload.')) return;
-  localStorage.removeItem(CFG_KEY);
+  try { localStorage.removeItem(CFG_KEY); } catch (e) {}
   try { sessionStorage.setItem('toka_force_config', '1'); } catch (e) {}
   location.reload();
 }
