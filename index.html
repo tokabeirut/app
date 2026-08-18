@@ -401,7 +401,7 @@
   #today-body .ftl-row[data-tiphtml]:hover { background: var(--surface2); }
   #today-body .ftl-row.ftl-warn:hover { background: #fbe7e3; }
   #today-body .ftl-row.ftl-clickable { cursor: pointer; }
-  #today-body .plan-headline { font-size: 1.3rem; }
+  #today-body .plan-headline { font-size: 1rem; }
   #today-body .plan-sub { font-size: 10pt; }
   #today-body .plan-vol label { font-size: 10pt; }
   #today-body .plan-vol input { font-size: 10pt; }
@@ -6952,7 +6952,7 @@ function setF1Days(v) {
 }
 function getF2Days() {
   var v = parseInt(lsGet('toka_f2_days'), 10);
-  return (!isNaN(v) && v > 0) ? v : 6;
+  return (!isNaN(v) && v > 0) ? v : 3;
 }
 function setF2Days(v) {
   v = parseInt(v, 10);
@@ -7774,8 +7774,12 @@ function todayStrainInf() {
   for (var i = 0; i < active.length; i++) {
     var inf = active[i];
     var elapsed = daysBetween(inf.startDate, todayISO()); if (elapsed == null || elapsed < 0) elapsed = 0;
-    var day = elapsed + 1;                                   // start day counts as day 1
-    var toStrain = getInfDays() - day, dueS = (toStrain <= 1), whenTxt;
+    var day = elapsed + 1;                                   // start day counts as day 1, for the "day X of Y" label below
+    // Strain once `elapsed` full days have passed since the start date — e.g.
+    // started yesterday: 1 day has passed today, 2 will have passed
+    // tomorrow, 3 the day after — so with a 3-day schedule that's when to
+    // strain, not tomorrow (using `day` here double-counted the start day).
+    var toStrain = getInfDays() - elapsed, dueS = (toStrain <= 1), whenTxt;
     if (toStrain > 1)       whenTxt = 'in ' + toStrain + ' days';
     else if (toStrain === 1) whenTxt = 'tomorrow';
     else if (toStrain === 0) whenTxt = 'today';
@@ -7821,8 +7825,10 @@ function todayFridge() {
   for (var i = 0; i < active.length; i++) {
     var bo = active[i];
     var elapsed = daysBetween(bo.bottlingDate, todayISO()); if (elapsed == null || elapsed < 0) elapsed = 0;
-    var day = elapsed + 1;                                   // bottling day counts as day 1
-    var toFridge = getF2Days() - day, dueF = (toFridge <= 1), whenTxt;
+    var day = elapsed + 1;                                   // bottling day counts as day 1, for the "day X of Y" label below
+    // Same fix as the strain schedule above: count against `elapsed` (full
+    // days actually passed), not `day` (which double-counted the start day).
+    var toFridge = getF2Days() - elapsed, dueF = (toFridge <= 1), whenTxt;
     if (toFridge > 1)       whenTxt = 'in ' + toFridge + ' days';
     else if (toFridge === 1) whenTxt = 'tomorrow';
     else if (toFridge === 0) whenTxt = 'today';
