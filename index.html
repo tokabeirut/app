@@ -161,7 +161,13 @@
   /* Infusion table: short id/date/vessel/volume columns kept tight (close
      to their content's own width), with the freed-up space handed to
      Notes instead. */
-  .infusion-table { table-layout: fixed; }
+  /* Without a min-width, table-layout:fixed shrinks these % columns down to
+     whatever the viewport allows — on a narrow phone that squeezes them well
+     below their content's width, and since cells are nowrap, the text spills
+     out and visually overlaps the next column instead of the row properly
+     scrolling sideways inside .table-scroll. A min-width forces the table to
+     stay at a legible size and hand off to the scroll wrapper instead. */
+  .infusion-table { table-layout: fixed; min-width: 760px; }
   .infusion-table th:nth-child(1), .infusion-table td:nth-child(1) { width: 12%; }
   .infusion-table th:nth-child(2), .infusion-table td:nth-child(2) { width: 11%; }
   .infusion-table th:nth-child(3), .infusion-table td:nth-child(3) { width: 9%; }
@@ -214,6 +220,35 @@
   #an-body { padding: 0 48px 48px; }
   .an-section .sec-title { font-family: 'Jost', sans-serif; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--ink); margin-bottom: 4px; }
   .an-section .sec-note { font-size: 0.74rem; color: var(--ink-faint); margin-bottom: 12px; }
+  /* Daily operations dashboard: each section (plus the manual checklist) gets
+     a visible card so the page reads as a set of separate boxes rather than
+     one long scroll. On a wide-enough screen (the "web app") they lay out as
+     a 2x2 matrix; on a phone-width screen they just stack, one under the
+     other, same as before. grid-auto-flow:column lets the existing DOM order
+     (batches, infusions, strain, fridge) fall directly into the requested
+     corners — batches top-left, infusions bottom-left, strain top-right,
+     fridge bottom-right — with no HTML reordering needed. */
+  #today-body .an-section, .daily-checklist {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 22px;
+  }
+  #today-body .an-section { margin-top: 0; }
+  .today-grid { margin-top: 20px; }
+  .today-grid > .an-section + .an-section { margin-top: 20px; }
+  @media (min-width: 700px) {
+    .today-grid {
+      display: -webkit-grid; display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(2, auto);
+      grid-auto-flow: column;
+      gap: 20px;
+      -webkit-align-items: start; align-items: start;
+    }
+    .today-grid > .an-section + .an-section { margin-top: 0; }
+  }
   .brew-plan-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
   .brew-plan-head .sec-title { margin-bottom: 0; }
   .recipe-open-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 5px; background: none; border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.03em; cursor: pointer; padding: 5px 12px; border-radius: 20px; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-transition: all .12s; transition: all .12s; }
@@ -264,7 +299,7 @@
   .an-empty { font-size: 0.78rem; color: var(--ink-faint); padding: 18px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
   /* ---- daily tasks page ---- */
   #today-body { padding: 0 48px 48px; }
-  .daily-checklist { padding: 0 48px 24px; }
+  .daily-checklist { margin: 24px 48px 0; }
   .daily-checklist-add { display: -webkit-flex; display: flex; gap: 10px; margin-bottom: 12px; }
   .daily-checklist-add input { -webkit-flex: 1; flex: 1; }
   .daily-checklist-list { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; gap: 2px; }
@@ -645,6 +680,8 @@
     .content-head { padding: 24px 20px 14px; }
     .table-wrap { padding: 0 20px 28px; }
     #an-body, #today-body { padding: 0 20px 28px; }
+    .daily-checklist { margin-left: 20px; margin-right: 20px; }
+    #today-body .an-section, .daily-checklist { padding: 16px 18px; }
     .task-when { min-width: 84px; }
     .task-when-wrap { min-width: 84px; }
     .need-tbl th.col-amt { width: 96px; }
@@ -9683,7 +9720,12 @@ function renderOverview() {
 
 function renderToday() {
   var body = document.getElementById('today-body'); if (!body) return;
-  body.innerHTML = todayBrewPlan() + todayPlanInf() + todayStrainInf() + todayFridge();
+  // Wrapped in .today-grid so CSS can lay these 4 boxes out as a 2x2
+  // dashboard matrix on wide screens (grid-auto-flow:column turns this exact
+  // order into: batches top-left, infusions bottom-left, strain top-right,
+  // fridge bottom-right) while just stacking them on a phone-width screen —
+  // see the .today-grid rules near .an-section in the stylesheet.
+  body.innerHTML = '<div class="today-grid">' + todayBrewPlan() + todayPlanInf() + todayStrainInf() + todayFridge() + '</div>';
   var sub = document.getElementById('today-sub');
   if (sub) sub.textContent = fmtDate(todayISO()) + ' \u00b7 ' + todayActiveF1().length + ' fermenting \u00b7 ' + todayActiveInf().length + ' infusing \u00b7 ' + todayActiveF2().length + ' carbonating';
   renderChecklist();
