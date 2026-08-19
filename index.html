@@ -171,19 +171,31 @@
      iOS Safari especially, min-width alone is unreliable here, so on a phone
      the table stayed squeezed to the viewport width, nowrap cell text
      spilling outside its column and overlapping the next one, with no actual
-     overflow for .table-scroll to detect and turn into a scrollbar. width:
-     100% keeps the normal full-width desktop look; the mobile breakpoint
-     below overrides this to a fixed px width wider than any phone screen,
-     forcing genuine overflow so .table-scroll scrolls sideways instead of
-     squeezing everything into place. */
-  .infusion-table { table-layout: fixed; width: 100%; }
-  .infusion-table th:nth-child(1), .infusion-table td:nth-child(1) { width: 12%; }
-  .infusion-table th:nth-child(2), .infusion-table td:nth-child(2) { width: 11%; }
-  .infusion-table th:nth-child(3), .infusion-table td:nth-child(3) { width: 9%; }
-  .infusion-table th:nth-child(4), .infusion-table td:nth-child(4) { width: 8%; }
-  .infusion-table th:nth-child(5), .infusion-table td:nth-child(5) { width: 7%; }
-  .infusion-table th:nth-child(6), .infusion-table td:nth-child(6) { width: 19%; }
-  .infusion-table th:nth-child(7), .infusion-table td:nth-child(7) { width: 30%; }
+     overflow for .table-scroll to detect and turn into a scrollbar. A media
+     query fix for this depends on the media query's evaluated width lining
+     up with the actual container width, which isn't guaranteed — width:
+     max(760px, 100%) sidesteps that entirely: it reads the table's own
+     rendered container directly, so it's 100% (today's full-width look) on
+     anything wider than 760px, and a hard 760px — forcing real, scrollable
+     overflow — on anything narrower, phones included, with no breakpoint
+     guessing involved. */
+  /* Percentages of the table's own width starve a column just as badly as
+     before if that width is small — each cell still pays the same ~28px of
+     fixed left/right padding regardless of its %, so a column like the date
+     (9% of 760px = ~68px, minus padding = ~40px of actual text room) never
+     had enough space for "17 Aug 2026" no matter how wide the table itself
+     got. Fixed px widths sized to each column's real content sidestep that:
+     every column gets enough room on its own, and the table's own width is
+     simply the sum of them (again via max(), so it still fills a wide
+     desktop screen rather than leaving dead space). */
+  .infusion-table { table-layout: fixed; width: 1226px; width: max(1226px, 100%); }
+  .infusion-table th:nth-child(1), .infusion-table td:nth-child(1) { width: 170px; }
+  .infusion-table th:nth-child(2), .infusion-table td:nth-child(2) { width: 170px; }
+  .infusion-table th:nth-child(3), .infusion-table td:nth-child(3) { width: 120px; }
+  .infusion-table th:nth-child(4), .infusion-table td:nth-child(4) { width: 90px; }
+  .infusion-table th:nth-child(5), .infusion-table td:nth-child(5) { width: 90px; }
+  .infusion-table th:nth-child(6), .infusion-table td:nth-child(6) { width: 220px; }
+  .infusion-table th:nth-child(7), .infusion-table td:nth-child(7) { width: 250px; }
   /* Fixed px, not %: this column holds 4 icon buttons (lineage/edit/archive/
      delete) that need real room, same reasoning as the Bottling table above. */
   .infusion-table th:nth-child(8), .infusion-table td:nth-child(8) { width: 116px; }
@@ -691,10 +703,6 @@
     #an-body, #today-body { padding: 0 20px 28px; }
     .daily-checklist { margin-left: 20px; margin-right: 20px; }
     #today-body .an-section, .daily-checklist { padding: 16px 18px; }
-    /* Force real overflow on phone screens so .table-scroll actually
-       scrolls sideways instead of the fixed-layout table staying squeezed
-       to the viewport (see the comment on .infusion-table above). */
-    .infusion-table { width: 760px; }
     .task-when { min-width: 84px; }
     .task-when-wrap { min-width: 84px; }
     .need-tbl th.col-amt { width: 96px; }
