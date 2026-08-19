@@ -36,6 +36,12 @@
     --radius-sm: 4px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Safety net: a wide table (see .infusion-table) is meant to overflow and
+     scroll *inside* .table-scroll, never the page itself. Without this, a
+     sizing slip like that can widen the whole body sideways on a phone,
+     which shows up as odd shadow/vignette artifacts at the screen edge when
+     the page is scrolled/rubber-banded horizontally. */
+  html, body { overflow-x: hidden; }
   body { background: var(--bg); font-family: 'Jost', sans-serif; font-weight: 300; color: var(--ink); min-height: 100vh; letter-spacing: 0.01em; font-size: 16px; }
 
   /* -- HEADER -- */
@@ -108,7 +114,7 @@
 
   /* -- TABLE -- */
   .table-wrap { padding: 0 48px 48px; }
-  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
   table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
   thead th { background: var(--surface2); text-align: left; padding: 11px 14px; font-family: 'Jost', sans-serif; font-weight: 500; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); white-space: nowrap; border-bottom: 1px solid var(--border); }
   tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--ink); vertical-align: top; }
@@ -161,13 +167,16 @@
   /* Infusion table: short id/date/vessel/volume columns kept tight (close
      to their content's own width), with the freed-up space handed to
      Notes instead. */
-  /* Without a min-width, table-layout:fixed shrinks these % columns down to
-     whatever the viewport allows — on a narrow phone that squeezes them well
-     below their content's width, and since cells are nowrap, the text spills
-     out and visually overlaps the next column instead of the row properly
-     scrolling sideways inside .table-scroll. A min-width forces the table to
-     stay at a legible size and hand off to the scroll wrapper instead. */
-  .infusion-table { table-layout: fixed; min-width: 760px; }
+  /* table-layout:fixed sizes a table off its `width`, not `min-width` — on
+     iOS Safari especially, min-width alone is unreliable here, so on a phone
+     the table stayed squeezed to the viewport width, nowrap cell text
+     spilling outside its column and overlapping the next one, with no actual
+     overflow for .table-scroll to detect and turn into a scrollbar. width:
+     100% keeps the normal full-width desktop look; the mobile breakpoint
+     below overrides this to a fixed px width wider than any phone screen,
+     forcing genuine overflow so .table-scroll scrolls sideways instead of
+     squeezing everything into place. */
+  .infusion-table { table-layout: fixed; width: 100%; }
   .infusion-table th:nth-child(1), .infusion-table td:nth-child(1) { width: 12%; }
   .infusion-table th:nth-child(2), .infusion-table td:nth-child(2) { width: 11%; }
   .infusion-table th:nth-child(3), .infusion-table td:nth-child(3) { width: 9%; }
@@ -682,6 +691,10 @@
     #an-body, #today-body { padding: 0 20px 28px; }
     .daily-checklist { margin-left: 20px; margin-right: 20px; }
     #today-body .an-section, .daily-checklist { padding: 16px 18px; }
+    /* Force real overflow on phone screens so .table-scroll actually
+       scrolls sideways instead of the fixed-layout table staying squeezed
+       to the viewport (see the comment on .infusion-table above). */
+    .infusion-table { width: 760px; }
     .task-when { min-width: 84px; }
     .task-when-wrap { min-width: 84px; }
     .need-tbl th.col-amt { width: 96px; }
