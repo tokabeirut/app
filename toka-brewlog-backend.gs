@@ -44,7 +44,7 @@ var PLANNED_INFUSIONS_SHEET = 'planned_infusions';
 var PLANNED_BREWS_SHEET = 'planned_brews';
 var DAILY_OPS_SHEET = 'daily_operations';
 
-var VERSION = '30 (daily operations consolidated into one sheet)';
+var VERSION = '31 (bottle inventory added)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -936,6 +936,132 @@ function migrateToDailyOperationsSheet_() {
   Logger.log('Migrated to daily_operations: ' + counts.checklist + ' checklist item(s), ' + counts.brew + ' planned brew(s), ' + counts.infusion + ' planned infusion(s).');
 }
 
+/* ---------- bottle inventory (Inventory > Bottle count) ----------
+   Two linked pools tracked as one signed ledger: empty bottles by size
+   (category = 'Big (750ml)' / 'Small (375ml)') and filled bottles by
+   flavour (category = free text, e.g. 'Base brew', 'Cardamom Sumac').
+   `kind` tells the two apart; `qty` is signed (+ received/filled,
+   - used/broken/opened), so the running stock for any category is just
+   the sum of its rows. "Fill bottles" in the UI (see the fillBottles
+   action below) writes one row of each kind at once — empty -qty, filled
+   +qty — so the two pools can't drift out of sync, but afterward each row
+   is just a plain, independently editable/deletable ledger entry. */
+
+var BOTTLE_INV_SHEET = 'bottle_inventory';
+
+var BOTTLE_INV_HEADERS = ['entry_pk', 'kind', 'entry_date', 'category', 'qty', 'notes'];
+
+function getBottleInvSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BOTTLE_INV_SHEET);
+  if (!sh) sh = ss.insertSheet(BOTTLE_INV_SHEET);
+
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, sh.getMaxRows(), BOTTLE_INV_HEADERS.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, BOTTLE_INV_HEADERS.length).setValues([BOTTLE_INV_HEADERS]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  for (var h = 0; h < BOTTLE_INV_HEADERS.length; h++) {
+    if (hdr.indexOf(BOTTLE_INV_HEADERS[h]) === -1) {
+      var c = sh.getLastColumn() + 1;
+      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
+      sh.getRange(1, c).setValue(BOTTLE_INV_HEADERS[h]);
+      hdr.push(BOTTLE_INV_HEADERS[h]);
+    }
+  }
+  return sh;
+}
+
+function buildBottleInvRow_(e, ncols, map) {
+  e = e || {};
+  var row = [];
+  for (var i = 0; i < ncols; i++) row.push('');
+  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
+  set('entry_pk', e.id || '');
+  set('kind', e.kind || '');
+  set('entry_date', e.date || '');
+  set('category', e.category || '');
+  set('qty', (e.qty == null ? '' : e.qty));
+  set('notes', e.notes || '');
+  return row;
+}
+
+function readAllBottleInv_() {
+  var sh = getBottleInvSheet_();
+  var map = headerMap_(sh);
+  var data = sh.getDataRange().getValues();
+  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!g(r, 'entry_pk')) continue;
+    out.push({
+      id: String(g(r, 'entry_pk')),
+      kind: g(r, 'kind'),
+      date: ymd_(g(r, 'entry_date')),
+      category: g(r, 'category'),
+      qty: g(r, 'qty'),
+      notes: g(r, 'notes')
+    });
+  }
+  return out;
+}
+
+/**
+ * One-time seed of the historical bottle counts Claire provided in chat.
+ * Safe to run once from the Apps Script editor (select this function in
+ * the function dropdown, then Run) after this version is deployed —
+ * running it twice duplicates rows. Delete this function afterward if
+ * you'd rather not keep a one-off seed script sitting in the file;
+ * nothing else depends on it.
+ *
+ * Every historical event here uses today's date as a placeholder except
+ * the 19 Aug 2026 bottle run-back, which Claire gave an exact date for —
+ * edit any of these dates directly in the Bottle count log afterward,
+ * same as editing any other cell in this app.
+ */
+function seedBottleInventoryHistory_() {
+  var sh = getBottleInvSheet_();
+  var map = headerMap_(sh);
+  var ncols = sh.getLastColumn();
+  var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  var BIG = 'Big (750ml)', SMALL = 'Small (375ml)';
+  var rows = [
+    // -- empty bottle stock received --
+    { kind: 'empty', date: today, category: BIG, qty: 2112, notes: 'Initial empty stock' },
+    { kind: 'empty', date: today, category: BIG, qty: 1, notes: 'Sample bottle received' },
+    { kind: 'empty', date: today, category: SMALL, qty: 4352, notes: 'Initial empty stock' },
+    { kind: 'empty', date: today, category: SMALL, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
+    { kind: 'empty', date: today, category: BIG, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
+    { kind: 'empty', date: today, category: SMALL, qty: 24, notes: 'Brought back to test corrugated boxes' },
+    { kind: 'empty', date: today, category: BIG, qty: 12, notes: 'Brought back to test corrugated boxes' },
+    { kind: 'empty', date: '2026-08-19', category: SMALL, qty: 196, notes: 'Brought back by Claude, Elie and Claire' },
+    { kind: 'empty', date: '2026-08-19', category: SMALL, qty: -1, notes: 'Broke' },
+    { kind: 'empty', date: '2026-08-19', category: BIG, qty: 12, notes: 'Brought back by Claude, Elie and Claire' },
+    // -- filling (consumes empty small stock, creates filled stock) --
+    { kind: 'empty', date: today, category: SMALL, qty: -93, notes: 'Filled: Base brew' },
+    { kind: 'empty', date: today, category: SMALL, qty: -103, notes: 'Filled: Cardamom Sumac' },
+    { kind: 'filled', date: today, category: 'Base brew', qty: 93, notes: 'Filled, ready in the fridge' },
+    { kind: 'filled', date: today, category: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
+    // -- opened / given away / used --
+    { kind: 'filled', date: today, category: 'Base brew', qty: -1, notes: 'Opened to try' },
+    { kind: 'filled', date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
+    { kind: 'filled', date: today, category: 'Base brew', qty: -1, notes: 'Gave to Kevin' },
+    { kind: 'filled', date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
+    { kind: 'filled', date: today, category: 'Base brew', qty: -4, notes: 'Brought to Mykonos' },
+    { kind: 'filled', date: today, category: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
+    { kind: 'filled', date: today, category: 'Base brew', qty: -1, notes: 'Left at the house' },
+    { kind: 'filled', date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
+  ];
+  for (var i = 0; i < rows.length; i++) {
+    rows[i].id = Utilities.getUuid();
+    sh.appendRow(buildBottleInvRow_(rows[i], ncols, map));
+  }
+  Logger.log('Seeded ' + rows.length + ' bottle_inventory entries.');
+}
+
 /* ---------- feedback (tasting) ---------- */
 
 var FEEDBACK_HEADERS = [
@@ -1264,6 +1390,9 @@ function doGet(e) {
   if (action === 'getProductionTasks') {
     return json_({ ok: true, productionTasks: readAllProductionTasks_() });
   }
+  if (action === 'getBottleInventory') {
+    return json_({ ok: true, bottleInventory: readAllBottleInv_() });
+  }
   if (action === 'getExpenses') {
     return json_({ ok: true, expenses: readAllExpenses_() });
   }
@@ -1302,7 +1431,8 @@ function doGet(e) {
       productionTasks: readAllProductionTasks_(),
       dailyChecklist: readAllChecklist_(),
       plannedInfusions: readAllPlannedInfusions_(),
-      plannedBrews: readAllPlannedBrews_()
+      plannedBrews: readAllPlannedBrews_(),
+      bottleInventory: readAllBottleInv_()
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
@@ -1531,6 +1661,53 @@ function handleAction_(body) {
     var pbdr = findRowByKey_(pbsh, pbmap, 'item_pk', body.id);
     if (pbdr === -1) return json_({ ok: false, error: 'not found' });
     pbsh.deleteRow(pbdr);
+    return json_({ ok: true });
+  }
+
+  // ---- bottle inventory actions (Inventory > Bottle count) ----
+  if (action === 'createBottleInvEntry' || action === 'updateBottleInvEntry' || action === 'deleteBottleInvEntry') {
+    var bish = getBottleInvSheet_();
+    var bimap = headerMap_(bish);
+    var bincols = bish.getLastColumn();
+    if (action === 'createBottleInvEntry') {
+      var newE = body.entry || {};
+      if (!newE.id) newE.id = Utilities.getUuid();
+      bish.appendRow(buildBottleInvRow_(newE, bincols, bimap));
+      return json_({ ok: true, id: newE.id });
+    }
+    if (action === 'updateBottleInvEntry') {
+      var eb = body.entry || {};
+      var erow = findRowByKey_(bish, bimap, 'entry_pk', eb.id);
+      if (erow === -1) return json_({ ok: false, error: 'not found' });
+      bish.getRange(erow, 1, 1, bincols).setValues([buildBottleInvRow_(eb, bincols, bimap)]);
+      return json_({ ok: true });
+    }
+    var edr = findRowByKey_(bish, bimap, 'entry_pk', body.id);
+    if (edr === -1) return json_({ ok: false, error: 'not found' });
+    bish.deleteRow(edr);
+    return json_({ ok: true });
+  }
+
+  // ---- bottle inventory: fill bottles ----
+  // Convenience action for the "Fill bottles" form: writes an empty-stock
+  // row (negative — consumes that size) and a filled-stock row (positive
+  // — creates that flavour) in the same request, so the two pools can't
+  // end up out of sync from one request succeeding and the other failing.
+  if (action === 'fillBottles') {
+    var f = body.fill || {};
+    var fsh = getBottleInvSheet_();
+    var fmap = headerMap_(fsh);
+    var fncols = fsh.getLastColumn();
+    var fdate = f.date || '';
+    var fqty = parseFloat(f.qty) || 0;
+    fsh.appendRow(buildBottleInvRow_({
+      id: Utilities.getUuid(), kind: 'empty', date: fdate, category: f.size || '',
+      qty: -fqty, notes: 'Filled: ' + (f.flavour || '')
+    }, fncols, fmap));
+    fsh.appendRow(buildBottleInvRow_({
+      id: Utilities.getUuid(), kind: 'filled', date: fdate, category: f.flavour || '',
+      qty: fqty, notes: f.notes || ''
+    }, fncols, fmap));
     return json_({ ok: true });
   }
 

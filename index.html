@@ -281,6 +281,15 @@
   .kpi .k-val { font-family: 'Jost', sans-serif; font-size: 1.55rem; line-height: 1.1; color: var(--ink); }
   .kpi .k-lab { font-size: 0.68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.09em; margin-top: 5px; }
   .kpi .k-sub { font-size: 0.7rem; color: var(--ink-faint); margin-top: 3px; }
+  /* ── BOTTLE INVENTORY ── */
+  .biv-kpi .biv-bar { margin-top: 8px; height: 6px; border-radius: 20px; background: var(--surface2); overflow: hidden; }
+  .biv-kpi .biv-bar-fill { height: 100%; background: var(--terra); border-radius: 20px; }
+  .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
+  .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .biv-form .plan-field-row { margin-bottom: 10px; }
+  .biv-form .plan-field-label { -webkit-flex-basis: 90px; flex-basis: 90px; }
+  .biv-form-title { font-family: 'Jost', sans-serif; font-size: 0.8rem; color: var(--ink); margin-bottom: 12px; }
+  .biv-form .btn-primary { width: 100%; }
   /* ── FERMENTATION TIMELINE ── */
   .ferm-timeline { margin-top: 6px; }
   .ftl-head-row { display: -webkit-flex; display: flex; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
@@ -1148,6 +1157,7 @@
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production timeline</button>
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
+    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Inventory</button>
   </div>
 </nav>
 
@@ -1208,6 +1218,10 @@
       <div class="feature-card clickable" onclick="showView('expenses')">
         <div class="card-head"><span class="name">Expenses</span></div>
         <div class="desc">Every cost logged and categorized &mdash; receipts attached, running totals &amp; your cash balance always in view.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('inventory')">
+        <div class="card-head"><span class="name">Inventory</span></div>
+        <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
       </div>
     </div>
   </div>
@@ -1309,6 +1323,18 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- ===== INVENTORY VIEW ===== -->
+<div id="view-inventory" style="display:none;">
+  <div class="view-bar">
+    <button class="back-link" onclick="goBack()">&larr; back</button>
+  </div>
+  <div class="content-head">
+    <div class="content-title">Inventory</div>
+    <div class="content-sub">Bottle count</div>
+  </div>
+  <div id="biv-body"></div>
 </div>
 
 <!-- ===== FAUCET TIMER VIEW ===== -->
@@ -3658,6 +3684,10 @@ var productionTasks = [];
 var dailyChecklist = [];
 var plannedInfusions = [];
 var plannedBrews = [];
+// Inventory > Bottle count: a flat, signed ledger — see the backend
+// comment on getBottleInvSheet_ for the two-pool (empty-by-size /
+// filled-by-flavour) model this powers.
+var bottleInventory = [];
 // Planned infusions/brews are edited as a local draft (Save/Cancel below)
 // instead of autosaving on every keystroke like the rest of the app. These
 // track, per plan id: whether it's never made it to the sheet yet
@@ -3803,7 +3833,7 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews], function () { if (cb) cb(); });
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory], function () { if (cb) cb(); });
       return;
     }
     batches = res.batches || [];
@@ -3815,6 +3845,7 @@ function loadAll(cb) {
     dailyChecklist = res.dailyChecklist || [];
     plannedInfusions = res.plannedInfusions || [];
     plannedBrews = res.plannedBrews || [];
+    bottleInventory = res.bottleInventory || [];
     planInfUnsaved = {}; planInfOriginal = {};
     for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
     planBrewUnsaved = {}; planBrewOriginal = {};
@@ -3844,6 +3875,7 @@ function showView(v, isBack) {
   var vp = document.getElementById('view-production'); if (vp) vp.style.display = (v === 'production') ? 'block' : 'none';
   var ve = document.getElementById('view-expenses'); if (ve) ve.style.display = (v === 'expenses') ? 'block' : 'none';
   var vf = document.getElementById('view-faucet'); if (vf) vf.style.display = (v === 'faucet') ? 'block' : 'none';
+  var vinv = document.getElementById('view-inventory'); if (vinv) vinv.style.display = (v === 'inventory') ? 'block' : 'none';
   if (typeof updateViewTabs === 'function') updateViewTabs(v);
   if (v === 'f1') { renderTable(); if (!readings.length) loadReadings(function () { renderTable(); }); }
   if (v === 'bottling') { renderBottles(); loadBottles(); loadInfusions(); }
@@ -3878,6 +3910,7 @@ function showView(v, isBack) {
     loadExpensesData();
   }
   if (v === 'faucet') { loadFaucetRate(); }
+  if (v === 'inventory') { renderBottleInventory(); loadAll(function () { renderBottleInventory(); }); }
   window.scrollTo(0, 0);
 }
 function goBack() {
@@ -5571,9 +5604,9 @@ function cellEd(inner, opts) {
 // inline editor can look either up without each type needing its own
 // lookup/commit function.
 function recKeyOf(rec) { return rec.uid != null ? rec.uid : rec.id; }
-function recArray(type) { return type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : readings))); }
-function rerenderType(type) { if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else renderReadings(); }
-function reloadType(type) { if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else loadReadings(); }
+function recArray(type) { return type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings)))); }
+function rerenderType(type) { if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
+function reloadType(type) { if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
 function commitInline(type, uidv, field, value) {
   var arr = recArray(type), rec = null;
   for (var i = 0; i < arr.length; i++) { if (String(recKeyOf(arr[i])) === String(uidv)) { rec = arr[i]; break; } }
@@ -5605,8 +5638,8 @@ function commitInline(type, uidv, field, value) {
     rec.dateWorst = value;
   }
   rerenderType(type);
-  var action = type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : 'updateReading')));
-  var key = type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : 'reading')));
+  var action = type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
+  var key = type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
   var body = { action: action }; body[key] = JSON.parse(JSON.stringify(rec));
   setSyncStatus('saving', 'saving\u2026');
   apiPost(body, function (err, res) {
@@ -6227,7 +6260,8 @@ var HIST_FIELDS = {
     bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { out.push(f.name); }); });
     return out;
   },
-  ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); }
+  ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); },
+  bottleFlavour: function () { return bottleInventory.filter(function (e) { return e.kind === 'filled'; }).map(function (e) { return e.category; }); }
 };
 function histValues(field, query) {
   var src = HIST_FIELDS[field];
@@ -6380,6 +6414,187 @@ function loadPlannedBrews(cb) {
     for (var i = 0; i < plannedBrews.length; i++) planBrewOriginal[plannedBrews[i].id] = clonePlan(plannedBrews[i]);
     if (typeof renderToday === 'function') renderToday();
     if (cb) cb(null);
+  });
+}
+function loadBottleInventory(cb) {
+  api({ action: 'getBottleInventory' }, function (err, res) {
+    if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
+    bottleInventory = res.bottleInventory || [];
+    if (typeof renderBottleInventory === 'function') renderBottleInventory();
+    if (cb) cb(null);
+  });
+}
+
+/* ---- Inventory / Bottle count ---- */
+// The whole ledger is just signed quantities against a (kind, category) pair —
+// remaining stock is the running sum, "received" is the sum of positive rows
+// only, so the KPI bar can show remaining-vs-ever-received per category.
+function bivBalances() {
+  var empty = {}, filled = {}, emptyRecv = {}, filledRecv = {};
+  for (var i = 0; i < bottleInventory.length; i++) {
+    var e = bottleInventory[i];
+    var q = parseFloat(e.qty) || 0;
+    var cat = e.category || '(unspecified)';
+    if (e.kind === 'filled') {
+      filled[cat] = (filled[cat] || 0) + q;
+      if (q > 0) filledRecv[cat] = (filledRecv[cat] || 0) + q;
+    } else {
+      empty[cat] = (empty[cat] || 0) + q;
+      if (q > 0) emptyRecv[cat] = (emptyRecv[cat] || 0) + q;
+    }
+  }
+  return { empty: empty, filled: filled, emptyRecv: emptyRecv, filledRecv: filledRecv };
+}
+function bivKpiCard(label, remaining, received) {
+  var pct = received > 0 ? Math.max(0, Math.min(100, Math.round((remaining / received) * 100))) : 0;
+  return '<div class="kpi biv-kpi">'
+    + '<div class="k-val">' + fmtNum(remaining) + '</div>'
+    + '<div class="k-lab">' + esc(label) + '</div>'
+    + '<div class="k-sub">of ' + fmtNum(received) + ' received</div>'
+    + '<div class="biv-bar"><div class="biv-bar-fill" style="width:' + pct + '%"></div></div>'
+    + '</div>';
+}
+function bivKpisHtml() {
+  var b = bivBalances();
+  // Known sizes always show first (even at zero), then any extra category
+  // someone free-types later still gets picked up automatically.
+  var emptyCats = ['Big (750ml)', 'Small (375ml)'];
+  for (var k in b.empty) { if (emptyCats.indexOf(k) === -1) emptyCats.push(k); }
+  for (var k2 in b.emptyRecv) { if (emptyCats.indexOf(k2) === -1) emptyCats.push(k2); }
+  var filledCats = Object.keys(b.filledRecv);
+  for (var k3 in b.filled) { if (filledCats.indexOf(k3) === -1) filledCats.push(k3); }
+  filledCats.sort();
+  var h = '<div class="an-section"><div class="sec-title">Bottle count</div><div class="kpi-row">';
+  for (var i = 0; i < emptyCats.length; i++) {
+    var c = emptyCats[i];
+    h += bivKpiCard(c + ' — empty', b.empty[c] || 0, b.emptyRecv[c] || 0);
+  }
+  for (var j = 0; j < filledCats.length; j++) {
+    var fc = filledCats[j];
+    h += bivKpiCard(fc + ' — filled', b.filled[fc] || 0, b.filledRecv[fc] || 0);
+  }
+  h += '</div></div>';
+  return h;
+}
+function bivSizeOptionsHtml() {
+  var opts = ['Big (750ml)', 'Small (375ml)'];
+  var h = '';
+  for (var i = 0; i < opts.length; i++) h += '<option value="' + esc(opts[i]) + '">' + esc(opts[i]) + '</option>';
+  return h;
+}
+function bivAddFormsHtml() {
+  var today = todayISO();
+  var h = '<div class="an-section"><div class="sec-title">Log a bottle movement</div><div class="biv-forms">';
+  h += '<div class="biv-form"><div class="biv-form-title">Receive empty bottles</div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-recv-size">' + bivSizeOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-recv-qty" placeholder="e.g. 24" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-recv-date" value="' + today + '" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-recv-notes" placeholder="e.g. brought back by Patrick" /></div></div>'
+    + '<button type="button" class="btn-primary" onclick="bivReceiveEmpty()">+ Add</button>'
+    + '</div>';
+  h += '<div class="biv-form"><div class="biv-form-title">Fill bottles</div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Size used</label><div class="plan-field-input"><select id="biv-fill-size">' + bivSizeOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><input type="text" id="biv-fill-flavour" placeholder="e.g. Base brew" data-hist-field="bottleFlavour" autocomplete="off" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-fill-qty" placeholder="e.g. 93" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-fill-date" value="' + today + '" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-fill-notes" placeholder="optional" /></div></div>'
+    + '<button type="button" class="btn-primary" onclick="bivFill()">+ Add</button>'
+    + '</div>';
+  h += '<div class="biv-form"><div class="biv-form-title">Use / open bottles</div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><input type="text" id="biv-use-flavour" placeholder="e.g. Cardamom Sumac" data-hist-field="bottleFlavour" autocomplete="off" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-use-qty" placeholder="e.g. 1" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-use-date" value="' + today + '" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-use-notes" placeholder="e.g. gave to Kevin" /></div></div>'
+    + '<button type="button" class="btn-primary" onclick="bivUse()">+ Add</button>'
+    + '</div>';
+  h += '</div></div>';
+  return h;
+}
+function bivRowHtml(e) {
+  var id = esc(e.id);
+  var qtyNum = parseFloat(e.qty) || 0;
+  var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
+  var kindLabel = e.kind === 'filled' ? 'Filled' : 'Empty';
+  return '<tr>'
+    + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
+    + '<td>' + esc(kindLabel) + '</td>'
+    + cellEd(esc(e.category || ''), { type: 'bottleinv', uid: e.id, field: 'category', input: 'text', hist: (e.kind === 'filled' ? 'bottleFlavour' : '') })
+    + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
+    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+    + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
+    + '</tr>';
+}
+function bivLogTableHtml() {
+  var list = bottleInventory.slice().sort(function (a, b) {
+    var da = String(a.date || ''), db = String(b.date || '');
+    return da !== db ? (da < db ? 1 : -1) : 0;
+  });
+  var rows = '';
+  for (var i = 0; i < list.length; i++) rows += bivRowHtml(list[i]);
+  if (!rows) rows = '<tr><td colspan="6" class="muted" style="text-align:center;padding:24px 0;">No movements logged yet.</td></tr>';
+  return '<div class="an-section"><div class="sec-title">Movement log</div>'
+    + '<div class="table-scroll"><table class="biv-table">'
+    + '<thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Qty</th><th>Notes</th><th></th></tr></thead>'
+    + '<tbody>' + rows + '</tbody>'
+    + '</table></div></div>';
+}
+function renderBottleInventory() {
+  var body = document.getElementById('biv-body');
+  if (!body) return;
+  body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml();
+}
+function bivReceiveEmpty() {
+  var size = val('biv-recv-size');
+  var qty = parseFloat(val('biv-recv-qty'));
+  var date = val('biv-recv-date') || todayISO();
+  var notes = val('biv-recv-notes').trim();
+  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'createBottleInvEntry', entry: { kind: 'empty', date: date, category: size, qty: qty, notes: notes } }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
+    document.getElementById('biv-recv-qty').value = ''; document.getElementById('biv-recv-notes').value = '';
+    setSyncStatus('live', 'connected · google sheets');
+    loadBottleInventory();
+  });
+}
+function bivFill() {
+  var size = val('biv-fill-size');
+  var flavour = val('biv-fill-flavour').trim();
+  var qty = parseFloat(val('biv-fill-qty'));
+  var date = val('biv-fill-date') || todayISO();
+  var notes = val('biv-fill-notes').trim();
+  if (!flavour) { alert('Enter a flavour.'); return; }
+  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
+    document.getElementById('biv-fill-qty').value = ''; document.getElementById('biv-fill-notes').value = '';
+    setSyncStatus('live', 'connected · google sheets');
+    loadBottleInventory();
+  });
+}
+function bivUse() {
+  var flavour = val('biv-use-flavour').trim();
+  var qty = parseFloat(val('biv-use-qty'));
+  var date = val('biv-use-date') || todayISO();
+  var notes = val('biv-use-notes').trim();
+  if (!flavour) { alert('Enter a flavour.'); return; }
+  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'createBottleInvEntry', entry: { kind: 'filled', date: date, category: flavour, qty: -qty, notes: notes } }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
+    document.getElementById('biv-use-qty').value = ''; document.getElementById('biv-use-notes').value = '';
+    setSyncStatus('live', 'connected · google sheets');
+    loadBottleInventory();
+  });
+}
+function deleteBottleInvEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  setSyncStatus('saving', 'deleting…');
+  apiPost({ action: 'deleteBottleInvEntry', id: id }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'delete failed'); alert('Could not delete. Check your connection and try again.'); return; }
+    loadBottleInventory();
+    setSyncStatus('live', 'connected · google sheets');
   });
 }
 function loadProductionTasks(cb) {
