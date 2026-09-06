@@ -282,18 +282,20 @@
   .kpi .k-lab { font-size: 0.68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.09em; margin-top: 5px; }
   .kpi .k-sub { font-size: 0.7rem; color: var(--ink-faint); margin-top: 3px; }
   /* ── BOTTLE INVENTORY ── */
-  .biv-progress-row { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 24px; margin-top: 10px; }
-  .biv-progress-col { -webkit-flex: 1 1 220px; flex: 1 1 220px; min-width: 200px; }
+  /* Shared by the progress-bar row and every stat row below it, so a
+     size's numbers always land directly under that size's bar. */
+  .biv-summary-grid { display: grid; grid-template-columns: minmax(140px, 1.4fr) 1fr 1fr; -webkit-column-gap: 24px; column-gap: 24px; align-items: center; }
+  .biv-progress-row { margin-top: 10px; }
   .biv-progress-label { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; font-size: 0.9rem; color: var(--ink); margin-bottom: 7px; }
   .biv-progress-pct { font-family: 'DM Mono', monospace; font-size: 0.76rem; color: var(--ink-faint); }
   .biv-progress-track { height: 10px; border-radius: 20px; background: var(--surface2); overflow: hidden; }
   .biv-progress-fill { height: 100%; background: var(--terra); border-radius: 20px; }
   .biv-stat-table { margin-top: 24px; }
-  .biv-stat-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .biv-stat-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
   .biv-stat-row:last-child { border-bottom: none; }
   .biv-stat-row.biv-stat-head { font-family: 'Jost', sans-serif; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); }
-  .biv-stat-label { -webkit-flex: 1 1 auto; flex: 1 1 auto; font-size: 0.9rem; color: var(--ink); }
-  .biv-stat-val { -webkit-flex: 0 0 130px; flex: 0 0 130px; text-align: right; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--ink); }
+  .biv-stat-label { font-size: 0.9rem; color: var(--ink); }
+  .biv-stat-val { text-align: right; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--ink); }
   .biv-stat-colhead { font-family: 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.66rem; color: var(--ink-faint); }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
   .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
@@ -6500,15 +6502,20 @@ function bivSizeList(b) {
   });
   return sizes;
 }
+// The progress row and the stat rows below it share ONE grid definition
+// (.biv-summary-grid — see CSS) so a size's number column lines up exactly
+// under that size's bar, regardless of how wide the leading label column
+// ends up being. The progress row's own leading cell is just an empty
+// spacer occupying that same label column.
 function bivProgressRowHtml(sizes, b) {
-  var h = '<div class="biv-progress-row">';
+  var h = '<div class="biv-summary-grid biv-progress-row"><div></div>';
   for (var i = 0; i < sizes.length; i++) {
     var s = sizes[i];
     var recv = b.received[s] || 0;
     var filled = b.filledEvents[s] || 0;
     var pct = recv > 0 ? Math.max(0, Math.min(100, Math.round((filled / recv) * 100))) : 0;
     h += '<div class="biv-progress-col">'
-      + '<div class="biv-progress-label"><span>' + esc(s) + '</span><span class="biv-progress-pct">' + pct + '% filled or consumed</span></div>'
+      + '<div class="biv-progress-label"><span>' + esc(s) + '</span><span class="biv-progress-pct">' + fmtNum(recv) + ' total received</span></div>'
       + '<div class="biv-progress-track"><div class="biv-progress-fill" style="width:' + pct + '%"></div></div>'
       + '</div>';
   }
@@ -6516,7 +6523,7 @@ function bivProgressRowHtml(sizes, b) {
   return h;
 }
 function bivStatRowHtml(label, sizes, map, isHead) {
-  var h = '<div class="biv-stat-row' + (isHead ? ' biv-stat-head' : '') + '"><div class="biv-stat-label">' + esc(label) + '</div>';
+  var h = '<div class="biv-summary-grid biv-stat-row' + (isHead ? ' biv-stat-head' : '') + '"><div class="biv-stat-label">' + esc(label) + '</div>';
   for (var i = 0; i < sizes.length; i++) {
     h += isHead
       ? '<div class="biv-stat-val biv-stat-colhead">' + esc(sizes[i]) + '</div>'
