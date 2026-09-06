@@ -6515,7 +6515,7 @@ function bivProgressRowHtml(sizes, b) {
     var filled = b.filledEvents[s] || 0;
     var pct = recv > 0 ? Math.max(0, Math.min(100, Math.round((filled / recv) * 100))) : 0;
     h += '<div class="biv-progress-col">'
-      + '<div class="biv-progress-label"><span>' + esc(s) + '</span><span class="biv-progress-pct">' + fmtNum(recv) + ' total received</span></div>'
+      + '<div class="biv-progress-label"><span>' + esc(s) + '</span><span class="biv-progress-pct">' + fmtNum(filled) + '/' + fmtNum(recv) + '</span></div>'
       + '<div class="biv-progress-track"><div class="biv-progress-fill" style="width:' + pct + '%"></div></div>'
       + '</div>';
   }
