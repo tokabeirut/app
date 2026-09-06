@@ -6494,6 +6494,13 @@ function bivAddFormsHtml() {
     + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-recv-notes" placeholder="e.g. brought back by Patrick" /></div></div>'
     + '<button type="button" class="btn-primary" onclick="bivReceiveEmpty()">+ Add</button>'
     + '</div>';
+  h += '<div class="biv-form"><div class="biv-form-title">Bring bottles from depot</div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-depot-size">' + bivSizeOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-depot-qty" placeholder="e.g. 196" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-depot-date" value="' + today + '" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-depot-notes" placeholder="e.g. brought back by Claire from Karl’s depot" /></div></div>'
+    + '<button type="button" class="btn-primary" onclick="bivBringFromDepot()">+ Add</button>'
+    + '</div>';
   h += '<div class="biv-form"><div class="biv-form-title">Fill bottles</div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Size used</label><div class="plan-field-input"><select id="biv-fill-size">' + bivSizeOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><input type="text" id="biv-fill-flavour" placeholder="e.g. Base brew" data-hist-field="bottleFlavour" autocomplete="off" /></div></div>'
@@ -6555,6 +6562,24 @@ function bivReceiveEmpty() {
   apiPost({ action: 'createBottleInvEntry', entry: { kind: 'empty', date: date, category: size, qty: qty, notes: notes } }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
     document.getElementById('biv-recv-qty').value = ''; document.getElementById('biv-recv-notes').value = '';
+    setSyncStatus('live', 'connected · google sheets');
+    loadBottleInventory();
+  });
+}
+// Same effect on the empty-bottle count as "Receive empty bottles" (it's the
+// same pool) — kept as its own form because it's a distinct real-world event
+// worth logging on its own: moving already-owned stock from the depot into
+// the atelier, rather than newly acquiring bottles.
+function bivBringFromDepot() {
+  var size = val('biv-depot-size');
+  var qty = parseFloat(val('biv-depot-qty'));
+  var date = val('biv-depot-date') || todayISO();
+  var notes = val('biv-depot-notes').trim() || 'Brought from depot';
+  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'createBottleInvEntry', entry: { kind: 'empty', date: date, category: size, qty: qty, notes: notes } }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
+    document.getElementById('biv-depot-qty').value = ''; document.getElementById('biv-depot-notes').value = '';
     setSyncStatus('live', 'connected · google sheets');
     loadBottleInventory();
   });
