@@ -44,7 +44,7 @@ var PLANNED_INFUSIONS_SHEET = 'planned_infusions';
 var PLANNED_BREWS_SHEET = 'planned_brews';
 var DAILY_OPS_SHEET = 'daily_operations';
 
-var VERSION = '32 (bottle inventory: depot/atelier location tracking)';
+var VERSION = '33 (bottle inventory: size field on filled rows)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -949,7 +949,7 @@ function migrateToDailyOperationsSheet_() {
 
 var BOTTLE_INV_SHEET = 'bottle_inventory';
 
-var BOTTLE_INV_HEADERS = ['entry_pk', 'kind', 'entry_date', 'category', 'qty', 'notes', 'location'];
+var BOTTLE_INV_HEADERS = ['entry_pk', 'kind', 'entry_date', 'category', 'qty', 'notes', 'location', 'size'];
 
 function getBottleInvSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -986,6 +986,9 @@ function buildBottleInvRow_(e, ncols, map) {
   set('qty', (e.qty == null ? '' : e.qty));
   set('notes', e.notes || '');
   set('location', e.location || '');
+  // Only meaningful on 'filled' rows — which size of bottle was used to
+  // fill/hold that flavour. Empty rows already carry size in `category`.
+  set('size', e.size || '');
   return row;
 }
 
@@ -1005,7 +1008,8 @@ function readAllBottleInv_() {
       category: g(r, 'category'),
       qty: g(r, 'qty'),
       notes: g(r, 'notes'),
-      location: g(r, 'location')
+      location: g(r, 'location'),
+      size: g(r, 'size')
     });
   }
   return out;
@@ -1062,17 +1066,17 @@ function seedBottleInventoryHistory_() {
     // -- filling (consumes atelier empty small stock, creates filled stock) --
     { kind: 'empty', location: 'atelier', date: today, category: SMALL, qty: -93, notes: 'Filled: Base brew' },
     { kind: 'empty', location: 'atelier', date: today, category: SMALL, qty: -103, notes: 'Filled: Cardamom Sumac' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Base brew', qty: 93, notes: 'Filled, ready in the fridge' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Base brew', qty: 93, notes: 'Filled, ready in the fridge' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
     // -- opened / given away / used --
-    { kind: 'filled', location: 'atelier', date: today, category: 'Base brew', qty: -1, notes: 'Opened to try' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Base brew', qty: -1, notes: 'Gave to Kevin' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Base brew', qty: -4, notes: 'Brought to Mykonos' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Base brew', qty: -1, notes: 'Left at the house' },
-    { kind: 'filled', location: 'atelier', date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Base brew', qty: -1, notes: 'Opened to try' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Base brew', qty: -1, notes: 'Gave to Kevin' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Base brew', qty: -4, notes: 'Brought to Mykonos' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Base brew', qty: -1, notes: 'Left at the house' },
+    { kind: 'filled', location: 'atelier', size: SMALL, date: today, category: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
   ];
   for (var i = 0; i < rows.length; i++) {
     rows[i].id = Utilities.getUuid();
@@ -1750,7 +1754,7 @@ function handleAction_(body) {
       qty: -fqty, notes: 'Filled: ' + (f.flavour || '')
     }, fncols, fmap));
     fsh.appendRow(buildBottleInvRow_({
-      id: Utilities.getUuid(), kind: 'filled', location: 'atelier', date: fdate, category: f.flavour || '',
+      id: Utilities.getUuid(), kind: 'filled', location: 'atelier', size: f.size || '', date: fdate, category: f.flavour || '',
       qty: fqty, notes: f.notes || ''
     }, fncols, fmap));
     return json_({ ok: true });

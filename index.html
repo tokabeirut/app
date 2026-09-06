@@ -6530,6 +6530,7 @@ function bivAddFormsHtml() {
     + '<button type="button" class="btn-primary" onclick="bivFill()">+ Add</button>'
     + '</div>';
   h += '<div class="biv-form"><div class="biv-form-title">Use / open bottles</div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-use-size">' + bivSizeOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><input type="text" id="biv-use-flavour" placeholder="e.g. Cardamom Sumac" data-hist-field="bottleFlavour" autocomplete="off" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-use-qty" placeholder="e.g. 1" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-use-date" value="' + today + '" /></div></div>'
@@ -6564,7 +6565,7 @@ function bivRowHtml(e) {
   var kindLabel = bivKindLabel(e);
   var isFilled = e.kind === 'filled';
   var sizeCell = isFilled
-    ? '<td class="muted">—</td>'
+    ? cellEd(esc(e.size || ''), { type: 'bottleinv', uid: e.id, field: 'size', input: 'text' })
     : cellEd(esc(e.category || ''), { type: 'bottleinv', uid: e.id, field: 'category', input: 'text' });
   var flavourCell = isFilled
     ? cellEd(esc(e.category || ''), { type: 'bottleinv', uid: e.id, field: 'category', input: 'text', hist: 'bottleFlavour' })
@@ -6666,6 +6667,7 @@ function bivFill() {
   });
 }
 function bivUse() {
+  var size = val('biv-use-size');
   var flavour = val('biv-use-flavour').trim();
   var qty = parseFloat(val('biv-use-qty'));
   var date = val('biv-use-date') || todayISO();
@@ -6673,7 +6675,7 @@ function bivUse() {
   if (!flavour) { alert('Enter a flavour.'); return; }
   if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
   setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'createBottleInvEntry', entry: { kind: 'filled', location: 'atelier', date: date, category: flavour, qty: -qty, notes: notes } }, function (err, res) {
+  apiPost({ action: 'createBottleInvEntry', entry: { kind: 'filled', location: 'atelier', size: size, date: date, category: flavour, qty: -qty, notes: notes } }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
     document.getElementById('biv-use-qty').value = ''; document.getElementById('biv-use-notes').value = '';
     setSyncStatus('live', 'connected · google sheets');
