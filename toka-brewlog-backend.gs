@@ -1031,7 +1031,9 @@ function seedBottleInventoryHistory_() {
   var rows = [
     // -- empty bottle stock received --
     { kind: 'empty', date: today, category: BIG, qty: 2112, notes: 'Initial empty stock' },
-    { kind: 'empty', date: today, category: BIG, qty: 1, notes: 'Sample bottle received' },
+    // Note: 1 sample bottle (750ml) was also received but is deliberately
+    // NOT logged here — it's excluded from the countable stock per Claire's
+    // request, since it's a sample rather than usable inventory.
     { kind: 'empty', date: today, category: SMALL, qty: 4352, notes: 'Initial empty stock' },
     { kind: 'empty', date: today, category: SMALL, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
     { kind: 'empty', date: today, category: BIG, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },

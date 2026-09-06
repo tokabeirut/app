@@ -282,8 +282,14 @@
   .kpi .k-lab { font-size: 0.68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.09em; margin-top: 5px; }
   .kpi .k-sub { font-size: 0.7rem; color: var(--ink-faint); margin-top: 3px; }
   /* ── BOTTLE INVENTORY ── */
-  .biv-kpi .biv-bar { margin-top: 8px; height: 6px; border-radius: 20px; background: var(--surface2); overflow: hidden; }
-  .biv-kpi .biv-bar-fill { height: 100%; background: var(--terra); border-radius: 20px; }
+  .biv-totals { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 24px; margin-top: 10px; }
+  .biv-totals-col { -webkit-flex: 1 1 220px; flex: 1 1 220px; min-width: 200px; }
+  .biv-totals-head { font-family: 'Jost', sans-serif; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); margin-bottom: 8px; }
+  .biv-totals-list { list-style: none; margin: 0; padding: 0; }
+  .biv-totals-list li { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .biv-totals-list li:last-child { border-bottom: none; }
+  .biv-totals-lab { font-size: 0.9rem; color: var(--ink); }
+  .biv-totals-val { font-family: 'DM Mono', monospace; font-size: 1.05rem; color: var(--ink); }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
   .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
   .biv-form .plan-field-row { margin-bottom: 10px; }
@@ -378,6 +384,7 @@
   .fridge-item.done .task-what { text-decoration: line-through; }
   /* Overview page */
   #overview-body { padding: 0 48px 48px; }
+  #biv-body { padding: 0 48px 48px; }
   .ov-legend { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-align-items: center; align-items: center; gap: 6px 16px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
   .ov-archived-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 4px 12px; cursor: pointer; -webkit-user-select: none; user-select: none; margin: 22px 0 14px; padding-top: 18px; border-top: 1px solid var(--border); }
   .ov-archived-head .content-title, .ov-archived-head .content-sub { margin-bottom: 0; }
@@ -709,7 +716,7 @@
     .view-bar { padding: 12px 20px; }
     .content-head { padding: 24px 20px 14px; }
     .table-wrap { padding: 0 20px 28px; }
-    #an-body, #today-body { padding: 0 20px 28px; }
+    #an-body, #today-body, #biv-body { padding: 0 20px 28px; }
     .daily-checklist { margin-left: 20px; margin-right: 20px; }
     #today-body .an-section, .daily-checklist { padding: 16px 18px; }
     .task-when { min-width: 84px; }
@@ -6445,34 +6452,29 @@ function bivBalances() {
   }
   return { empty: empty, filled: filled, emptyRecv: emptyRecv, filledRecv: filledRecv };
 }
-function bivKpiCard(label, remaining, received) {
-  var pct = received > 0 ? Math.max(0, Math.min(100, Math.round((remaining / received) * 100))) : 0;
-  return '<div class="kpi biv-kpi">'
-    + '<div class="k-val">' + fmtNum(remaining) + '</div>'
-    + '<div class="k-lab">' + esc(label) + '</div>'
-    + '<div class="k-sub">of ' + fmtNum(received) + ' received</div>'
-    + '<div class="biv-bar"><div class="biv-bar-fill" style="width:' + pct + '%"></div></div>'
-    + '</div>';
-}
+// Plain itemized current-stock totals — no "of X received" sub-line or
+// progress bar; just what's left right now, per category, at a glance.
 function bivKpisHtml() {
   var b = bivBalances();
   // Known sizes always show first (even at zero), then any extra category
   // someone free-types later still gets picked up automatically.
   var emptyCats = ['Big (750ml)', 'Small (375ml)'];
   for (var k in b.empty) { if (emptyCats.indexOf(k) === -1) emptyCats.push(k); }
-  for (var k2 in b.emptyRecv) { if (emptyCats.indexOf(k2) === -1) emptyCats.push(k2); }
-  var filledCats = Object.keys(b.filledRecv);
-  for (var k3 in b.filled) { if (filledCats.indexOf(k3) === -1) filledCats.push(k3); }
-  filledCats.sort();
-  var h = '<div class="an-section"><div class="sec-title">Bottle count</div><div class="kpi-row">';
+  var filledCats = Object.keys(b.filled).sort();
+  var h = '<div class="an-section"><div class="sec-title">Bottle count</div><div class="biv-totals">';
+  h += '<div class="biv-totals-col"><div class="biv-totals-head">Empty bottles</div><ul class="biv-totals-list">';
   for (var i = 0; i < emptyCats.length; i++) {
     var c = emptyCats[i];
-    h += bivKpiCard(c + ' — empty', b.empty[c] || 0, b.emptyRecv[c] || 0);
+    h += '<li><span class="biv-totals-lab">' + esc(c) + '</span><span class="biv-totals-val">' + fmtNum(b.empty[c] || 0) + '</span></li>';
   }
+  h += '</ul></div>';
+  h += '<div class="biv-totals-col"><div class="biv-totals-head">Filled bottles</div><ul class="biv-totals-list">';
+  if (!filledCats.length) h += '<li class="muted">None filled yet</li>';
   for (var j = 0; j < filledCats.length; j++) {
     var fc = filledCats[j];
-    h += bivKpiCard(fc + ' — filled', b.filled[fc] || 0, b.filledRecv[fc] || 0);
+    h += '<li><span class="biv-totals-lab">' + esc(fc) + '</span><span class="biv-totals-val">' + fmtNum(b.filled[fc] || 0) + '</span></li>';
   }
+  h += '</ul></div>';
   h += '</div></div>';
   return h;
 }
