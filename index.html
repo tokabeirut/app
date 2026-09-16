@@ -297,10 +297,10 @@
   .biv-stat-label { font-size: 0.9rem; color: var(--ink); }
   .biv-stat-val { text-align: right; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--ink); }
   .biv-stat-colhead { font-family: 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.66rem; color: var(--ink-faint); }
-  .biv-flavour-block { margin-top: 22px; max-width: 360px; }
-  .biv-flavour-head { font-family: 'Jost', sans-serif; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); margin-bottom: 6px; }
-  .biv-flavour-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
-  .biv-flavour-row:last-child { border-bottom: none; }
+  /* Flavour breakdown, indented under "Filled bottles at atelier" */
+  .biv-stat-subrow { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; padding: 5px 0 5px 24px; }
+  .biv-stat-sublabel { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); }
+  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'DM Mono', monospace; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
      italic so they read as a consequence of another entry rather than
@@ -6559,22 +6559,20 @@ function bivKpisHtml() {
   h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot);
   h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
   h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet);
-  h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
-  h += '</div>';
   // Remaining filled stock by flavour (fills minus consumption, same net
   // logic as filledAtelierNet above, just grouped by flavour instead of
   // size — the size split above doesn't show flavour detail since every
-  // fill so far happens to be Small, so this fills that gap).
+  // fill so far happens to be Small, so this fills that gap). Shown as
+  // indented sub-rows directly under "Filled bottles at atelier" rather
+  // than a separate block, since that's the row they're a breakdown of.
   var flavours = Object.keys(b.filledEventsByFlavour).sort(function (a, c) { return bivFlavourRank(a) - bivFlavourRank(c); });
-  if (flavours.length) {
-    h += '<div class="biv-flavour-block"><div class="biv-stat-head">Filled bottles remaining, by flavour</div>';
-    for (var j = 0; j < flavours.length; j++) {
-      var fl = flavours[j];
-      var net = (b.filledEventsByFlavour[fl] || 0) - (b.consumedByFlavour[fl] || 0);
-      h += '<div class="biv-flavour-row"><span class="biv-stat-label">' + esc(fl) + '</span><span class="biv-stat-val">' + fmtNum(net) + '</span></div>';
-    }
-    h += '</div>';
+  for (var j = 0; j < flavours.length; j++) {
+    var fl = flavours[j];
+    var net = (b.filledEventsByFlavour[fl] || 0) - (b.consumedByFlavour[fl] || 0);
+    h += '<div class="biv-stat-subrow"><span class="biv-stat-sublabel">' + esc(fl) + '</span><span class="biv-stat-subval">' + fmtNum(net) + '</span></div>';
   }
+  h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
+  h += '</div>';
   h += '</div>';
   return h;
 }
