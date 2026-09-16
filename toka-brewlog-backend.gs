@@ -44,7 +44,7 @@ var PLANNED_INFUSIONS_SHEET = 'planned_infusions';
 var PLANNED_BREWS_SHEET = 'planned_brews';
 var DAILY_OPS_SHEET = 'daily_operations';
 
-var VERSION = '35 (bottle inventory: consumed location, filled/used split)';
+var VERSION = '36 (bottle inventory: collapse type+location into single stage field)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -949,7 +949,7 @@ function migrateToDailyOperationsSheet_() {
 
 var BOTTLE_INV_SHEET = 'bottle_inventory';
 
-var BOTTLE_INV_HEADERS = ['entry_pk', 'filled_empty', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'location'];
+var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes'];
 
 function getBottleInvSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -980,13 +980,12 @@ function buildBottleInvRow_(e, ncols, map) {
   for (var i = 0; i < ncols; i++) row.push('');
   function set(name, value) { if (map[name] != null) row[map[name]] = value; }
   set('entry_pk', e.id || '');
-  set('filled_empty', e.filledEmpty || '');
+  set('stage', e.stage || '');
   set('entry_date', e.date || '');
   set('size', e.size || '');
   set('flavour', e.flavour || '');
   set('qty', (e.qty == null ? '' : e.qty));
   set('notes', e.notes || '');
-  set('location', e.location || '');
   return row;
 }
 
@@ -1001,13 +1000,12 @@ function readAllBottleInv_() {
     if (!g(r, 'entry_pk')) continue;
     out.push({
       id: String(g(r, 'entry_pk')),
-      filledEmpty: g(r, 'filled_empty'),
+      stage: g(r, 'stage'),
       date: ymd_(g(r, 'entry_date')),
       size: g(r, 'size'),
       flavour: g(r, 'flavour'),
       qty: g(r, 'qty'),
-      notes: g(r, 'notes'),
-      location: g(r, 'location')
+      notes: g(r, 'notes')
     });
   }
   return out;
@@ -1021,13 +1019,15 @@ function readAllBottleInv_() {
  * you'd rather not keep a one-off seed script sitting in the file;
  * nothing else depends on it.
  *
- * Data model: every empty-bottle row is tagged with a location, 'depot' or
- * 'atelier'. "Receive empty bottles" is the one true lifetime total (always
- * logged at the depot, and never decreases even as stock moves out) — the
- * 2112/4352 initial batch. Everything else Claire described as "brought
- * back from Karl's depot" is a TRANSFER out of that same total, not new
- * stock: each transfer is two rows, a negative at 'depot' and a matching
- * positive at 'atelier'. Filling consumes atelier (not depot) empty stock.
+ * Data model: every row carries a single 'stage' field describing where the
+ * bottle sits in its lifecycle — 'depot', 'atelier' (empty, at the atelier),
+ * 'filled' (at the atelier), or 'consumed'. "Receive empty bottles" is the
+ * one true lifetime total (always logged at 'depot', and never decreases
+ * even as stock moves out) — the 2112/4352 initial batch. Everything else
+ * Claire described as "brought back from Karl's depot" is a TRANSFER out of
+ * that same total, not new stock: each transfer is two rows, a negative at
+ * 'depot' and a matching positive at 'atelier'. Filling consumes atelier
+ * (not depot) empty stock.
  *
  * Every historical event here uses today's date as a placeholder except
  * the 19 Aug 2026 bottle run-back, which Claire gave an exact date for —
@@ -1042,39 +1042,39 @@ function seedBottleInventoryHistory_() {
   var BIG = 'Big (750ml)', SMALL = 'Small (375ml)';
   var rows = [
     // -- lifetime total received (always at the depot) --
-    { filledEmpty: 'empty', location: 'depot', date: today, size: BIG, qty: 2112, notes: 'Initial empty stock' },
+    { stage: 'depot', date: today, size: BIG, qty: 2112, notes: 'Initial empty stock' },
     // Note: 1 sample bottle (750ml) was also received but is deliberately
     // NOT logged here — it's excluded from the countable stock per Claire's
     // request, since it's a sample rather than usable inventory.
-    { filledEmpty: 'empty', location: 'depot', date: today, size: SMALL, qty: 4352, notes: 'Initial empty stock' },
+    { stage: 'depot', date: today, size: SMALL, qty: 4352, notes: 'Initial empty stock' },
     // -- transfers: depot -> atelier (each a matched depot-out / atelier-in pair) --
-    { filledEmpty: 'empty', location: 'depot', date: today, size: SMALL, qty: -1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { filledEmpty: 'empty', location: 'atelier', date: today, size: SMALL, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { filledEmpty: 'empty', location: 'depot', date: today, size: BIG, qty: -1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { filledEmpty: 'empty', location: 'atelier', date: today, size: BIG, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { filledEmpty: 'empty', location: 'depot', date: today, size: SMALL, qty: -24, notes: 'Brought back to test corrugated boxes' },
-    { filledEmpty: 'empty', location: 'atelier', date: today, size: SMALL, qty: 24, notes: 'Brought back to test corrugated boxes' },
-    { filledEmpty: 'empty', location: 'depot', date: today, size: BIG, qty: -12, notes: 'Brought back to test corrugated boxes' },
-    { filledEmpty: 'empty', location: 'atelier', date: today, size: BIG, qty: 12, notes: 'Brought back to test corrugated boxes' },
-    { filledEmpty: 'empty', location: 'depot', date: '2026-08-19', size: SMALL, qty: -196, notes: 'Brought back by Claude, Elie and Claire' },
-    { filledEmpty: 'empty', location: 'atelier', date: '2026-08-19', size: SMALL, qty: 196, notes: 'Brought back by Claude, Elie and Claire' },
-    { filledEmpty: 'empty', location: 'atelier', date: '2026-08-19', size: SMALL, qty: -1, notes: 'Broke after arriving at the atelier' },
-    { filledEmpty: 'empty', location: 'depot', date: '2026-08-19', size: BIG, qty: -12, notes: 'Brought back by Claude, Elie and Claire' },
-    { filledEmpty: 'empty', location: 'atelier', date: '2026-08-19', size: BIG, qty: 12, notes: 'Brought back by Claude, Elie and Claire' },
+    { stage: 'depot', date: today, size: SMALL, qty: -1, notes: 'Brought back by Patrick from Karl’s depot' },
+    { stage: 'atelier', date: today, size: SMALL, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
+    { stage: 'depot', date: today, size: BIG, qty: -1, notes: 'Brought back by Patrick from Karl’s depot' },
+    { stage: 'atelier', date: today, size: BIG, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
+    { stage: 'depot', date: today, size: SMALL, qty: -24, notes: 'Brought back to test corrugated boxes' },
+    { stage: 'atelier', date: today, size: SMALL, qty: 24, notes: 'Brought back to test corrugated boxes' },
+    { stage: 'depot', date: today, size: BIG, qty: -12, notes: 'Brought back to test corrugated boxes' },
+    { stage: 'atelier', date: today, size: BIG, qty: 12, notes: 'Brought back to test corrugated boxes' },
+    { stage: 'depot', date: '2026-08-19', size: SMALL, qty: -196, notes: 'Brought back by Claude, Elie and Claire' },
+    { stage: 'atelier', date: '2026-08-19', size: SMALL, qty: 196, notes: 'Brought back by Claude, Elie and Claire' },
+    { stage: 'atelier', date: '2026-08-19', size: SMALL, qty: -1, notes: 'Broke after arriving at the atelier' },
+    { stage: 'depot', date: '2026-08-19', size: BIG, qty: -12, notes: 'Brought back by Claude, Elie and Claire' },
+    { stage: 'atelier', date: '2026-08-19', size: BIG, qty: 12, notes: 'Brought back by Claude, Elie and Claire' },
     // -- filling (consumes atelier empty small stock, creates filled stock) --
-    { filledEmpty: 'empty', location: 'atelier', date: today, size: SMALL, qty: -93, notes: 'Filled: Base brew' },
-    { filledEmpty: 'empty', location: 'atelier', date: today, size: SMALL, qty: -103, notes: 'Filled: Cardamom Sumac' },
-    { filledEmpty: 'filled', location: 'atelier', size: SMALL, date: today, flavour: 'Base brew', qty: 93, notes: 'Filled, ready in the fridge' },
-    { filledEmpty: 'filled', location: 'atelier', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
+    { stage: 'atelier', date: today, size: SMALL, qty: -93, notes: 'Filled: Base brew' },
+    { stage: 'atelier', date: today, size: SMALL, qty: -103, notes: 'Filled: Cardamom Sumac' },
+    { stage: 'filled', size: SMALL, date: today, flavour: 'Base brew', qty: 93, notes: 'Filled, ready in the fridge' },
+    { stage: 'filled', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
     // -- opened / given away / used (consumed — leaves the "filled at atelier" pool for good) --
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Opened to try' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Gave to Kevin' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -4, notes: 'Brought to Mykonos' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Left at the house' },
-    { filledEmpty: 'filled', location: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Opened to try' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Gave to Kevin' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -4, notes: 'Brought to Mykonos' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Left at the house' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
   ];
   for (var i = 0; i < rows.length; i++) {
     rows[i].id = Utilities.getUuid();
@@ -1724,11 +1724,11 @@ function handleAction_(body) {
     var bfqty = parseFloat(bf.qty) || 0;
     var bfnotes = bf.notes || 'Brought from depot';
     bfsh.appendRow(buildBottleInvRow_({
-      id: Utilities.getUuid(), filledEmpty: 'empty', location: 'depot', date: bfdate, size: bf.size || '',
+      id: Utilities.getUuid(), stage: 'depot', date: bfdate, size: bf.size || '',
       qty: -bfqty, notes: bfnotes
     }, bfncols, bfmap));
     bfsh.appendRow(buildBottleInvRow_({
-      id: Utilities.getUuid(), filledEmpty: 'empty', location: 'atelier', date: bfdate, size: bf.size || '',
+      id: Utilities.getUuid(), stage: 'atelier', date: bfdate, size: bf.size || '',
       qty: bfqty, notes: bfnotes
     }, bfncols, bfmap));
     return json_({ ok: true });
@@ -1748,11 +1748,11 @@ function handleAction_(body) {
     var fdate = f.date || '';
     var fqty = parseFloat(f.qty) || 0;
     fsh.appendRow(buildBottleInvRow_({
-      id: Utilities.getUuid(), filledEmpty: 'empty', location: 'atelier', date: fdate, size: f.size || '',
+      id: Utilities.getUuid(), stage: 'atelier', date: fdate, size: f.size || '',
       qty: -fqty, notes: 'Filled: ' + (f.flavour || '')
     }, fncols, fmap));
     fsh.appendRow(buildBottleInvRow_({
-      id: Utilities.getUuid(), filledEmpty: 'filled', location: 'atelier', size: f.size || '', date: fdate, flavour: f.flavour || '',
+      id: Utilities.getUuid(), stage: 'filled', size: f.size || '', date: fdate, flavour: f.flavour || '',
       qty: fqty, notes: f.notes || ''
     }, fncols, fmap));
     return json_({ ok: true });
@@ -1911,6 +1911,8 @@ function handleAction_(body) {
  *   bottles:   batch_date_ref, legacy rel_f1_date, feedback (leftover from
  *              an older layout — feedback now lives in its own sheet, see
  *              FEEDBACK_SHEET)
+ *   bottle_inventory: filled_empty, location (collapsed into a single
+ *              'stage' column — see BOTTLE_INV_HEADERS)
  * The batch's date is looked up live from batch_pk_fk now (see
  * batchDatesByUid_), so none of the *_date_ref copies are needed going
  * forward either.
@@ -1925,7 +1927,8 @@ function oneTimeCleanupRedundantColumns() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var toRemove = {
     infusions: ['batch_date_ref', 'rel_f1_date', 'end_date'],
-    bottles: ['batch_date_ref', 'rel_f1_date', 'feedback']
+    bottles: ['batch_date_ref', 'rel_f1_date', 'feedback'],
+    bottle_inventory: ['filled_empty', 'location']
   };
   var removed = [];
   Object.keys(toRemove).forEach(function (sheetName) {

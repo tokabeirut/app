@@ -6459,11 +6459,13 @@ function loadBottleInventory(cb) {
 function bivBalances() {
   // received/depot/atelierEmpty track EMPTY-bottle stock, keyed by size.
   // filledEvents/consumed track FILLED-bottle activity, also keyed by size
-  // (not flavour — flavour detail lives in the movement log itself):
-  //   filledEvents = lifetime total ever filled (location:'atelier', always
+  // (not flavour — flavour detail lives in the movement log itself). Every
+  // row's single 'stage' field (depot/atelier/filled/consumed/other) now
+  // says exactly which pool it belongs to:
+  //   filledEvents = lifetime total ever filled (stage:'filled', always
   //     positive — this is the "removed from raw stock" event and never
   //     reverses, matching the top progress bar).
-  //   consumed     = lifetime total ever consumed (location:'consumed').
+  //   consumed     = lifetime total ever consumed (stage:'consumed').
   //   "Filled bottles at atelier" (current, on-hand) = filledEvents - consumed.
   var received = {}, depot = {}, atelierEmpty = {}, filledEvents = {}, consumed = {};
   var filledEventsByFlavour = {}, consumedByFlavour = {};
@@ -6472,31 +6474,25 @@ function bivBalances() {
     var q = parseFloat(e.qty) || 0;
     var scat = e.size || '(unspecified)';
     var fcat = e.flavour || '(unspecified)';
-    if (e.filledEmpty === 'filled') {
-      if (e.location === 'consumed') {
-        consumed[scat] = (consumed[scat] || 0) + Math.abs(q);
-        consumedByFlavour[fcat] = (consumedByFlavour[fcat] || 0) + Math.abs(q);
-      } else {
-        // 'atelier' (the normal case) and anything else land here as the
-        // lifetime-filled tally.
-        filledEvents[scat] = (filledEvents[scat] || 0) + q;
-        filledEventsByFlavour[fcat] = (filledEventsByFlavour[fcat] || 0) + q;
-      }
+    // Rows with no stage yet (shouldn't happen going forward, but covers
+    // anything ever added before this field existed) default to 'depot',
+    // matching the original "Receive empty bottles" behavior. 'other'
+    // bottles (broken, lost, elsewhere) are tracked in the ledger but
+    // deliberately excluded from every headline pool.
+    var stage = e.stage || 'depot';
+    if (stage === 'filled') {
+      filledEvents[scat] = (filledEvents[scat] || 0) + q;
+      filledEventsByFlavour[fcat] = (filledEventsByFlavour[fcat] || 0) + q;
+    } else if (stage === 'consumed') {
+      consumed[scat] = (consumed[scat] || 0) + Math.abs(q);
+      consumedByFlavour[fcat] = (consumedByFlavour[fcat] || 0) + Math.abs(q);
+    } else if (stage === 'atelier') {
+      atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
+    } else if (stage === 'other') {
+      // untracked in the headline totals
     } else {
-      // Rows with no location yet (shouldn't happen going forward, but
-      // covers anything ever added before this field existed) default to
-      // 'depot', matching the original "Receive empty bottles" behavior.
-      // 'other' bottles (broken, lost, elsewhere) are tracked in the ledger
-      // but deliberately excluded from both headline pools.
-      var loc = e.location || 'depot';
-      if (loc === 'atelier') {
-        atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
-      } else if (loc === 'other') {
-        // untracked in the headline totals
-      } else {
-        depot[scat] = (depot[scat] || 0) + q;
-        if (q > 0) received[scat] = (received[scat] || 0) + q;
-      }
+      depot[scat] = (depot[scat] || 0) + q;
+      if (q > 0) received[scat] = (received[scat] || 0) + q;
     }
   }
   return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour };
@@ -6579,8 +6575,7 @@ function bivKpisHtml() {
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
 var BIV_SIZE_OPTS = 'Small (375ml),Big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Base brew,Cardamom Sumac';
-var BIV_LOCATION_OPTS = 'depot:Depot,atelier:Atelier,consumed:Consumed,other:Other';
-var BIV_KIND_OPTS = 'empty:Empty,filled:Filled';
+var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,consumed:Consumed,other:Other';
 function bivOptionsHtml(optStr) {
   var parts = optStr.split(','), h = '';
   for (var i = 0; i < parts.length; i++) {
@@ -6627,10 +6622,11 @@ function bivAddFormsHtml() {
   h += '</div></div>';
   return h;
 }
-function bivLocationLabel(loc) {
-  if (loc === 'atelier') return 'Atelier';
-  if (loc === 'consumed') return 'Consumed';
-  if (loc === 'other') return 'Other';
+function bivStageLabel(stage) {
+  if (stage === 'atelier') return 'Atelier';
+  if (stage === 'filled') return 'Filled';
+  if (stage === 'consumed') return 'Consumed';
+  if (stage === 'other') return 'Other';
   return 'Depot';
 }
 // Rank helpers purely for sort order (see bivSortedLog) — not tied to the
@@ -6645,14 +6641,23 @@ function bivFlavourRank(flavour) {
   if (flavour === 'Base brew') return 1;
   return 2;
 }
+// Lifecycle-stage rank for sorting: a bottle's whole journey is one line —
+// Depot -> Atelier (still empty) -> Filled (at atelier) -> Consumed, with
+// Other (broken/lost/untracked) trailing at the end.
+function bivStageRank(stage) {
+  if (stage === 'atelier') return 1;
+  if (stage === 'filled') return 2;
+  if (stage === 'consumed') return 3;
+  if (stage === 'other') return 4;
+  return 0;
+}
 function bivRowHtml(e) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
   return '<tr>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
-    + cellEd(esc(e.filledEmpty === 'filled' ? 'Filled' : 'Empty'), { type: 'bottleinv', uid: e.id, field: 'filledEmpty', input: 'select', options: BIV_KIND_OPTS })
-    + cellEd(esc(bivLocationLabel(e.location)), { type: 'bottleinv', uid: e.id, field: 'location', input: 'select', options: BIV_LOCATION_OPTS })
+    + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
     + cellEd(esc(e.flavour || '—'), { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS })
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
@@ -6660,18 +6665,20 @@ function bivRowHtml(e) {
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
 }
-// Sort: latest date first, then filled above empty, then (within empty)
-// small above big, then (within filled) Cardamom Sumac above Base brew,
-// then alphabetically by notes.
+// Sort: latest date first, then (within date) small above big, then by
+// stage (Depot < Atelier < Filled < Consumed < Other — the stage rank now
+// carries the old "filled above empty" grouping too, since Filled/Consumed
+// always rank above Depot/Atelier), then (within filled) Cardamom Sumac
+// above Base brew, then alphabetically by notes.
 function bivSortedLog() {
   var list = bottleInventory.slice();
   list.sort(function (a, b) {
     var da = String(a.date || ''), db = String(b.date || '');
     if (da !== db) return da < db ? 1 : -1;
-    var ta = a.filledEmpty === 'filled' ? 0 : 1, tb = b.filledEmpty === 'filled' ? 0 : 1;
-    if (ta !== tb) return ta - tb;
     var sa = bivSizeRank(a.size), sb = bivSizeRank(b.size);
     if (sa !== sb) return sa - sb;
+    var ga = bivStageRank(a.stage), gb = bivStageRank(b.stage);
+    if (ga !== gb) return ga - gb;
     var fa = bivFlavourRank(a.flavour), fb = bivFlavourRank(b.flavour);
     if (fa !== fb) return fa - fb;
     var na = String(a.notes || ''), nb = String(b.notes || '');
@@ -6687,7 +6694,7 @@ function bivLogTableHtml() {
   if (!rows) rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:24px 0;">No movements logged yet.</td></tr>';
   return '<div class="an-section"><div class="sec-title">Movement log</div>'
     + '<div class="table-scroll"><table class="biv-table">'
-    + '<thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Size</th><th>Flavour</th><th>Qty</th><th>Notes</th><th></th></tr></thead>'
+    + '<thead><tr><th>Date</th><th>Stage</th><th>Size</th><th>Flavour</th><th>Qty</th><th>Notes</th><th></th></tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '</table></div></div>';
 }
@@ -6705,7 +6712,7 @@ function bivReceiveEmpty() {
   setSyncStatus('saving', 'saving…');
   // Always logged at the depot — this is the lifetime "total received"
   // figure, which only grows over time (see bivBalances).
-  apiPost({ action: 'createBottleInvEntry', entry: { filledEmpty: 'empty', location: 'depot', date: date, size: size, qty: qty, notes: notes } }, function (err, res) {
+  apiPost({ action: 'createBottleInvEntry', entry: { stage: 'depot', date: date, size: size, qty: qty, notes: notes } }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
     document.getElementById('biv-recv-qty').value = ''; document.getElementById('biv-recv-notes').value = '';
     setSyncStatus('live', 'connected · google sheets');
@@ -6755,7 +6762,7 @@ function bivUse() {
   if (!flavour) { alert('Enter a flavour.'); return; }
   if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
   setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'createBottleInvEntry', entry: { filledEmpty: 'filled', location: 'consumed', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } }, function (err, res) {
+  apiPost({ action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
     document.getElementById('biv-use-qty').value = ''; document.getElementById('biv-use-notes').value = '';
     setSyncStatus('live', 'connected · google sheets');
