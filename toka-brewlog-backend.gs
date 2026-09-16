@@ -974,6 +974,54 @@ function getBottleInvSheet_() {
   return sh;
 }
 
+/**
+ * One-time migration: fills in the new 'stage' column for any existing
+ * bottle_inventory rows that were written before this schema change, by
+ * combining their old filled_empty + location values. Until this runs,
+ * every such row reads back with an empty stage, which readAllBottleInv_/
+ * bivBalances default to 'depot' — that's why everything on the Bottle
+ * count page showed up as Depot. Run this once from the Apps Script
+ * editor (select it in the Run dropdown, then Run) after deploying this
+ * version. Safe to run more than once — it only fills rows where 'stage'
+ * is still blank. Run oneTimeCleanupRedundantColumns() afterward to
+ * delete the now-unused filled_empty/location columns.
+ */
+function migrateBottleInvToStage_() {
+  var sh = getBottleInvSheet_();
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var fei = hdr.indexOf('filled_empty');
+  var loi = hdr.indexOf('location');
+  var sti = hdr.indexOf('stage');
+  if (sti === -1) { Logger.log('No stage column found.'); return; }
+  if (fei === -1 && loi === -1) { Logger.log('No legacy filled_empty/location columns found — nothing to migrate.'); return; }
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) { Logger.log('No data rows.'); return; }
+  var n = lastRow - 1;
+  var feVals = fei === -1 ? null : sh.getRange(2, fei + 1, n, 1).getValues();
+  var loVals = loi === -1 ? null : sh.getRange(2, loi + 1, n, 1).getValues();
+  var stVals = sh.getRange(2, sti + 1, n, 1).getValues();
+  var migrated = 0;
+  for (var i = 0; i < n; i++) {
+    if (stVals[i][0]) continue; // already has a stage value, leave it alone
+    var fe = feVals ? String(feVals[i][0] || '').trim() : '';
+    var lo = loVals ? String(loVals[i][0] || '').trim() : '';
+    var stage;
+    if (fe === 'filled') {
+      stage = (lo === 'consumed') ? 'consumed' : 'filled';
+    } else if (lo === 'atelier') {
+      stage = 'atelier';
+    } else if (lo === 'other') {
+      stage = 'other';
+    } else {
+      stage = 'depot';
+    }
+    stVals[i][0] = stage;
+    migrated++;
+  }
+  sh.getRange(2, sti + 1, n, 1).setValues(stVals);
+  Logger.log('Migrated ' + migrated + ' row(s) to the new stage column.');
+}
+
 function buildBottleInvRow_(e, ncols, map) {
   e = e || {};
   var row = [];
