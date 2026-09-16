@@ -297,6 +297,10 @@
   .biv-stat-label { font-size: 0.9rem; color: var(--ink); }
   .biv-stat-val { text-align: right; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--ink); }
   .biv-stat-colhead { font-family: 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.66rem; color: var(--ink-faint); }
+  .biv-flavour-block { margin-top: 22px; max-width: 360px; }
+  .biv-flavour-head { font-family: 'Jost', sans-serif; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); margin-bottom: 6px; }
+  .biv-flavour-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .biv-flavour-row:last-child { border-bottom: none; }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
   .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
   .biv-form .plan-field-row { margin-bottom: 10px; }
@@ -6462,17 +6466,21 @@ function bivBalances() {
   //   consumed     = lifetime total ever consumed (location:'consumed').
   //   "Filled bottles at atelier" (current, on-hand) = filledEvents - consumed.
   var received = {}, depot = {}, atelierEmpty = {}, filledEvents = {}, consumed = {};
+  var filledEventsByFlavour = {}, consumedByFlavour = {};
   for (var i = 0; i < bottleInventory.length; i++) {
     var e = bottleInventory[i];
     var q = parseFloat(e.qty) || 0;
     var scat = e.size || '(unspecified)';
+    var fcat = e.flavour || '(unspecified)';
     if (e.filledEmpty === 'filled') {
       if (e.location === 'consumed') {
         consumed[scat] = (consumed[scat] || 0) + Math.abs(q);
+        consumedByFlavour[fcat] = (consumedByFlavour[fcat] || 0) + Math.abs(q);
       } else {
         // 'atelier' (the normal case) and anything else land here as the
         // lifetime-filled tally.
         filledEvents[scat] = (filledEvents[scat] || 0) + q;
+        filledEventsByFlavour[fcat] = (filledEventsByFlavour[fcat] || 0) + q;
       }
     } else {
       // Rows with no location yet (shouldn't happen going forward, but
@@ -6491,7 +6499,7 @@ function bivBalances() {
       }
     }
   }
-  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed };
+  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour };
 }
 function bivSizeList(b) {
   // Known sizes always show first (even at zero), then any extra category
@@ -6548,7 +6556,22 @@ function bivKpisHtml() {
   h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
   h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet);
   h += bivStatRowHtml('Used bottles', sizes, b.consumed);
-  h += '</div></div>';
+  h += '</div>';
+  // Remaining filled stock by flavour (fills minus consumption, same net
+  // logic as filledAtelierNet above, just grouped by flavour instead of
+  // size — the size split above doesn't show flavour detail since every
+  // fill so far happens to be Small, so this fills that gap).
+  var flavours = Object.keys(b.filledEventsByFlavour).sort(function (a, c) { return bivFlavourRank(a) - bivFlavourRank(c); });
+  if (flavours.length) {
+    h += '<div class="biv-flavour-block"><div class="biv-stat-head">Filled bottles remaining, by flavour</div>';
+    for (var j = 0; j < flavours.length; j++) {
+      var fl = flavours[j];
+      var net = (b.filledEventsByFlavour[fl] || 0) - (b.consumedByFlavour[fl] || 0);
+      h += '<div class="biv-flavour-row"><span class="biv-stat-label">' + esc(fl) + '</span><span class="biv-stat-val">' + fmtNum(net) + '</span></div>';
+    }
+    h += '</div>';
+  }
+  h += '</div>';
   return h;
 }
 // Fixed vocabularies for the bottle_inventory ledger's categorical fields —
