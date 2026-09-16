@@ -3741,7 +3741,7 @@ function saveConfig() {
   try { localStorage.setItem(CFG_KEY, url); } catch (e) {}
   hideConfig();
   revealApp();
-  loadData();
+  loadAllInBackground();
 }
 function resetConfig() {
   if (!confirm('Reconnect to a different Google Sheet? The page will reload.')) return;
@@ -3884,6 +3884,20 @@ function loadAll(cb) {
     for (var i = 0; i < feedback.length; i++) feedbackByKey[feedback[i].key] = feedback[i];
     setSyncStatus('live', 'connected \u00b7 google sheets');
     if (cb) cb();
+  });
+}
+// Called once at boot (see "boot" at the bottom of this file) right after
+// the Home screen is shown, so every page's data is already sitting in
+// memory by the time the user taps into it \u2014 no per-page loading moment.
+// Home itself has no live data to render, so this only needs to catch the
+// case where the user navigates to f1/bottling/readings before this
+// background fetch finishes (those views render as soon as they're opened,
+// then re-render for free once this callback lands).
+function loadAllInBackground() {
+  loadAll(function () {
+    renderTable();
+    if (typeof renderBottles === 'function') renderBottles();
+    if (typeof renderReadings === 'function') renderReadings();
   });
 }
 
@@ -10374,7 +10388,7 @@ ftBuildChart();
    a default URL is baked in, so "reconnect" can point at a different sheet. */
 var forceConfig = false;
 try { forceConfig = sessionStorage.getItem('toka_force_config') === '1'; if (forceConfig) sessionStorage.removeItem('toka_force_config'); } catch (e) {}
-if (API_URL && !forceConfig) { hideConfig(); revealApp(); loadData(); }
+if (API_URL && !forceConfig) { hideConfig(); revealApp(); loadAllInBackground(); }
 </script>
 
 </body>
