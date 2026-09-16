@@ -297,10 +297,14 @@
   .biv-stat-label { font-size: 0.9rem; color: var(--ink); }
   .biv-stat-val { text-align: right; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--ink); }
   .biv-stat-colhead { font-family: 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.66rem; color: var(--ink-faint); }
-  /* Flavour breakdown, indented under "Filled bottles at atelier" */
-  .biv-stat-subrow { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; padding: 5px 0 5px 24px; }
-  .biv-stat-sublabel { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); }
-  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'DM Mono', monospace; }
+  /* Flavour breakdown, indented under "Filled bottles at atelier" — shares
+     the .biv-summary-grid column layout so the Small/Big numbers still
+     line up under their matching columns; only the label is indented
+     (padding on the label itself, not the row, so the grid columns after
+     it don't shift). */
+  .biv-stat-subrow { padding: 4px 0; }
+  .biv-stat-sublabel { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); padding-left: 20px; }
+  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'DM Mono', monospace; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
      italic so they read as a consequence of another entry rather than
@@ -6477,6 +6481,10 @@ function bivBalances() {
   //   "Filled bottles at atelier" (current, on-hand) = filledEvents - consumed.
   var received = {}, depot = {}, atelierEmpty = {}, filledEvents = {}, consumed = {};
   var filledEventsByFlavour = {}, consumedByFlavour = {};
+  // Same two tallies, but keyed by flavour THEN size, so the flavour
+  // breakdown can be shown split into the same Small/Big columns as every
+  // other row in the stat table (see bivStatSubRowHtml).
+  var filledByFlavourSize = {}, consumedByFlavourSize = {};
   for (var i = 0; i < bottleInventory.length; i++) {
     var e = bottleInventory[i];
     var q = parseFloat(e.qty) || 0;
@@ -6491,9 +6499,13 @@ function bivBalances() {
     if (stage === 'filled') {
       filledEvents[scat] = (filledEvents[scat] || 0) + q;
       filledEventsByFlavour[fcat] = (filledEventsByFlavour[fcat] || 0) + q;
+      filledByFlavourSize[fcat] = filledByFlavourSize[fcat] || {};
+      filledByFlavourSize[fcat][scat] = (filledByFlavourSize[fcat][scat] || 0) + q;
     } else if (stage === 'consumed') {
       consumed[scat] = (consumed[scat] || 0) + Math.abs(q);
       consumedByFlavour[fcat] = (consumedByFlavour[fcat] || 0) + Math.abs(q);
+      consumedByFlavourSize[fcat] = consumedByFlavourSize[fcat] || {};
+      consumedByFlavourSize[fcat][scat] = (consumedByFlavourSize[fcat][scat] || 0) + Math.abs(q);
     } else if (stage === 'atelier') {
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
     } else if (stage === 'other') {
@@ -6503,7 +6515,7 @@ function bivBalances() {
       if (q > 0) received[scat] = (received[scat] || 0) + q;
     }
   }
-  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour };
+  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize };
 }
 function bivSizeList(b) {
   // Known sizes always show first (even at zero), then any extra category
@@ -6544,6 +6556,18 @@ function bivStatRowHtml(label, sizes, map, isHead) {
   h += '</div>';
   return h;
 }
+// Same .biv-summary-grid column layout as bivStatRowHtml (so the numbers
+// land in the same Small/Big columns as every other row), but rendered as
+// an indented, smaller, italic, muted sub-row — used for the flavour
+// breakdown nested under "Filled bottles at atelier".
+function bivStatSubRowHtml(label, sizes, map) {
+  var h = '<div class="biv-summary-grid biv-stat-subrow"><div class="biv-stat-sublabel">' + esc(label) + '</div>';
+  for (var i = 0; i < sizes.length; i++) {
+    h += '<div class="biv-stat-subval">' + fmtNum((map[sizes[i]] || 0)) + '</div>';
+  }
+  h += '</div>';
+  return h;
+}
 function bivKpisHtml() {
   var b = bivBalances();
   var sizes = bivSizeList(b);
@@ -6559,17 +6583,20 @@ function bivKpisHtml() {
   h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot);
   h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
   h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet);
-  // Remaining filled stock by flavour (fills minus consumption, same net
-  // logic as filledAtelierNet above, just grouped by flavour instead of
-  // size — the size split above doesn't show flavour detail since every
-  // fill so far happens to be Small, so this fills that gap). Shown as
-  // indented sub-rows directly under "Filled bottles at atelier" rather
-  // than a separate block, since that's the row they're a breakdown of.
+  // Remaining filled stock by flavour (fills minus consumption), split into
+  // the same Small/Big columns as every other row so it lines up under
+  // "Filled bottles at atelier" — the row it's a breakdown of.
   var flavours = Object.keys(b.filledEventsByFlavour).sort(function (a, c) { return bivFlavourRank(a) - bivFlavourRank(c); });
   for (var j = 0; j < flavours.length; j++) {
     var fl = flavours[j];
-    var net = (b.filledEventsByFlavour[fl] || 0) - (b.consumedByFlavour[fl] || 0);
-    h += '<div class="biv-stat-subrow"><span class="biv-stat-sublabel">' + esc(fl) + '</span><span class="biv-stat-subval">' + fmtNum(net) + '</span></div>';
+    var filledBySize = b.filledByFlavourSize[fl] || {};
+    var consumedBySize = b.consumedByFlavourSize[fl] || {};
+    var netBySize = {};
+    for (var k = 0; k < sizes.length; k++) {
+      var sz = sizes[k];
+      netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0);
+    }
+    h += bivStatSubRowHtml(fl, sizes, netBySize);
   }
   h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
   h += '</div>';
