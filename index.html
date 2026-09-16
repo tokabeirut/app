@@ -6559,7 +6559,7 @@ function bivKpisHtml() {
   h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot);
   h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
   h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet);
-  h += bivStatRowHtml('Used bottles', sizes, b.consumed);
+  h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
   h += '</div>';
   // Remaining filled stock by flavour (fills minus consumption, same net
   // logic as filledAtelierNet above, just grouped by flavour instead of
@@ -6597,21 +6597,21 @@ function bivFlavourOptionsHtml() { return bivOptionsHtml(BIV_FLAVOUR_OPTS); }
 function bivAddFormsHtml() {
   var today = todayISO();
   var h = '<div class="an-section"><div class="sec-title">Log a bottle movement</div><div class="biv-forms">';
-  h += '<div class="biv-form"><div class="biv-form-title">Empty bottles at DEPOT</div>'
+  h += '<div class="biv-form"><div class="biv-form-title">Empty bottles at depot</div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-recv-date" value="' + today + '" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-recv-size">' + bivSizeOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-recv-qty" placeholder="e.g. 24" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-recv-notes" placeholder="e.g. brought back by Patrick" /></div></div>'
     + '<button type="button" class="btn-primary" onclick="bivReceiveEmpty()">+ Add</button>'
     + '</div>';
-  h += '<div class="biv-form"><div class="biv-form-title">Empty bottles at ATELIER</div>'
+  h += '<div class="biv-form"><div class="biv-form-title">Empty bottles at atelier</div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-depot-date" value="' + today + '" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-depot-size">' + bivSizeOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-depot-qty" placeholder="e.g. 196" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-depot-notes" placeholder="e.g. brought back by Claire from Karl’s depot" /></div></div>'
     + '<button type="button" class="btn-primary" onclick="bivBringFromDepot()">+ Add</button>'
     + '</div>';
-  h += '<div class="biv-form"><div class="biv-form-title">Filled bottles at ATELIER</div>'
+  h += '<div class="biv-form"><div class="biv-form-title">Filled bottles at atelier</div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-fill-date" value="' + today + '" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-fill-size">' + bivSizeOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-fill-flavour">' + bivFlavourOptionsHtml() + '</select></div></div>'
