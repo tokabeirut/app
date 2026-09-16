@@ -301,6 +301,14 @@
   .biv-flavour-head { font-family: 'Jost', sans-serif; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); margin-bottom: 6px; }
   .biv-flavour-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
   .biv-flavour-row:last-child { border-bottom: none; }
+  /* Auto-generated counterpart rows (the debit half of a depot->atelier
+     transfer, or the empty-stock half of a fill) — dimmed, smaller and
+     italic so they read as a consequence of another entry rather than
+     something typed in directly. They aren't guaranteed to sit next to
+     their "parent" row (the log sorts by stage), so the distinction lives
+     on the row itself rather than in its border/spacing. */
+  .biv-table tr.biv-auto-row td { font-size: 0.86em; font-style: italic; color: var(--ink-faint); }
+  .biv-auto-tag { display: inline-block; font-style: normal; font-family: 'Jost', sans-serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
   .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
   .biv-form .plan-field-row { margin-bottom: 10px; }
@@ -6651,17 +6659,26 @@ function bivStageRank(stage) {
   if (stage === 'other') return 4;
   return 3; // depot (also the default/legacy fallback)
 }
+// A "bring from depot" or "fill bottles" quick-add writes two ledger rows
+// atomically (see bringFromDepot/fillBottles on the backend); the one that
+// directly reflects the quantity the user typed is the "real" entry, and
+// its counterpart (the automatic debit from the source stage) is flagged
+// auto:true. Since the movement log sorts by stage, the two rows usually
+// land far apart rather than next to each other — so the auto row is
+// marked on its own (dimmer, smaller, italic, tagged) rather than by
+// trying to visually attach it to a neighboring row.
 function bivRowHtml(e) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
-  return '<tr>'
+  var autoTag = e.auto ? '<span class="biv-auto-tag" title="Automatically written alongside another entry">auto</span>' : '';
+  return '<tr' + (e.auto ? ' class="biv-auto-row"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
     + cellEd(esc(e.flavour || '—'), { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS })
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
-    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
 }

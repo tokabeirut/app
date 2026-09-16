@@ -44,7 +44,7 @@ var PLANNED_INFUSIONS_SHEET = 'planned_infusions';
 var PLANNED_BREWS_SHEET = 'planned_brews';
 var DAILY_OPS_SHEET = 'daily_operations';
 
-var VERSION = '36 (bottle inventory: collapse type+location into single stage field)';
+var VERSION = '37 (bottle inventory: flag auto-generated counterpart rows)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -949,7 +949,7 @@ function migrateToDailyOperationsSheet_() {
 
 var BOTTLE_INV_SHEET = 'bottle_inventory';
 
-var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes'];
+var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto'];
 
 function getBottleInvSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1034,6 +1034,7 @@ function buildBottleInvRow_(e, ncols, map) {
   set('flavour', e.flavour || '');
   set('qty', (e.qty == null ? '' : e.qty));
   set('notes', e.notes || '');
+  set('auto', e.auto ? 'yes' : '');
   return row;
 }
 
@@ -1053,7 +1054,8 @@ function readAllBottleInv_() {
       size: g(r, 'size'),
       flavour: g(r, 'flavour'),
       qty: g(r, 'qty'),
-      notes: g(r, 'notes')
+      notes: g(r, 'notes'),
+      auto: truthy_(g(r, 'auto'))
     });
   }
   return out;
@@ -1762,7 +1764,10 @@ function handleAction_(body) {
   // depot-side row (negative — leaves the depot) and an atelier-side row
   // (positive — arrives at the atelier) for the same size, in the same
   // request, so a transfer can't end up debited from the depot without
-  // also crediting the atelier (or vice versa).
+  // also crediting the atelier (or vice versa). The depot-side row is the
+  // system-generated consequence of the atelier-side row the user actually
+  // asked for, so it's flagged auto:true (see bivRowHtml on the frontend
+  // for how that's visualized in the movement log).
   if (action === 'bringFromDepot') {
     var bf = body.bring || {};
     var bfsh = getBottleInvSheet_();
@@ -1773,7 +1778,7 @@ function handleAction_(body) {
     var bfnotes = bf.notes || 'Brought from depot';
     bfsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'depot', date: bfdate, size: bf.size || '',
-      qty: -bfqty, notes: bfnotes
+      qty: -bfqty, notes: bfnotes, auto: true
     }, bfncols, bfmap));
     bfsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'atelier', date: bfdate, size: bf.size || '',
@@ -1787,7 +1792,9 @@ function handleAction_(body) {
   // row (negative — consumes atelier stock of that size) and a filled-stock
   // row (positive — creates that flavour) in the same request, so the two
   // pools can't end up out of sync from one request succeeding and the
-  // other failing.
+  // other failing. The empty-stock row is the system-generated consequence
+  // of the filled-stock row the user actually asked for, so it's flagged
+  // auto:true.
   if (action === 'fillBottles') {
     var f = body.fill || {};
     var fsh = getBottleInvSheet_();
@@ -1797,7 +1804,7 @@ function handleAction_(body) {
     var fqty = parseFloat(f.qty) || 0;
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'atelier', date: fdate, size: f.size || '',
-      qty: -fqty, notes: 'Filled: ' + (f.flavour || '')
+      qty: -fqty, notes: 'Filled: ' + (f.flavour || ''), auto: true
     }, fncols, fmap));
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'filled', size: f.size || '', date: fdate, flavour: f.flavour || '',
@@ -1960,7 +1967,11 @@ function handleAction_(body) {
  *              an older layout — feedback now lives in its own sheet, see
  *              FEEDBACK_SHEET)
  *   bottle_inventory: filled_empty, location (collapsed into a single
- *              'stage' column — see BOTTLE_INV_HEADERS)
+ *              'stage' column — see BOTTLE_INV_HEADERS), plus 'kind' and
+ *              'category' — both leftover from even earlier versions of
+ *              this schema (kind -> filled_empty, category -> split into
+ *              size + flavour) that were renamed in code but never
+ *              cleaned up on the live sheet
  * The batch's date is looked up live from batch_pk_fk now (see
  * batchDatesByUid_), so none of the *_date_ref copies are needed going
  * forward either.
@@ -1976,7 +1987,7 @@ function oneTimeCleanupRedundantColumns() {
   var toRemove = {
     infusions: ['batch_date_ref', 'rel_f1_date', 'end_date'],
     bottles: ['batch_date_ref', 'rel_f1_date', 'feedback'],
-    bottle_inventory: ['filled_empty', 'location']
+    bottle_inventory: ['filled_empty', 'location', 'kind', 'category']
   };
   var removed = [];
   Object.keys(toRemove).forEach(function (sheetName) {
