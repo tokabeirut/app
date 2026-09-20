@@ -844,22 +844,29 @@
    (always summing to 100) and re-derives the two non-anchor amount boxes
    from whichever amount box the user last typed into (see bcOnEdit /
    bcOnPctEdit / bcRecalcFromAnchor in the script). */
-#view-bottlecalc .bc-diagram { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; margin: 8px 0 4px; }
-#view-bottlecalc .bc-sizes { display: -webkit-flex; display: flex; gap: 22px; -webkit-align-items: flex-end; align-items: flex-end; }
+#view-bottlecalc .bc-diagram { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; justify-content: center; gap: 22px; flex-wrap: wrap; margin: 8px 0 4px; }
+#view-bottlecalc .bc-sizes { display: -webkit-flex; display: flex; gap: 22px; -webkit-align-items: flex-start; align-items: flex-start; }
 #view-bottlecalc .bc-box-group { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
-#view-bottlecalc .bc-pct-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 3px; margin-bottom: 10px; font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--ink-faint); }
+#view-bottlecalc .bc-pct-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; gap: 3px; height: 26px; margin-bottom: 10px; font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--ink-faint); }
+#view-bottlecalc .bc-pct-box.bc-pct-box-spacer { visibility: hidden; }
 #view-bottlecalc .bc-pct-input { width: 48px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 3px 7px; font-family: 'DM Mono', monospace; font-size: 0.88rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
-#view-bottlecalc .bc-box { width: 150px; height: 150px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--surface); display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; justify-content: center; gap: 8px; padding: 10px; }
-#view-bottlecalc .bc-box-liters { width: 124px; height: 124px; }
+#view-bottlecalc .bc-box { width: 160px; height: 160px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--surface); display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; justify-content: center; gap: 8px; padding: 10px; }
 #view-bottlecalc .bc-box-input { width: 100%; border: none; background: transparent; text-align: center; font-family: 'DM Mono', monospace; font-weight: 700; font-size: 2.1rem; color: var(--ink); outline: none; -webkit-appearance: none; padding: 0; }
 #view-bottlecalc .bc-box-liters-row { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 6px; justify-content: center; }
-#view-bottlecalc .bc-box-liters .bc-box-input { font-size: 1.7rem; width: auto; -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
+#view-bottlecalc .bc-box-liters .bc-box-input { font-size: 1.8rem; width: auto; -webkit-flex: 0 1 auto; flex: 0 1 auto; min-width: 0; }
 #view-bottlecalc .bc-box-liters-unit { font-family: 'DM Mono', monospace; font-size: 1.3rem; color: var(--ink); -webkit-flex-shrink: 0; flex-shrink: 0; }
 #view-bottlecalc .bc-box-unit { font-size: 0.76rem; color: var(--ink-faint); text-align: center; line-height: 1.35; }
-#view-bottlecalc .bc-arrow { font-size: 1.8rem; color: var(--ink-faint); }
+#view-bottlecalc .bc-arrow-wrap { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
+#view-bottlecalc .bc-arrow { width: 160px; height: 160px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; font-size: 1.8rem; color: var(--ink-faint); }
+#view-bottlecalc .bc-box-input::-webkit-outer-spin-button,
+#view-bottlecalc .bc-box-input::-webkit-inner-spin-button,
+#view-bottlecalc .bc-pct-input::-webkit-outer-spin-button,
+#view-bottlecalc .bc-pct-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+#view-bottlecalc .bc-box-input, #view-bottlecalc .bc-pct-input { -moz-appearance: textfield; }
 @media (max-width: 640px) {
-  #view-bottlecalc .bc-diagram { -webkit-flex-direction: column; flex-direction: column; }
-  #view-bottlecalc .bc-arrow { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
+  #view-bottlecalc .bc-diagram { -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
+  #view-bottlecalc .bc-arrow-wrap .bc-pct-box-spacer { display: none; }
+  #view-bottlecalc .bc-arrow { width: auto; height: auto; -webkit-transform: rotate(90deg); transform: rotate(90deg); margin: 6px 0; }
 }
 
 /* ===== EXPENSES PAGE (scoped to #view-expenses) ===== */
@@ -1449,13 +1456,20 @@
   </div>
   <div class="ft-page">
     <div class="bc-diagram">
-      <div class="bc-box bc-box-liters">
-        <div class="bc-box-liters-row">
-          <input type="number" id="bc-liters" class="bc-box-input" placeholder="0" min="0" step="0.1" oninput="bcOnEdit('L')" />
-          <span class="bc-box-liters-unit">L</span>
+      <div class="bc-box-group">
+        <div class="bc-pct-box bc-pct-box-spacer" aria-hidden="true">&nbsp;</div>
+        <div class="bc-box bc-box-liters">
+          <div class="bc-box-liters-row">
+            <input type="number" id="bc-liters" class="bc-box-input" placeholder="0" min="0" step="0.1" oninput="bcOnEdit('L')" />
+            <span class="bc-box-liters-unit">L</span>
+          </div>
+          <div class="bc-box-unit">litres of kombucha</div>
         </div>
       </div>
-      <div class="bc-arrow">&rarr;</div>
+      <div class="bc-arrow-wrap">
+        <div class="bc-pct-box bc-pct-box-spacer" aria-hidden="true">&nbsp;</div>
+        <div class="bc-arrow">&rarr;</div>
+      </div>
       <div class="bc-sizes">
         <div class="bc-box-group">
           <div class="bc-pct-box">
