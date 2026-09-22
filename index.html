@@ -907,6 +907,11 @@
 
 #view-bottlemath .bm-input { width: 68px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 4px 9px; font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
 #view-bottlemath .bm-input.bm-input-wide { width: 78px; }
+/* The amount input is followed by a unit word (kg/bottles/caps/labels/boxes)
+   of varying length; giving that word a fixed width keeps every pill lined
+   up at the same x-position instead of drifting with the word's length. */
+#view-bottlemath .bm-amount-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 7px; }
+#view-bottlemath .bm-unit { width: 52px; text-align: left; color: var(--ink-faint); font-size: 0.78rem; white-space: nowrap; }
 #view-bottlemath .bm-input::-webkit-outer-spin-button, #view-bottlemath .bm-input::-webkit-inner-spin-button,
 #view-bottlemath .bm-card-val input::-webkit-outer-spin-button, #view-bottlemath .bm-card-val input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 #view-bottlemath .bm-input, #view-bottlemath .bm-card-val input { -moz-appearance: textfield; }
@@ -11053,7 +11058,7 @@ function bmBuildIngredientsTable() {
     h += '<tr>'
       + '<td>' + esc(def.label) + '</td>'
       + '<td class="num">$<input type="number" class="bm-input" id="bm-buy-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></td>'
-      + '<td class="num"><input type="number" class="bm-input" id="bm-amount-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'amount\',this)" /> ' + esc(def.unit) + '</td>'
+      + '<td class="num"><span class="bm-amount-cell"><input type="number" class="bm-input" id="bm-amount-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'amount\',this)" /><span class="bm-unit">' + esc(def.unit) + '</span></span></td>'
       + '<td class="num" id="bm-out-perunit-' + def.key + '">—</td>'
       + '<td class="num" id="bm-out-in750-' + def.key + '">—</td>'
       + '<td class="num" id="bm-out-in375-' + def.key + '">—</td>'
