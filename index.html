@@ -11019,6 +11019,7 @@ function bmMoney2(n) { return '$ ' + fmtUSD(bmNum(n)); }
 function bmMoney3(n) { return '$ ' + bmNum(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 }); }
 function bmMoneyWhole(n) { return '$ ' + Math.round(bmNum(n)).toLocaleString('en-US'); }
 function bmLitres(n) { return fmtNum(Math.round(bmNum(n))) + ' L'; }
+function bmBottles(n) { return fmtNum(Math.round(bmNum(n))) + ' bottles'; }
 function bmRowState(def) { return def.group === 'ingredient' ? bmState.ingredients[def.key] : bmState.packaging[def.key]; }
 function bmEditFieldFn(def) { return def.group === 'ingredient' ? 'bmEditIngredient' : 'bmEditPackaging'; }
 
@@ -11104,23 +11105,20 @@ function bmCompute(s) {
     half: bHalf > 0 ? runningTotal / bHalf : null,
     retail: bRe > 0 ? runningTotal / bRe : null
   };
-  // Break-even table columns: same three sales-channel mixes above, but for
-  // three fixed bottle-SIZE mixes instead of the 50/50 split baked into
-  // blendedMarginPerLitre — i.e. what happens if the litres sold lean
-  // toward one bottle size or the other.
-  function marginForChannelMode(szKey, mode) {
-    if (mode === 'half') return (marginPerLitre[szKey].wholesale + marginPerLitre[szKey].retail) / 2;
-    return marginPerLitre[szKey][mode];
-  }
-  var breakEvenGrid = {};
+  // Break-even table's extra columns: the litres figure above stays a single
+  // number per row (the same blended break-even) — these columns just turn
+  // that same litre total into a bottle COUNT, under three assumptions about
+  // what fraction of those litres come from each bottle size.
+  var breakEvenBottles = {};
   ['wholesale', 'half', 'retail'].forEach(function (mode) {
-    breakEvenGrid[mode] = {};
+    breakEvenBottles[mode] = {};
+    var litres = breakEven[mode];
     BM_SIZE_MIXES.forEach(function (mix) {
+      if (litres == null) { breakEvenBottles[mode][mix.key] = null; return; }
       var weights = BM_SIZE_MIX_WEIGHTS[mix.key];
-      var margin = BM_SIZES.reduce(function (sum, sz) {
-        return sum + weights[sz.key] * marginForChannelMode(sz.key, mode);
+      breakEvenBottles[mode][mix.key] = BM_SIZES.reduce(function (sum, sz) {
+        return sum + (litres * weights[sz.key]) / sz.litres;
       }, 0);
-      breakEvenGrid[mode][mix.key] = margin > 0 ? runningTotal / margin : null;
     });
   });
   var profitAtFullOutput = {
@@ -11132,7 +11130,7 @@ function bmCompute(s) {
     oneOffTotal: oneOffTotal, runningTotal: runningTotal,
     litresPerMonth: litresPerMonth, overheadPerLitre: overheadPerLitre,
     overheadShare: overheadShare, fullCost: fullCost, weKeep: weKeep,
-    breakEven: breakEven, breakEvenGrid: breakEvenGrid, profitAtFullOutput: profitAtFullOutput
+    breakEven: breakEven, breakEvenBottles: breakEvenBottles, profitAtFullOutput: profitAtFullOutput
   };
 }
 
@@ -11251,11 +11249,12 @@ var BM_BREAKEVEN_ROWS = [
   { mode: 'retail', label: 'Only B2C' }
 ];
 function bmBuildBreakEvenTable() {
-  var h = '<thead><tr><th>Where we sell</th>'
+  var h = '<thead><tr><th>Where we sell</th><th>Litres we have to sell</th>'
     + BM_SIZE_MIXES.map(function (mix) { return '<th>' + esc(mix.label) + '</th>'; }).join('')
     + '</tr></thead><tbody>';
   BM_BREAKEVEN_ROWS.forEach(function (row) {
     h += '<tr><td>' + esc(row.label) + '</td>'
+      + '<td class="num" id="bm-out-be-' + row.mode + '">—</td>'
       + BM_SIZE_MIXES.map(function (mix) {
         return '<td class="num" id="bm-out-be-' + row.mode + '-' + mix.key + '">—</td>';
       }).join('')
@@ -11379,9 +11378,11 @@ function bmPaintComputed() {
   setText('bm-out-overhead-source-note', 'The running costs behind the overhead come straight from section 04 — currently ' + bmMoneyWhole(r.runningTotal) + ' a month.');
 
   BM_BREAKEVEN_ROWS.forEach(function (row) {
+    var litres = r.breakEven[row.mode];
+    setText('bm-out-be-' + row.mode, litres != null ? bmLitres(litres) : '—');
     BM_SIZE_MIXES.forEach(function (mix) {
-      var v = r.breakEvenGrid[row.mode][mix.key];
-      setText('bm-out-be-' + row.mode + '-' + mix.key, v != null ? bmLitres(v) : '—');
+      var v = r.breakEvenBottles[row.mode][mix.key];
+      setText('bm-out-be-' + row.mode + '-' + mix.key, v != null ? bmBottles(v) : '—');
     });
   });
   setText('bm-out-profit-wholesale', bmMoneyWhole(r.profitAtFullOutput.wholesale));
