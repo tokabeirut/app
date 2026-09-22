@@ -879,6 +879,14 @@
 #view-bottlemath .bm-section:first-child { margin-top: 0; }
 #view-bottlemath .bm-section-label { font-family: 'DM Sans', sans-serif; font-size: 0.98rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
 #view-bottlemath .bm-section-intro { font-size: 0.8rem; color: var(--ink-faint); line-height: 1.6; margin-bottom: 16px; max-width: 720px; }
+/* A section with no intro paragraph (01, 02) goes straight from the title
+   into its cards/table — give that a bit more breathing room, matching
+   the gap content-head leaves under a page title (see Labo, First
+   fermentation, etc.). Sections that DO have an intro already get enough
+   space from the intro's own margin-bottom above, so this only targets the
+   title-directly-into-content case via the adjacent-sibling selector. */
+#view-bottlemath .bm-section-label + .bm-cards,
+#view-bottlemath .bm-section-label + .bm-table-wrap { margin-top: 20px; }
 
 /* Fixed summary bar, pinned to the bottom of the viewport like the
    original artifact — always one line, scrolls horizontally on narrow
@@ -895,7 +903,7 @@
 #view-bottlemath .bm-card { -webkit-flex: 0 0 auto; flex: 0 0 auto; width: 140px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
 #view-bottlemath .bm-card-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
 #view-bottlemath .bm-card-val { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 5px; }
-#view-bottlemath .bm-card-val input { width: 60px; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
+#view-bottlemath .bm-card-val input { width: 44px; text-align: right; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
 #view-bottlemath .bm-card-unit { font-size: 0.85rem; color: var(--ink-faint); font-weight: 400; }
 
 #view-bottlemath .bm-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -926,7 +934,13 @@
 #view-bottlemath .bm-overhead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #view-bottlemath .bm-overhead-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 #view-bottlemath .bm-overhead-card .bm-card-val { font-size: 1.3rem; }
-#view-bottlemath .bm-overhead-card .bm-card-val input { width: 90px; font-size: 1.3rem; }
+/* This one (unlike the read-only overhead-per-litre card next to it) is a
+   live input — changing it recalculates overhead, full cost, break-even
+   and profit everywhere else on the page. Give it the same pill look as
+   every other editable amount on the page so that's obvious at a glance,
+   instead of the borderless/transparent style .bm-card-val inputs use
+   elsewhere (which reads as plain text). */
+#view-bottlemath .bm-overhead-card .bm-card-val input { width: 110px; font-size: 1.3rem; text-align: right; border: 1px solid var(--border); border-radius: 20px; background: var(--surface2); padding: 4px 12px; -webkit-appearance: none; }
 #view-bottlemath .bm-overhead-note { font-size: 0.72rem; color: var(--ink-faint); margin-top: 8px; }
 
 #view-bottlemath .bm-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -10942,9 +10956,9 @@ var bmSaveTimer = null;
 var bottleMathSettingsRaw = '';
 
 function bmNum(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
-function bmMoney2(n) { return '$' + fmtUSD(bmNum(n)); }
-function bmMoney3(n) { return '$' + bmNum(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 }); }
-function bmMoneyWhole(n) { return '$' + Math.round(bmNum(n)).toLocaleString('en-US'); }
+function bmMoney2(n) { return '$ ' + fmtUSD(bmNum(n)); }
+function bmMoney3(n) { return '$ ' + bmNum(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 }); }
+function bmMoneyWhole(n) { return '$ ' + Math.round(bmNum(n)).toLocaleString('en-US'); }
 function bmLitres(n) { return fmtNum(Math.round(bmNum(n))) + ' L'; }
 function bmRowState(def) { return def.group === 'ingredient' ? bmState.ingredients[def.key] : bmState.packaging[def.key]; }
 function bmEditFieldFn(def) { return def.group === 'ingredient' ? 'bmEditIngredient' : 'bmEditPackaging'; }
@@ -11066,7 +11080,7 @@ function bmBuildIngredientsTable() {
       + '<td class="num" id="bm-out-in375-' + def.key + '">—</td>'
       + '</tr>';
   });
-  h += '<tr class="bm-total-row"><td>Cost to fill one bottle</td><td></td><td></td><td></td>'
+  h += '<tr class="bm-total-row"><td>Fixed costs for one bottle</td><td></td><td></td><td></td>'
     + '<td class="num" id="bm-out-fillcost-bottle750">—</td>'
     + '<td class="num" id="bm-out-fillcost-bottle375">—</td></tr>';
   h += '</tbody>';
