@@ -903,12 +903,12 @@
 #view-bottlemath .bm-summary-val { font-family: 'DM Mono', monospace; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
 #view-bottlemath .bm-summary-val.accent { color: var(--terra); }
 
-#view-bottlemath .bm-cards { display: -webkit-flex; display: flex; gap: 12px; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
-#view-bottlemath .bm-card { -webkit-flex: 0 0 auto; flex: 0 0 auto; width: 140px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
-#view-bottlemath .bm-card-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
-#view-bottlemath .bm-card-val { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 5px; }
+#view-bottlemath .bm-cards { display: -webkit-flex; display: flex; gap: 16px; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
+#view-bottlemath .bm-card { -webkit-flex: 1 1 180px; flex: 1 1 180px; min-width: 160px; max-width: 240px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+#view-bottlemath .bm-card-label { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+#view-bottlemath .bm-card-val { font-family: 'DM Mono', monospace; font-size: 2.1rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 6px; }
 #view-bottlemath .bm-card-val input { text-align: left; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
-#view-bottlemath .bm-card-unit { font-size: 0.85rem; color: var(--ink-faint); font-weight: 400; }
+#view-bottlemath .bm-card-unit { font-size: 1.15rem; color: var(--ink); font-weight: 400; }
 
 #view-bottlemath .bm-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 #view-bottlemath .bm-table-title { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.92rem; color: var(--ink); padding: 14px 16px; border-bottom: 1px solid var(--border); }
@@ -1669,11 +1669,11 @@
 
       <div class="bm-section">
         <div class="bm-section-label">Running costs, per month</div>
-        <div class="bm-section-intro">This total is the overhead everything further down is built on &mdash; changing a value will automatically update the rest of the page.</div>
         <div class="bm-table-wrap">
           <div class="bm-table-title">Every month</div>
           <div class="table-scroll"><table class="bm-table" id="bm-running-table"></table></div>
         </div>
+        <div class="bm-section-intro" style="margin-bottom: 0; margin-top: 12px;">This total is the overhead everything further down is built on &mdash; changing a value will automatically update the rest of the page.</div>
       </div>
     </div>
 
