@@ -990,6 +990,8 @@
 #view-bottlemath .bm-price-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); gap: 10px; }
 #view-bottlemath .bm-price-row:first-of-type { border-top: none; }
 #view-bottlemath .bm-price-row-label { font-family: 'DM Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-flex-shrink: 0; flex-shrink: 0; width: 68px; }
+#view-bottlemath .bm-price-range { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; -webkit-flex-shrink: 0; flex-shrink: 0; }
+#view-bottlemath .bm-price-range-sep { color: var(--ink-faint); font-size: 0.78rem; }
 #view-bottlemath .bm-price-keep { font-size: 0.8rem; color: var(--ink); text-align: right; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
 #view-bottlemath .bm-price-keep strong { color: var(--terra); font-family: 'DM Mono', monospace; }
 #view-bottlemath .bm-price-pct { color: var(--ink-faint); font-size: 0.72rem; }
@@ -10980,8 +10982,8 @@ function bmDefaults() {
     ],
     litresPerMonth: 750,
     pricing: {
-      bottle750: { wholesale: 9, retail: 11 },
-      bottle375: { wholesale: 4, retail: 6 }
+      bottle750: { wholesale: { low: 5.5, high: 7 }, retail: { low: 10, high: 11 } },
+      bottle375: { wholesale: { low: 3.5, high: 4.5 }, retail: { low: 6, high: 7 } }
     },
     // User-added lines on top of the fixed ingredient/packaging rows above —
     // each one is a flat per-bottle cost (buy/amount), applied to whichever
@@ -10996,6 +10998,9 @@ var bmSaveTimer = null;
 var bottleMathSettingsRaw = '';
 
 function bmNum(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+// A price is stored as a low/high range; everywhere else on the page (break-
+// even, margins, profit, "we keep") works off the average of that range.
+function bmPriceAvg(p) { return (bmNum(p && p.low) + bmNum(p && p.high)) / 2; }
 function bmNewKey(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function bmMoney2(n) { return '$ ' + fmtUSD(bmNum(n)); }
 function bmMoney3(n) { return '$ ' + bmNum(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 }); }
@@ -11055,7 +11060,7 @@ function bmCompute(s) {
   BM_SIZES.forEach(function (sz) {
     weKeep[sz.key] = {};
     ['wholesale', 'retail'].forEach(function (ch) {
-      var price = bmNum(s.pricing[sz.key][ch]);
+      var price = bmPriceAvg(s.pricing[sz.key][ch]);
       var keep = price - fullCost[sz.key];
       weKeep[sz.key][ch] = { price: price, keep: keep, pct: price > 0 ? (keep / price) * 100 : 0 };
     });
@@ -11069,7 +11074,7 @@ function bmCompute(s) {
   BM_SIZES.forEach(function (sz) {
     marginPerLitre[sz.key] = {};
     ['wholesale', 'retail'].forEach(function (ch) {
-      var price = bmNum(s.pricing[sz.key][ch]);
+      var price = bmPriceAvg(s.pricing[sz.key][ch]);
       marginPerLitre[sz.key][ch] = sz.litres > 0 ? (price - productCost[sz.key]) / sz.litres : 0;
     });
   });
@@ -11113,7 +11118,7 @@ function bmBuildSummaryBar() {
 function bmBuildRecipeCards() {
   var h = '';
   BM_INGREDIENT_KEYS.forEach(function (k) {
-    var len = Math.max(1, String(bmState.recipe[k]).length);
+    var len = Math.max(1, String(bmState.recipe[k]).length) + 1;
     h += '<div class="bm-card"><div class="bm-card-label">' + esc(BM_INGREDIENT_LABELS[k]) + '</div>'
       + '<div class="bm-card-val"><input type="number" id="bm-recipe-' + k + '" min="0" step="any" style="width:' + len + 'ch" oninput="bmEditRecipe(\'' + k + '\', this)" /><span class="bm-card-unit">g</span></div></div>';
   });
@@ -11123,9 +11128,10 @@ function bmBuildIngredientsTable() {
   var h = '<thead><tr><th>Item</th><th>We buy</th><th>Amount</th><th>Per unit</th><th>In a 750ml</th><th>In a 375ml</th><th></th></tr></thead><tbody>';
   BM_ROW_DEFS.forEach(function (def) {
     var fn = bmEditFieldFn(def);
+    var buySize = Math.max(1, String(bmRowState(def).buy).length) + 1;
     h += '<tr>'
       + '<td>' + esc(def.label) + '</td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-buy-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-buy-' + def.key + '" min="0" step="any" style="width:' + buySize + 'ch" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></span></td>'
       + '<td class="num"><span class="bm-amount-cell"><input type="number" class="bm-input" id="bm-amount-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'amount\',this)" /><span class="bm-unit">' + esc(def.unit) + '</span></span></td>'
       + '<td class="num" id="bm-out-perunit-' + def.key + '">—</td>'
       + '<td class="num" id="bm-out-in750-' + def.key + '">—</td>'
@@ -11134,9 +11140,10 @@ function bmBuildIngredientsTable() {
       + '</tr>';
   });
   (bmState.customRows || []).forEach(function (row) {
+    var customBuySize = Math.max(1, String(row.buy).length) + 1;
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-custom-label-' + row.key + '" placeholder="Item name" oninput="bmEditCustomField(\'' + row.key + '\',\'label\',this)" /></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-custom-buy-' + row.key + '" min="0" step="any" oninput="bmEditCustomField(\'' + row.key + '\',\'buy\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-custom-buy-' + row.key + '" min="0" step="any" style="width:' + customBuySize + 'ch" oninput="bmEditCustomField(\'' + row.key + '\',\'buy\',this)" /></span></td>'
       + '<td class="num"><span class="bm-amount-cell"><input type="number" class="bm-input" id="bm-custom-amount-' + row.key + '" min="0" step="any" oninput="bmEditCustomField(\'' + row.key + '\',\'amount\',this)" /><input type="text" class="bm-unit-input" id="bm-custom-unit-' + row.key + '" placeholder="unit" oninput="bmEditCustomField(\'' + row.key + '\',\'unit\',this)" /></span></td>'
       + '<td class="num" id="bm-out-custom-perunit-' + row.key + '">—</td>'
       + '<td class="num"><label class="bm-applies-label"><input type="checkbox" id="bm-custom-applies-' + row.key + '-bottle750" onchange="bmEditCustomApplies(\'' + row.key + '\',\'bottle750\',this)" /><span id="bm-out-custom-in750-' + row.key + '">—</span></label></td>'
@@ -11160,7 +11167,7 @@ function bmBuildOursTable(kind) {
   var rows = bmState[kind];
   var h = '<thead><tr><th>Item</th><th>Price</th><th></th></tr></thead><tbody>';
   rows.forEach(function (r) {
-    var size = Math.max(1, String(r.ours).length);
+    var size = Math.max(1, String(r.ours).length) + 1;
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-' + cfg.idPrefix + '-label-' + r.key + '" placeholder="Item name" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'label\',this)" /></td>'
       + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" style="width:' + size + 'ch" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
@@ -11189,10 +11196,18 @@ function bmBuildPriceCards() {
       + '<div class="bm-price-head"><div class="bm-price-title">' + esc(labels[sz.key]) + '</div>'
       + '<div class="bm-price-fullcost">full cost <strong id="bm-out-price-fullcost-' + sz.key + '">—</strong></div></div>'
       + '<div class="bm-price-row"><div class="bm-price-row-label">B2B</div>'
-      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-wholesale" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',this)" />'
+      + '<div class="bm-price-range">'
+      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-wholesale-low" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',\'low\',this)" />'
+      + '<span class="bm-price-range-sep">&ndash;</span>'
+      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-wholesale-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',\'high\',this)" />'
+      + '</div>'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-wholesale">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-wholesale"></span></div></div>'
       + '<div class="bm-price-row"><div class="bm-price-row-label">B2C</div>'
-      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-retail" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',this)" />'
+      + '<div class="bm-price-range">'
+      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-retail-low" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'low\',this)" />'
+      + '<span class="bm-price-range-sep">&ndash;</span>'
+      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-retail-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'high\',this)" />'
+      + '</div>'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-retail">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-retail"></span></div></div>'
       + '</div>';
   });
@@ -11231,23 +11246,23 @@ function bmBuildAll() {
 /* -- paint (every load + every edit) -- */
 function bmPaintInputs() {
   BM_INGREDIENT_KEYS.forEach(function (k) {
-    var el = document.getElementById('bm-recipe-' + k); if (el) { el.value = bmState.recipe[k]; el.style.width = Math.max(1, String(bmState.recipe[k]).length) + 'ch'; }
+    var el = document.getElementById('bm-recipe-' + k); if (el) { el.value = bmState.recipe[k]; el.style.width = (Math.max(1, String(bmState.recipe[k]).length) + 1) + 'ch'; }
   });
   BM_ROW_DEFS.forEach(function (def) {
     var row = bmRowState(def);
-    var buyEl = document.getElementById('bm-buy-' + def.key); if (buyEl) buyEl.value = row.buy;
+    var buyEl = document.getElementById('bm-buy-' + def.key); if (buyEl) { buyEl.value = row.buy; buyEl.style.width = (Math.max(1, String(row.buy).length) + 1) + 'ch'; }
     var amtEl = document.getElementById('bm-amount-' + def.key); if (amtEl) amtEl.value = row.amount;
   });
   ['oneOff', 'running'].forEach(function (kind) {
     var prefix = BM_OURS_TABLES[kind].idPrefix;
     bmState[kind].forEach(function (r) {
       var lbl = document.getElementById('bm-' + prefix + '-label-' + r.key); if (lbl) lbl.value = r.label;
-      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = r.ours; ou.style.width = Math.max(1, String(r.ours).length) + 'ch'; }
+      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = r.ours; ou.style.width = (Math.max(1, String(r.ours).length) + 1) + 'ch'; }
     });
   });
   (bmState.customRows || []).forEach(function (row) {
     var lbl = document.getElementById('bm-custom-label-' + row.key); if (lbl) lbl.value = row.label;
-    var buy = document.getElementById('bm-custom-buy-' + row.key); if (buy) buy.value = row.buy;
+    var buy = document.getElementById('bm-custom-buy-' + row.key); if (buy) { buy.value = row.buy; buy.style.width = (Math.max(1, String(row.buy).length) + 1) + 'ch'; }
     var amt = document.getElementById('bm-custom-amount-' + row.key); if (amt) amt.value = row.amount;
     var unit = document.getElementById('bm-custom-unit-' + row.key); if (unit) unit.value = row.unit;
     BM_SIZES.forEach(function (sz) {
@@ -11257,8 +11272,11 @@ function bmPaintInputs() {
   });
   var lm = document.getElementById('bm-litres-month'); if (lm) lm.value = bmState.litresPerMonth;
   BM_SIZES.forEach(function (sz) {
-    var w = document.getElementById('bm-price-' + sz.key + '-wholesale'); if (w) w.value = bmState.pricing[sz.key].wholesale;
-    var rt = document.getElementById('bm-price-' + sz.key + '-retail'); if (rt) rt.value = bmState.pricing[sz.key].retail;
+    ['wholesale', 'retail'].forEach(function (ch) {
+      var p = bmState.pricing[sz.key][ch];
+      var lo = document.getElementById('bm-price-' + sz.key + '-' + ch + '-low'); if (lo) lo.value = p.low;
+      var hi = document.getElementById('bm-price-' + sz.key + '-' + ch + '-high'); if (hi) hi.value = p.high;
+    });
   });
 }
 function bmPaintComputed() {
@@ -11334,15 +11352,15 @@ function bmPaintComputed() {
 }
 
 /* -- edits -- */
-function bmEditRecipe(key, el) { bmState.recipe[key] = bmNum(el.value); el.style.width = Math.max(1, el.value.length) + 'ch'; bmAfterEdit(); }
-function bmEditIngredient(key, field, el) { bmState.ingredients[key][field] = bmNum(el.value); bmAfterEdit(); }
-function bmEditPackaging(key, field, el) { bmState.packaging[key][field] = bmNum(el.value); bmAfterEdit(); }
+function bmEditRecipe(key, el) { bmState.recipe[key] = bmNum(el.value); el.style.width = (Math.max(1, el.value.length) + 1) + 'ch'; bmAfterEdit(); }
+function bmEditIngredient(key, field, el) { bmState.ingredients[key][field] = bmNum(el.value); if (field === 'buy') el.style.width = (Math.max(1, el.value.length) + 1) + 'ch'; bmAfterEdit(); }
+function bmEditPackaging(key, field, el) { bmState.packaging[key][field] = bmNum(el.value); if (field === 'buy') el.style.width = (Math.max(1, el.value.length) + 1) + 'ch'; bmAfterEdit(); }
 function bmEditOursField(kind, key, field, el) {
   var rows = bmState[kind];
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].key === key) { rows[i][field] = (field === 'label') ? el.value : bmNum(el.value); break; }
   }
-  if (field === 'ours') el.style.width = Math.max(1, el.value.length) + 'ch';
+  if (field === 'ours') el.style.width = (Math.max(1, el.value.length) + 1) + 'ch';
   bmAfterEdit();
 }
 function bmAddOursRow(kind) {
@@ -11371,6 +11389,7 @@ function bmEditCustomField(key, field, el) {
       break;
     }
   }
+  if (field === 'buy') el.style.width = (Math.max(1, el.value.length) + 1) + 'ch';
   bmAfterEdit();
 }
 function bmEditCustomApplies(key, sizeKey, el) {
@@ -11403,7 +11422,7 @@ function bmDeleteCustomRow(key) {
   bmScheduleSave();
 }
 function bmEditLitresPerMonth(el) { bmState.litresPerMonth = bmNum(el.value); bmAfterEdit(); }
-function bmEditPrice(sizeKey, channel, el) { bmState.pricing[sizeKey][channel] = bmNum(el.value); bmAfterEdit(); }
+function bmEditPrice(sizeKey, channel, bound, el) { bmState.pricing[sizeKey][channel][bound] = bmNum(el.value); bmAfterEdit(); }
 function bmAfterEdit() { bmPaintComputed(); bmScheduleSave(); }
 
 /* -- save/load -- */
@@ -11465,8 +11484,19 @@ function bmMergeDefaults(loaded) {
   if (loaded.pricing) {
     for (var szk in d.pricing) {
       if (loaded.pricing[szk]) {
-        if (loaded.pricing[szk].wholesale != null) d.pricing[szk].wholesale = bmNum(loaded.pricing[szk].wholesale);
-        if (loaded.pricing[szk].retail != null) d.pricing[szk].retail = bmNum(loaded.pricing[szk].retail);
+        ['wholesale', 'retail'].forEach(function (ch) {
+          var v = loaded.pricing[szk][ch];
+          if (v == null) return;
+          if (typeof v === 'object') {
+            if (v.low != null) d.pricing[szk][ch].low = bmNum(v.low);
+            if (v.high != null) d.pricing[szk][ch].high = bmNum(v.high);
+          } else {
+            // Pre-range saved data was a single flat price — carry it over
+            // as a zero-width range rather than losing it.
+            d.pricing[szk][ch].low = bmNum(v);
+            d.pricing[szk][ch].high = bmNum(v);
+          }
+        });
       }
     }
   }
