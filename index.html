@@ -923,8 +923,28 @@
 #view-bottlemath .bm-add-link { background: none; border: 1px dashed var(--border); border-radius: 99px; padding: 5px 14px; font-family: 'Jost', sans-serif; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terra); cursor: pointer; }
 #view-bottlemath .bm-add-link:hover { background: var(--terra-pale); border-color: var(--terra-light); }
 
-#view-bottlemath .bm-input { width: 68px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 4px 9px; font-family: 'DM Mono', monospace; font-size: 0.8rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
+#view-bottlemath .bm-input { width: 68px; text-align: right; border: none; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 1px; font-family: 'DM Mono', monospace; font-size: 0.8rem; background: transparent; color: var(--ink); -webkit-appearance: none; }
+#view-bottlemath .bm-input:focus { border-bottom-color: var(--border); outline: none; }
 #view-bottlemath .bm-input.bm-input-wide { width: 78px; }
+/* Now that inputs read as plain text (no pill), italics is what marks a
+   number as computed/read-only rather than something you can type into —
+   applied broadly to every output cell, then explicitly reset back to
+   upright on every actual <input> and its adjacent symbols/units so an
+   editable pill's own text is never italicized by inheriting from its
+   parent <td>. */
+#view-bottlemath td.num,
+#view-bottlemath .bm-summary-val,
+#view-bottlemath .bm-result-val,
+#view-bottlemath .bm-price-fullcost strong,
+#view-bottlemath .bm-price-keep strong,
+#view-bottlemath .bm-price-pct,
+#view-bottlemath .bm-overhead-card .bm-card-val span { font-style: italic; }
+#view-bottlemath .bm-input,
+#view-bottlemath .bm-text-input,
+#view-bottlemath .bm-unit-input,
+#view-bottlemath .bm-unit,
+#view-bottlemath .bm-buy-symbol,
+#view-bottlemath .bm-card-val input { font-style: normal; }
 /* The amount input is followed by a unit word (kg/bottles/caps/labels/boxes)
    of varying length; giving that word a fixed width keeps every pill lined
    up at the same x-position instead of drifting with the word's length. */
@@ -950,7 +970,7 @@
    every other editable amount on the page so that's obvious at a glance,
    instead of the borderless/transparent style .bm-card-val inputs use
    elsewhere (which reads as plain text). */
-#view-bottlemath .bm-overhead-card .bm-card-val input { width: 110px; font-size: 1.3rem; text-align: right; border: 1px solid var(--border); border-radius: 20px; background: var(--surface2); padding: 4px 12px; -webkit-appearance: none; }
+#view-bottlemath .bm-overhead-card .bm-card-val input { width: 110px; font-size: 1.3rem; }
 #view-bottlemath .bm-overhead-note { font-size: 0.72rem; color: var(--ink-faint); margin-top: 8px; }
 
 #view-bottlemath .bm-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -10928,25 +10948,25 @@ function bmDefaults() {
       box375: { buy: 510, amount: 600 }
     },
     oneOff: [
-      { key: 'tea', label: 'Tea from India', low: 2200, high: 3000, ours: 3000 },
-      { key: 'boxes', label: 'Boxes', low: 150, high: 1250, ours: 1250 },
-      { key: 'labels', label: 'Label printing', low: 150, high: 1500, ours: 300 },
-      { key: 'equip', label: 'Equipment (Belgium)', low: 200, high: 500, ours: 500 },
-      { key: 'stamp', label: 'Batch and expiry date stamp', low: 30, high: 150, ours: 100 },
-      { key: 'lab', label: 'Lab testing — microbiology + alcohol %', low: 150, high: 600, ours: 300 },
-      { key: 'legal', label: 'Legal (registration, health permit, municipality, etc.)', low: 0, high: 6000, ours: 0 },
-      { key: 'website', label: 'Website, domain, simple shop page', low: 0, high: 600, ours: 500 },
-      { key: 'photo', label: 'First photo shoot', low: 150, high: 1200, ours: 1200 }
+      { key: 'tea', label: 'Tea from India', ours: 3000 },
+      { key: 'boxes', label: 'Boxes', ours: 1250 },
+      { key: 'labels', label: 'Label printing', ours: 300 },
+      { key: 'equip', label: 'Equipment (Belgium)', ours: 500 },
+      { key: 'stamp', label: 'Batch and expiry date stamp', ours: 100 },
+      { key: 'lab', label: 'Lab testing — microbiology + alcohol %', ours: 300 },
+      { key: 'legal', label: 'Legal (registration, health permit, municipality, etc.)', ours: 0 },
+      { key: 'website', label: 'Website, domain, simple shop page', ours: 500 },
+      { key: 'photo', label: 'First photo shoot', ours: 1200 }
     ],
     running: [
-      { key: 'generator', label: 'Generator', low: 100, high: 200, ours: 150 },
-      { key: 'electricity', label: 'Electricity', low: 30, high: 70, ours: 50 },
-      { key: 'rent', label: 'Atelier rent', low: 500, high: 500, ours: 500 },
-      { key: 'salary', label: 'Claire’s salary', low: 500, high: 500, ours: 500 },
-      { key: 'water', label: 'Water', low: 20, high: 60, ours: 0 },
-      { key: 'filter', label: 'Water filter maintenance and cartridges', low: 20, high: 80, ours: 50 },
-      { key: 'cleaning', label: 'Cleaning and sanitation consumables', low: 30, high: 100, ours: 50 },
-      { key: 'marketing', label: 'Marketing (Meta)', low: 1500, high: 1500, ours: 1500 }
+      { key: 'generator', label: 'Generator', ours: 150 },
+      { key: 'electricity', label: 'Electricity', ours: 50 },
+      { key: 'rent', label: 'Atelier rent', ours: 500 },
+      { key: 'salary', label: 'Claire’s salary', ours: 500 },
+      { key: 'water', label: 'Water', ours: 0 },
+      { key: 'filter', label: 'Water filter maintenance and cartridges', ours: 50 },
+      { key: 'cleaning', label: 'Cleaning and sanitation consumables', ours: 50 },
+      { key: 'marketing', label: 'Marketing (Meta)', ours: 1500 }
     ],
     litresPerMonth: 750,
     pricing: {
@@ -11012,10 +11032,8 @@ function bmCompute(s) {
     });
   });
   function sumOurs(rows) { return rows.reduce(function (a, r) { return a + bmNum(r.ours); }, 0); }
-  function sumLow(rows) { return rows.reduce(function (a, r) { return a + bmNum(r.low); }, 0); }
-  function sumHigh(rows) { return rows.reduce(function (a, r) { return a + bmNum(r.high); }, 0); }
-  var oneOffTotal = sumOurs(s.oneOff), oneOffLow = sumLow(s.oneOff), oneOffHigh = sumHigh(s.oneOff);
-  var runningTotal = sumOurs(s.running), runningLow = sumLow(s.running), runningHigh = sumHigh(s.running);
+  var oneOffTotal = sumOurs(s.oneOff);
+  var runningTotal = sumOurs(s.running);
   var litresPerMonth = bmNum(s.litresPerMonth);
   var overheadPerLitre = litresPerMonth > 0 ? runningTotal / litresPerMonth : 0;
   var overheadShare = {}, fullCost = {};
@@ -11064,8 +11082,7 @@ function bmCompute(s) {
   };
   return {
     ingUnit: ingUnit, pkgUnit: pkgUnit, customUnit: customUnit, productCost: productCost,
-    oneOffTotal: oneOffTotal, oneOffLow: oneOffLow, oneOffHigh: oneOffHigh,
-    runningTotal: runningTotal, runningLow: runningLow, runningHigh: runningHigh,
+    oneOffTotal: oneOffTotal, runningTotal: runningTotal,
     litresPerMonth: litresPerMonth, overheadPerLitre: overheadPerLitre,
     overheadShare: overheadShare, fullCost: fullCost, weKeep: weKeep,
     breakEven: breakEven, profitAtFullOutput: profitAtFullOutput
@@ -11130,20 +11147,16 @@ var BM_OURS_TABLES = {
 function bmBuildOursTable(kind) {
   var cfg = BM_OURS_TABLES[kind];
   var rows = bmState[kind];
-  var h = '<thead><tr><th>Item</th><th>Minimum</th><th>Maximum</th><th>Final</th><th></th></tr></thead><tbody>';
+  var h = '<thead><tr><th>Item</th><th>Ours</th><th></th></tr></thead><tbody>';
   rows.forEach(function (r) {
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-' + cfg.idPrefix + '-label-' + r.key + '" placeholder="Item name" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'label\',this)" /></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-' + cfg.idPrefix + '-low-' + r.key + '" min="0" step="any" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'low\',this)" /></span></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-' + cfg.idPrefix + '-high-' + r.key + '" min="0" step="any" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'high\',this)" /></span></td>'
       + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
       + '<td class="row-actions"><button type="button" class="del-btn" title="Remove" onclick="bmDeleteOursRow(\'' + kind + '\',\'' + r.key + '\')">&times;</button></td>'
       + '</tr>';
   });
-  h += '<tr class="bm-add-row"><td colspan="5"><button type="button" class="bm-add-link" onclick="bmAddOursRow(\'' + kind + '\')">+ add cost</button></td></tr>';
+  h += '<tr class="bm-add-row"><td colspan="3"><button type="button" class="bm-add-link" onclick="bmAddOursRow(\'' + kind + '\')">+ add cost</button></td></tr>';
   h += '<tr class="bm-total-row"><td>' + esc(cfg.totalLabel) + '</td>'
-    + '<td class="num" id="bm-out-' + cfg.idPrefix + '-low">—</td>'
-    + '<td class="num" id="bm-out-' + cfg.idPrefix + '-high">—</td>'
     + '<td class="num" id="bm-out-' + cfg.idPrefix + '-ours">—</td><td></td></tr>';
   h += '</tbody>';
   document.getElementById(cfg.containerId).innerHTML = h;
@@ -11217,8 +11230,6 @@ function bmPaintInputs() {
     var prefix = BM_OURS_TABLES[kind].idPrefix;
     bmState[kind].forEach(function (r) {
       var lbl = document.getElementById('bm-' + prefix + '-label-' + r.key); if (lbl) lbl.value = r.label;
-      var lo = document.getElementById('bm-' + prefix + '-low-' + r.key); if (lo) lo.value = r.low;
-      var hi = document.getElementById('bm-' + prefix + '-high-' + r.key); if (hi) hi.value = r.high;
       var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) ou.value = r.ours;
     });
   });
@@ -11272,11 +11283,7 @@ function bmPaintComputed() {
   setText('bm-out-fillcost-bottle750', bmMoney2(r.productCost.bottle750));
   setText('bm-out-fillcost-bottle375', bmMoney2(r.productCost.bottle375));
 
-  setText('bm-out-oneoff-low', bmMoneyWhole(r.oneOffLow));
-  setText('bm-out-oneoff-high', bmMoneyWhole(r.oneOffHigh));
   setText('bm-out-oneoff-ours', bmMoneyWhole(r.oneOffTotal));
-  setText('bm-out-running-low', bmMoneyWhole(r.runningLow));
-  setText('bm-out-running-high', bmMoneyWhole(r.runningHigh));
   setText('bm-out-running-ours', bmMoneyWhole(r.runningTotal));
 
   setText('bm-out-overhead-per-litre', bmMoney2(r.overheadPerLitre));
@@ -11328,7 +11335,7 @@ function bmEditOursField(kind, key, field, el) {
 function bmAddOursRow(kind) {
   var cfg = BM_OURS_TABLES[kind];
   var key = bmNewKey('c');
-  bmState[kind].push({ key: key, label: '', low: 0, high: 0, ours: 0 });
+  bmState[kind].push({ key: key, label: '', ours: 0 });
   bmBuildOursTable(kind);
   bmPaintInputs();
   bmPaintComputed();
@@ -11422,13 +11429,13 @@ function bmMergeDefaults(loaded) {
       }
     }
   }
-  // oneOff/running/customRows are now fully user-editable — label, low,
-  // high, ours, plus add/delete — rather than a fixed schema with only
-  // "ours" overridden. Once the user has saved anything, their saved array
-  // IS the row list going forward; bmDefaults()'s starter rows only apply
-  // to a page that's never been saved.
+  // oneOff/running/customRows are now fully user-editable — label, ours,
+  // plus add/delete — rather than a fixed schema with only "ours"
+  // overridden. Once the user has saved anything, their saved array IS the
+  // row list going forward; bmDefaults()'s starter rows only apply to a
+  // page that's never been saved.
   function bmSanitizeOursRow(r) {
-    return { key: (r && r.key) || bmNewKey('c'), label: (r && r.label) || '', low: bmNum(r && r.low), high: bmNum(r && r.high), ours: bmNum(r && r.ours) };
+    return { key: (r && r.key) || bmNewKey('c'), label: (r && r.label) || '', ours: bmNum(r && r.ours) };
   }
   if (Array.isArray(loaded.oneOff) && loaded.oneOff.length) d.oneOff = loaded.oneOff.map(bmSanitizeOursRow);
   if (Array.isArray(loaded.running) && loaded.running.length) d.running = loaded.running.map(bmSanitizeOursRow);
