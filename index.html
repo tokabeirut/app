@@ -10940,7 +10940,7 @@ var BM_SIZE_MIX_WEIGHTS = {
 var BM_INGREDIENT_KEYS = ['tea', 'sugar', 'cardamom', 'sumac', 'yeast'];
 var BM_INGREDIENT_LABELS = { tea: 'Tea', sugar: 'Sugar', cardamom: 'Cardamom', sumac: 'Sumac', yeast: 'Yeast' };
 var BM_ROW_DEFS = [
-  { group: 'ingredient', key: 'tea', label: 'Tea from India', unit: 'kg', applies: ['bottle750', 'bottle375'] },
+  { group: 'ingredient', key: 'tea', label: 'Tea from Malawi', unit: 'kg', applies: ['bottle750', 'bottle375'] },
   { group: 'ingredient', key: 'sugar', label: 'Sugar', unit: 'kg', applies: ['bottle750', 'bottle375'] },
   { group: 'ingredient', key: 'cardamom', label: 'Cardamom', unit: 'kg', applies: ['bottle750', 'bottle375'] },
   { group: 'ingredient', key: 'sumac', label: 'Sumac', unit: 'kg', applies: ['bottle750', 'bottle375'] },
@@ -10957,7 +10957,7 @@ function bmDefaults() {
   return {
     recipe: { tea: 7, sugar: 70, cardamom: 1, sumac: 2, yeast: 0.2 },
     ingredients: {
-      tea: { buy: 3000, amount: 90 },
+      tea: { buy: 205.44, amount: 24 },
       sugar: { buy: 218, amount: 300 },
       cardamom: { buy: 75, amount: 1 },
       sumac: { buy: 25, amount: 1 },
@@ -10973,8 +10973,7 @@ function bmDefaults() {
       box375: { buy: 510, amount: 600 }
     },
     oneOff: [
-      { key: 'tea', label: 'Tea from India', ours: 3000 },
-      { key: 'teaBelgium', label: 'Tea from Belgium', ours: 205.44 },
+      { key: 'teaBelgium', label: 'Tea from Malawi', ours: 205.44 },
       { key: 'boxes', label: 'Boxes', ours: 1250 },
       { key: 'labels', label: 'Label printing', ours: 500 },
       { key: 'equip', label: 'Equipment (Belgium)', ours: 587.5 },
