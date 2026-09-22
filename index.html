@@ -888,6 +888,10 @@
 #view-bottlemath .bm-section-label + .bm-cards,
 #view-bottlemath .bm-section-label + .bm-table-wrap { margin-top: 20px; }
 
+/* One-off / running costs side by side */
+#view-bottlemath .bm-twocol { display: flex; gap: 24px; align-items: flex-start; margin-top: 40px; }
+#view-bottlemath .bm-twocol .bm-section { margin-top: 0; flex: 1 1 0; min-width: 0; }
+
 /* Fixed summary bar, pinned to the bottom of the viewport like the
    original artifact — always one line, scrolls horizontally on narrow
    screens rather than wrapping. .bm-page carries matching bottom padding
@@ -903,7 +907,7 @@
 #view-bottlemath .bm-card { -webkit-flex: 0 0 auto; flex: 0 0 auto; width: 140px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; }
 #view-bottlemath .bm-card-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
 #view-bottlemath .bm-card-val { font-family: 'DM Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 5px; }
-#view-bottlemath .bm-card-val input { width: 38px; text-align: left; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
+#view-bottlemath .bm-card-val input { text-align: left; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
 #view-bottlemath .bm-card-unit { font-size: 0.85rem; color: var(--ink-faint); font-weight: 400; }
 
 #view-bottlemath .bm-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -952,6 +956,10 @@
 #view-bottlemath .bm-unit { width: 52px; text-align: left; color: var(--ink-faint); font-size: 0.78rem; white-space: nowrap; }
 #view-bottlemath .bm-buy-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; }
 #view-bottlemath .bm-buy-symbol { color: var(--ink-faint); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+/* Price inputs in the one-off/running cost tables: size to the value's own
+   length so the "$" sits one space away from the figure, instead of a fixed
+   box leaving a big gap for short numbers. */
+#view-bottlemath .bm-input.bm-price-input { width: auto; text-align: left; }
 #view-bottlemath .bm-input::-webkit-outer-spin-button, #view-bottlemath .bm-input::-webkit-inner-spin-button,
 #view-bottlemath .bm-card-val input::-webkit-outer-spin-button, #view-bottlemath .bm-card-val input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 #view-bottlemath .bm-input, #view-bottlemath .bm-card-val input { -moz-appearance: textfield; }
@@ -1650,20 +1658,22 @@
       </div>
     </div>
 
-    <div class="bm-section">
-      <div class="bm-section-label">One-off costs still coming</div>
-      <div class="bm-table-wrap">
-        <div class="bm-table-title">One-off setup</div>
-        <div class="table-scroll"><table class="bm-table" id="bm-oneoff-table"></table></div>
+    <div class="bm-twocol">
+      <div class="bm-section">
+        <div class="bm-section-label">One-off costs still coming</div>
+        <div class="bm-table-wrap">
+          <div class="bm-table-title">One-off setup</div>
+          <div class="table-scroll"><table class="bm-table" id="bm-oneoff-table"></table></div>
+        </div>
       </div>
-    </div>
 
-    <div class="bm-section">
-      <div class="bm-section-label">Running costs, per month</div>
-      <div class="bm-section-intro">This total is the overhead everything further down is built on &mdash; changing a value will automatically update the rest of the page.</div>
-      <div class="bm-table-wrap">
-        <div class="bm-table-title">Every month</div>
-        <div class="table-scroll"><table class="bm-table" id="bm-running-table"></table></div>
+      <div class="bm-section">
+        <div class="bm-section-label">Running costs, per month</div>
+        <div class="bm-section-intro">This total is the overhead everything further down is built on &mdash; changing a value will automatically update the rest of the page.</div>
+        <div class="bm-table-wrap">
+          <div class="bm-table-title">Every month</div>
+          <div class="table-scroll"><table class="bm-table" id="bm-running-table"></table></div>
+        </div>
       </div>
     </div>
 
@@ -11103,8 +11113,9 @@ function bmBuildSummaryBar() {
 function bmBuildRecipeCards() {
   var h = '';
   BM_INGREDIENT_KEYS.forEach(function (k) {
+    var len = Math.max(1, String(bmState.recipe[k]).length);
     h += '<div class="bm-card"><div class="bm-card-label">' + esc(BM_INGREDIENT_LABELS[k]) + '</div>'
-      + '<div class="bm-card-val"><input type="number" id="bm-recipe-' + k + '" min="0" step="any" oninput="bmEditRecipe(\'' + k + '\', this)" /><span class="bm-card-unit">g</span></div></div>';
+      + '<div class="bm-card-val"><input type="number" id="bm-recipe-' + k + '" min="0" step="any" size="' + len + '" oninput="bmEditRecipe(\'' + k + '\', this)" /><span class="bm-card-unit">g</span></div></div>';
   });
   document.getElementById('bm-recipe-cards').innerHTML = h;
 }
@@ -11147,11 +11158,12 @@ var BM_OURS_TABLES = {
 function bmBuildOursTable(kind) {
   var cfg = BM_OURS_TABLES[kind];
   var rows = bmState[kind];
-  var h = '<thead><tr><th>Item</th><th>Ours</th><th></th></tr></thead><tbody>';
+  var h = '<thead><tr><th>Item</th><th>Price</th><th></th></tr></thead><tbody>';
   rows.forEach(function (r) {
+    var size = Math.max(1, String(r.ours).length);
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-' + cfg.idPrefix + '-label-' + r.key + '" placeholder="Item name" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'label\',this)" /></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" size="' + size + '" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
       + '<td class="row-actions"><button type="button" class="del-btn" title="Remove" onclick="bmDeleteOursRow(\'' + kind + '\',\'' + r.key + '\')">&times;</button></td>'
       + '</tr>';
   });
@@ -11219,7 +11231,7 @@ function bmBuildAll() {
 /* -- paint (every load + every edit) -- */
 function bmPaintInputs() {
   BM_INGREDIENT_KEYS.forEach(function (k) {
-    var el = document.getElementById('bm-recipe-' + k); if (el) el.value = bmState.recipe[k];
+    var el = document.getElementById('bm-recipe-' + k); if (el) { el.value = bmState.recipe[k]; el.size = Math.max(1, String(bmState.recipe[k]).length); }
   });
   BM_ROW_DEFS.forEach(function (def) {
     var row = bmRowState(def);
@@ -11230,7 +11242,7 @@ function bmPaintInputs() {
     var prefix = BM_OURS_TABLES[kind].idPrefix;
     bmState[kind].forEach(function (r) {
       var lbl = document.getElementById('bm-' + prefix + '-label-' + r.key); if (lbl) lbl.value = r.label;
-      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) ou.value = r.ours;
+      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = r.ours; ou.size = Math.max(1, String(r.ours).length); }
     });
   });
   (bmState.customRows || []).forEach(function (row) {
@@ -11322,7 +11334,7 @@ function bmPaintComputed() {
 }
 
 /* -- edits -- */
-function bmEditRecipe(key, el) { bmState.recipe[key] = bmNum(el.value); bmAfterEdit(); }
+function bmEditRecipe(key, el) { bmState.recipe[key] = bmNum(el.value); el.size = Math.max(1, el.value.length); bmAfterEdit(); }
 function bmEditIngredient(key, field, el) { bmState.ingredients[key][field] = bmNum(el.value); bmAfterEdit(); }
 function bmEditPackaging(key, field, el) { bmState.packaging[key][field] = bmNum(el.value); bmAfterEdit(); }
 function bmEditOursField(kind, key, field, el) {
@@ -11330,6 +11342,7 @@ function bmEditOursField(kind, key, field, el) {
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].key === key) { rows[i][field] = (field === 'label') ? el.value : bmNum(el.value); break; }
   }
+  if (field === 'ours') el.size = Math.max(1, el.value.length);
   bmAfterEdit();
 }
 function bmAddOursRow(kind) {
