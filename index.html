@@ -11104,7 +11104,7 @@ function bmBuildSummaryBar() {
   var items = [
     ['one-off', 'bm-out-summary-oneoff'], ['per month', 'bm-out-summary-permonth'],
     ['750ml full cost', 'bm-out-summary-750'], ['375ml full cost', 'bm-out-summary-375'],
-    ['break-even, wholesale', 'bm-out-summary-breakeven'], ['profit at full output', 'bm-out-summary-profit']
+    ['break-even, B2B', 'bm-out-summary-breakeven'], ['profit at full output', 'bm-out-summary-profit']
   ];
   document.getElementById('bm-summary-bar').innerHTML = items.map(function (it) {
     return '<div class="bm-summary-item"><div class="bm-summary-label">' + esc(it[0]) + '</div><div class="bm-summary-val accent" id="' + it[1] + '">—</div></div>';
@@ -11188,10 +11188,10 @@ function bmBuildPriceCards() {
     h += '<div class="bm-price-card">'
       + '<div class="bm-price-head"><div class="bm-price-title">' + esc(labels[sz.key]) + '</div>'
       + '<div class="bm-price-fullcost">full cost <strong id="bm-out-price-fullcost-' + sz.key + '">—</strong></div></div>'
-      + '<div class="bm-price-row"><div class="bm-price-row-label">Wholesale</div>'
+      + '<div class="bm-price-row"><div class="bm-price-row-label">B2B</div>'
       + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-wholesale" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',this)" />'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-wholesale">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-wholesale"></span></div></div>'
-      + '<div class="bm-price-row"><div class="bm-price-row-label">Retail</div>'
+      + '<div class="bm-price-row"><div class="bm-price-row-label">B2C</div>'
       + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-retail" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',this)" />'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-retail">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-retail"></span></div></div>'
       + '</div>';
@@ -11201,17 +11201,17 @@ function bmBuildPriceCards() {
 function bmBuildBreakEvenTable() {
   document.getElementById('bm-breakeven-table').innerHTML =
     '<thead><tr><th>Where we sell</th><th>Litres we have to sell</th></tr></thead><tbody>'
-    + '<tr><td>Only wholesale (B2B)</td><td class="num" id="bm-out-be-wholesale">—</td></tr>'
-    + '<tr><td>Half wholesale (B2B), half retail (B2C)</td><td class="num" id="bm-out-be-half">—</td></tr>'
-    + '<tr><td>Only retail (B2C)</td><td class="num" id="bm-out-be-retail">—</td></tr>'
+    + '<tr><td>Only B2B</td><td class="num" id="bm-out-be-wholesale">—</td></tr>'
+    + '<tr><td>Half B2B, half B2C</td><td class="num" id="bm-out-be-half">—</td></tr>'
+    + '<tr><td>Only B2C</td><td class="num" id="bm-out-be-retail">—</td></tr>'
     + '</tbody>';
 }
 function bmBuildProfitCards() {
   document.getElementById('bm-profit-cards').innerHTML =
-    '<div class="bm-result-card"><div class="bm-result-label">Profit at full output, wholesale</div>'
+    '<div class="bm-result-card"><div class="bm-result-label">Profit at full output, B2B</div>'
     + '<div class="bm-result-val" id="bm-out-profit-wholesale">—</div>'
     + '<div class="bm-overhead-note" id="bm-out-profit-wholesale-note"></div></div>'
-    + '<div class="bm-result-card"><div class="bm-result-label">Profit at full output, retail</div>'
+    + '<div class="bm-result-card"><div class="bm-result-label">Profit at full output, B2C</div>'
     + '<div class="bm-result-val" id="bm-out-profit-retail">—</div>'
     + '<div class="bm-overhead-note" id="bm-out-profit-retail-note"></div></div>';
 }
@@ -11321,9 +11321,9 @@ function bmPaintComputed() {
   setText('bm-out-be-half', r.breakEven.half != null ? bmLitres(r.breakEven.half) : '—');
   setText('bm-out-be-retail', r.breakEven.retail != null ? bmLitres(r.breakEven.retail) : '—');
   setText('bm-out-profit-wholesale', bmMoneyWhole(r.profitAtFullOutput.wholesale));
-  setText('bm-out-profit-wholesale-note', 'A month at ' + fmtNum(r.litresPerMonth) + ' litres, half in each size, all sold to shops.');
+  setText('bm-out-profit-wholesale-note', 'A month at ' + fmtNum(r.litresPerMonth) + ' litres, half in each size, all sold B2B.');
   setText('bm-out-profit-retail', bmMoneyWhole(r.profitAtFullOutput.retail));
-  setText('bm-out-profit-retail-note', 'The same litres sold direct at retail prices.');
+  setText('bm-out-profit-retail-note', 'The same litres sold direct at B2C prices.');
 
   setText('bm-out-summary-oneoff', bmMoneyWhole(r.oneOffTotal));
   setText('bm-out-summary-permonth', bmMoneyWhole(r.runningTotal));
