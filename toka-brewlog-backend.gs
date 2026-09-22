@@ -1482,6 +1482,17 @@ function doGet(e) {
     var frVal = frSheet.getRange('B1').getValue();
     return json_({ ok: true, rate: frVal || 13.32 });
   }
+  // Bottle Math (Business > Volume to bottle converter's cost/pricing
+  // sibling page) has ~50 individually-editable figures, but they're all
+  // one coherent settings object rather than a ledger, so — same as the
+  // faucet rate above — they're stored as a single value, this time a
+  // JSON string, in one more cell (C1) of the shared settings sheet.
+  if (action === 'getBottleMathSettings') {
+    var bmSs = SpreadsheetApp.getActiveSpreadsheet();
+    var bmSheet = bmSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || bmSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    var bmVal = bmSheet.getRange('C1').getValue();
+    return json_({ ok: true, settings: bmVal ? String(bmVal) : '' });
+  }
   if (action === 'getExpenseDeposits') {
     return getExpenseDeposits_();
   }
@@ -1492,6 +1503,9 @@ function doGet(e) {
   // read. The frontend falls back to the individual actions above if this
   // one isn't available yet, so redeploying is safe at any time.
   if (action === 'getAll') {
+    var gaSs = SpreadsheetApp.getActiveSpreadsheet();
+    var gaSettingsSheet = gaSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || gaSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    var gaBmVal = gaSettingsSheet.getRange('C1').getValue();
     return json_({
       ok: true,
       batches: readAll_(),
@@ -1503,7 +1517,8 @@ function doGet(e) {
       dailyChecklist: readAllChecklist_(),
       plannedInfusions: readAllPlannedInfusions_(),
       plannedBrews: readAllPlannedBrews_(),
-      bottleInventory: readAllBottleInv_()
+      bottleInventory: readAllBottleInv_(),
+      bottleMathSettings: gaBmVal ? String(gaBmVal) : ''
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
@@ -1550,6 +1565,13 @@ function handleAction_(body) {
     var fsSs = SpreadsheetApp.getActiveSpreadsheet();
     var fsSheet = fsSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || fsSs.insertSheet(EXPENSES_SETTINGS_SHEET);
     fsSheet.getRange('B1').setValue(body.rate);
+    return json_({ ok: true });
+  }
+
+  if (action === 'setBottleMathSettings') {
+    var bmsSs = SpreadsheetApp.getActiveSpreadsheet();
+    var bmsSheet = bmsSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || bmsSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    bmsSheet.getRange('C1').setValue(JSON.stringify(body.settings || {}));
     return json_({ ok: true });
   }
 
