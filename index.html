@@ -11115,7 +11115,7 @@ function bmBuildRecipeCards() {
   BM_INGREDIENT_KEYS.forEach(function (k) {
     var len = Math.max(1, String(bmState.recipe[k]).length);
     h += '<div class="bm-card"><div class="bm-card-label">' + esc(BM_INGREDIENT_LABELS[k]) + '</div>'
-      + '<div class="bm-card-val"><input type="number" id="bm-recipe-' + k + '" min="0" step="any" size="' + len + '" oninput="bmEditRecipe(\'' + k + '\', this)" /><span class="bm-card-unit">g</span></div></div>';
+      + '<div class="bm-card-val"><input type="number" id="bm-recipe-' + k + '" min="0" step="any" style="width:' + len + 'ch" oninput="bmEditRecipe(\'' + k + '\', this)" /><span class="bm-card-unit">g</span></div></div>';
   });
   document.getElementById('bm-recipe-cards').innerHTML = h;
 }
@@ -11163,7 +11163,7 @@ function bmBuildOursTable(kind) {
     var size = Math.max(1, String(r.ours).length);
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-' + cfg.idPrefix + '-label-' + r.key + '" placeholder="Item name" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'label\',this)" /></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" size="' + size + '" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" style="width:' + size + 'ch" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
       + '<td class="row-actions"><button type="button" class="del-btn" title="Remove" onclick="bmDeleteOursRow(\'' + kind + '\',\'' + r.key + '\')">&times;</button></td>'
       + '</tr>';
   });
@@ -11231,7 +11231,7 @@ function bmBuildAll() {
 /* -- paint (every load + every edit) -- */
 function bmPaintInputs() {
   BM_INGREDIENT_KEYS.forEach(function (k) {
-    var el = document.getElementById('bm-recipe-' + k); if (el) { el.value = bmState.recipe[k]; el.size = Math.max(1, String(bmState.recipe[k]).length); }
+    var el = document.getElementById('bm-recipe-' + k); if (el) { el.value = bmState.recipe[k]; el.style.width = Math.max(1, String(bmState.recipe[k]).length) + 'ch'; }
   });
   BM_ROW_DEFS.forEach(function (def) {
     var row = bmRowState(def);
@@ -11242,7 +11242,7 @@ function bmPaintInputs() {
     var prefix = BM_OURS_TABLES[kind].idPrefix;
     bmState[kind].forEach(function (r) {
       var lbl = document.getElementById('bm-' + prefix + '-label-' + r.key); if (lbl) lbl.value = r.label;
-      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = r.ours; ou.size = Math.max(1, String(r.ours).length); }
+      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = r.ours; ou.style.width = Math.max(1, String(r.ours).length) + 'ch'; }
     });
   });
   (bmState.customRows || []).forEach(function (row) {
@@ -11334,7 +11334,7 @@ function bmPaintComputed() {
 }
 
 /* -- edits -- */
-function bmEditRecipe(key, el) { bmState.recipe[key] = bmNum(el.value); el.size = Math.max(1, el.value.length); bmAfterEdit(); }
+function bmEditRecipe(key, el) { bmState.recipe[key] = bmNum(el.value); el.style.width = Math.max(1, el.value.length) + 'ch'; bmAfterEdit(); }
 function bmEditIngredient(key, field, el) { bmState.ingredients[key][field] = bmNum(el.value); bmAfterEdit(); }
 function bmEditPackaging(key, field, el) { bmState.packaging[key][field] = bmNum(el.value); bmAfterEdit(); }
 function bmEditOursField(kind, key, field, el) {
@@ -11342,7 +11342,7 @@ function bmEditOursField(kind, key, field, el) {
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].key === key) { rows[i][field] = (field === 'label') ? el.value : bmNum(el.value); break; }
   }
-  if (field === 'ours') el.size = Math.max(1, el.value.length);
+  if (field === 'ours') el.style.width = Math.max(1, el.value.length) + 'ch';
   bmAfterEdit();
 }
 function bmAddOursRow(kind) {
