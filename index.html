@@ -912,6 +912,8 @@
    up at the same x-position instead of drifting with the word's length. */
 #view-bottlemath .bm-amount-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 7px; }
 #view-bottlemath .bm-unit { width: 52px; text-align: left; color: var(--ink-faint); font-size: 0.78rem; white-space: nowrap; }
+#view-bottlemath .bm-buy-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; }
+#view-bottlemath .bm-buy-symbol { color: var(--ink-faint); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
 #view-bottlemath .bm-input::-webkit-outer-spin-button, #view-bottlemath .bm-input::-webkit-inner-spin-button,
 #view-bottlemath .bm-card-val input::-webkit-outer-spin-button, #view-bottlemath .bm-card-val input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 #view-bottlemath .bm-input, #view-bottlemath .bm-card-val input { -moz-appearance: textfield; }
@@ -11057,7 +11059,7 @@ function bmBuildIngredientsTable() {
     var fn = bmEditFieldFn(def);
     h += '<tr>'
       + '<td>' + esc(def.label) + '</td>'
-      + '<td class="num">$<input type="number" class="bm-input" id="bm-buy-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input" id="bm-buy-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></span></td>'
       + '<td class="num"><span class="bm-amount-cell"><input type="number" class="bm-input" id="bm-amount-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'amount\',this)" /><span class="bm-unit">' + esc(def.unit) + '</span></span></td>'
       + '<td class="num" id="bm-out-perunit-' + def.key + '">—</td>'
       + '<td class="num" id="bm-out-in750-' + def.key + '">—</td>'
