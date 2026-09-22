@@ -893,7 +893,7 @@
    screens rather than wrapping. .bm-page carries matching bottom padding
    above so the last section never sits underneath it. */
 #view-bottlemath .bm-summary-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 400; display: -webkit-flex; display: flex; -webkit-flex-wrap: nowrap; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--border); background: var(--surface); -webkit-box-shadow: 0 -2px 14px rgba(30,27,24,0.08); box-shadow: 0 -2px 14px rgba(30,27,24,0.08); }
-#view-bottlemath .bm-summary-item { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 150px; padding: 11px 22px; border-right: 1px solid var(--border); white-space: nowrap; }
+#view-bottlemath .bm-summary-item { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 150px; padding: 11px 22px; border-right: 1px solid var(--border); white-space: nowrap; text-align: center; }
 #view-bottlemath .bm-summary-item:last-child { border-right: none; }
 #view-bottlemath .bm-summary-label { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; white-space: nowrap; }
 #view-bottlemath .bm-summary-val { font-family: 'DM Mono', monospace; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
@@ -968,7 +968,6 @@
 
 #view-bottlemath .bm-note { font-size: 0.76rem; color: var(--ink-faint); margin-top: 10px; }
 #view-bottlemath .bm-callout { background: var(--terra-pale); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 0.84rem; color: var(--ink); margin-top: 14px; }
-#view-bottlemath .bm-footnote { font-size: 0.76rem; color: var(--ink-faint); margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border); }
 
 @media (max-width: 640px) {
   #view-bottlemath .bm-overhead-grid, #view-bottlemath .bm-price-grid { grid-template-columns: 1fr; }
@@ -1624,7 +1623,7 @@
     </div>
 
     <div class="bm-section">
-      <div class="bm-section-label">What goes into a bottle</div>
+      <div class="bm-section-label">Fixed costs for one bottle</div>
       <div class="bm-table-wrap">
         <div class="bm-table-title">Ingredients and packaging</div>
         <div class="table-scroll"><table class="bm-table" id="bm-ingredients-table"></table></div>
@@ -1633,7 +1632,6 @@
 
     <div class="bm-section">
       <div class="bm-section-label">One-off costs still coming</div>
-      <div class="bm-section-intro">What we still have to spend to get a bottle onto a shelf. &ldquo;Ours&rdquo; is what we actually expect to pay &mdash; where it&rsquo;s blank, the working total uses the middle of the range.</div>
       <div class="bm-table-wrap">
         <div class="bm-table-title">One-off setup</div>
         <div class="table-scroll"><table class="bm-table" id="bm-oneoff-table"></table></div>
@@ -1642,7 +1640,7 @@
 
     <div class="bm-section">
       <div class="bm-section-label">Running costs, per month</div>
-      <div class="bm-section-intro">The monthly bill for keeping the atelier running, whether we sell anything or not. This total is the overhead everything further down is built on &mdash; change a line and the whole page follows.</div>
+      <div class="bm-section-intro">This total is the overhead everything further down is built on &mdash; changing a value will automatically update the rest of the page.</div>
       <div class="bm-table-wrap">
         <div class="bm-table-title">Every month</div>
         <div class="table-scroll"><table class="bm-table" id="bm-running-table"></table></div>
@@ -1685,10 +1683,8 @@
         <div class="table-scroll"><table class="bm-table" id="bm-breakeven-table"></table></div>
       </div>
       <div class="bm-result-grid" id="bm-profit-cards"></div>
-      <div class="bm-callout">Selling direct instead of through shops is worth more than any packaging decision we could make.</div>
     </div>
 
-    <div class="bm-footnote" id="bm-footnote"></div>
   </div>
 </div>
 
@@ -11121,7 +11117,7 @@ function bmBuildIngredientsTable() {
       + '</tr>';
   });
   h += '<tr class="bm-add-row"><td colspan="7"><button type="button" class="bm-add-link" onclick="bmAddCustomRow()">+ add item</button></td></tr>';
-  h += '<tr class="bm-total-row"><td>Fixed costs for one bottle</td><td></td><td></td><td></td>'
+  h += '<tr class="bm-total-row"><td>Cost for one bottle</td><td></td><td></td><td></td>'
     + '<td class="num" id="bm-out-fillcost-bottle750">—</td>'
     + '<td class="num" id="bm-out-fillcost-bottle375">—</td><td></td></tr>';
   h += '</tbody>';
@@ -11134,7 +11130,7 @@ var BM_OURS_TABLES = {
 function bmBuildOursTable(kind) {
   var cfg = BM_OURS_TABLES[kind];
   var rows = bmState[kind];
-  var h = '<thead><tr><th>Item</th><th>Low</th><th>High</th><th>Ours</th><th></th></tr></thead><tbody>';
+  var h = '<thead><tr><th>Item</th><th>Minimum</th><th>Maximum</th><th>Final</th><th></th></tr></thead><tbody>';
   rows.forEach(function (r) {
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-' + cfg.idPrefix + '-label-' + r.key + '" placeholder="Item name" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'label\',this)" /></td>'
@@ -11316,12 +11312,6 @@ function bmPaintComputed() {
   setText('bm-out-summary-375', bmMoney2(r.fullCost.bottle375));
   setText('bm-out-summary-breakeven', r.breakEven.wholesale != null ? bmLitres(r.breakEven.wholesale) : '—');
   setText('bm-out-summary-profit', bmMoneyWhole(r.profitAtFullOutput.wholesale));
-
-  var footEl = document.getElementById('bm-footnote');
-  if (footEl) {
-    var monthYear = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    footEl.textContent = 'Costs from our own purchase prices, ' + monthYear + '. Change any figure in the tables and the rest of the page follows.';
-  }
 }
 
 /* -- edits -- */
