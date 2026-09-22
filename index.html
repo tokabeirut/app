@@ -10924,6 +10924,19 @@ var BM_SIZES = [
   { key: 'bottle750', litres: 0.75, labelKey: 'label750', boxKey: 'box750', boxCapacity: 12 },
   { key: 'bottle375', litres: 0.375, labelKey: 'label375', boxKey: 'box375', boxCapacity: 24 }
 ];
+// Break-even is also split by what fraction of the litres sold are the big
+// vs. the small bottle — three fixed mixes, used to build the extra columns
+// on the break-even table.
+var BM_SIZE_MIXES = [
+  { key: 'allBig', label: '100% 750 ml' },
+  { key: 'mixed', label: '1/3 750 ml, 2/3 375 ml' },
+  { key: 'allSmall', label: '100% 375 ml' }
+];
+var BM_SIZE_MIX_WEIGHTS = {
+  allBig: { bottle750: 1, bottle375: 0 },
+  mixed: { bottle750: 1 / 3, bottle375: 2 / 3 },
+  allSmall: { bottle750: 0, bottle375: 1 }
+};
 var BM_INGREDIENT_KEYS = ['tea', 'sugar', 'cardamom', 'sumac', 'yeast'];
 var BM_INGREDIENT_LABELS = { tea: 'Tea', sugar: 'Sugar', cardamom: 'Cardamom', sumac: 'Sumac', yeast: 'Yeast' };
 var BM_ROW_DEFS = [
@@ -11091,6 +11104,25 @@ function bmCompute(s) {
     half: bHalf > 0 ? runningTotal / bHalf : null,
     retail: bRe > 0 ? runningTotal / bRe : null
   };
+  // Break-even table columns: same three sales-channel mixes above, but for
+  // three fixed bottle-SIZE mixes instead of the 50/50 split baked into
+  // blendedMarginPerLitre — i.e. what happens if the litres sold lean
+  // toward one bottle size or the other.
+  function marginForChannelMode(szKey, mode) {
+    if (mode === 'half') return (marginPerLitre[szKey].wholesale + marginPerLitre[szKey].retail) / 2;
+    return marginPerLitre[szKey][mode];
+  }
+  var breakEvenGrid = {};
+  ['wholesale', 'half', 'retail'].forEach(function (mode) {
+    breakEvenGrid[mode] = {};
+    BM_SIZE_MIXES.forEach(function (mix) {
+      var weights = BM_SIZE_MIX_WEIGHTS[mix.key];
+      var margin = BM_SIZES.reduce(function (sum, sz) {
+        return sum + weights[sz.key] * marginForChannelMode(sz.key, mode);
+      }, 0);
+      breakEvenGrid[mode][mix.key] = margin > 0 ? runningTotal / margin : null;
+    });
+  });
   var profitAtFullOutput = {
     wholesale: bWh * litresPerMonth - runningTotal,
     retail: bRe * litresPerMonth - runningTotal
@@ -11100,7 +11132,7 @@ function bmCompute(s) {
     oneOffTotal: oneOffTotal, runningTotal: runningTotal,
     litresPerMonth: litresPerMonth, overheadPerLitre: overheadPerLitre,
     overheadShare: overheadShare, fullCost: fullCost, weKeep: weKeep,
-    breakEven: breakEven, profitAtFullOutput: profitAtFullOutput
+    breakEven: breakEven, breakEvenGrid: breakEvenGrid, profitAtFullOutput: profitAtFullOutput
   };
 }
 
@@ -11213,13 +11245,24 @@ function bmBuildPriceCards() {
   });
   document.getElementById('bm-price-cards').innerHTML = h;
 }
+var BM_BREAKEVEN_ROWS = [
+  { mode: 'wholesale', label: 'Only B2B' },
+  { mode: 'half', label: 'Half B2B, half B2C' },
+  { mode: 'retail', label: 'Only B2C' }
+];
 function bmBuildBreakEvenTable() {
-  document.getElementById('bm-breakeven-table').innerHTML =
-    '<thead><tr><th>Where we sell</th><th>Litres we have to sell</th></tr></thead><tbody>'
-    + '<tr><td>Only B2B</td><td class="num" id="bm-out-be-wholesale">—</td></tr>'
-    + '<tr><td>Half B2B, half B2C</td><td class="num" id="bm-out-be-half">—</td></tr>'
-    + '<tr><td>Only B2C</td><td class="num" id="bm-out-be-retail">—</td></tr>'
-    + '</tbody>';
+  var h = '<thead><tr><th>Where we sell</th>'
+    + BM_SIZE_MIXES.map(function (mix) { return '<th>' + esc(mix.label) + '</th>'; }).join('')
+    + '</tr></thead><tbody>';
+  BM_BREAKEVEN_ROWS.forEach(function (row) {
+    h += '<tr><td>' + esc(row.label) + '</td>'
+      + BM_SIZE_MIXES.map(function (mix) {
+        return '<td class="num" id="bm-out-be-' + row.mode + '-' + mix.key + '">—</td>';
+      }).join('')
+      + '</tr>';
+  });
+  h += '</tbody>';
+  document.getElementById('bm-breakeven-table').innerHTML = h;
 }
 function bmBuildProfitCards() {
   document.getElementById('bm-profit-cards').innerHTML =
@@ -11335,9 +11378,12 @@ function bmPaintComputed() {
   });
   setText('bm-out-overhead-source-note', 'The running costs behind the overhead come straight from section 04 — currently ' + bmMoneyWhole(r.runningTotal) + ' a month.');
 
-  setText('bm-out-be-wholesale', r.breakEven.wholesale != null ? bmLitres(r.breakEven.wholesale) : '—');
-  setText('bm-out-be-half', r.breakEven.half != null ? bmLitres(r.breakEven.half) : '—');
-  setText('bm-out-be-retail', r.breakEven.retail != null ? bmLitres(r.breakEven.retail) : '—');
+  BM_BREAKEVEN_ROWS.forEach(function (row) {
+    BM_SIZE_MIXES.forEach(function (mix) {
+      var v = r.breakEvenGrid[row.mode][mix.key];
+      setText('bm-out-be-' + row.mode + '-' + mix.key, v != null ? bmLitres(v) : '—');
+    });
+  });
   setText('bm-out-profit-wholesale', bmMoneyWhole(r.profitAtFullOutput.wholesale));
   setText('bm-out-profit-wholesale-note', 'A month at ' + fmtNum(r.litresPerMonth) + ' litres, half in each size, all sold B2B.');
   setText('bm-out-profit-retail', bmMoneyWhole(r.profitAtFullOutput.retail));
