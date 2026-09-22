@@ -639,7 +639,7 @@
   .pt-filter-th:hover, .pt-filter-th.pt-filter-active { color: var(--terra); }
   .pt-filter-chevron { font-size: 0.6rem; opacity: 0.7; }
   .pt-filter-badge { display: inline-block; min-width: 13px; height: 13px; line-height: 13px; padding: 0 3px; border-radius: 20px; background: var(--terra); color: #fff; font-size: 0.58rem; text-align: center; margin-left: 3px; vertical-align: 1px; }
-  #pt-filter-menu { position: absolute; z-index: 9999; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 8px 28px rgba(30, 27, 24, 0.18); padding: 6px; font-size: 0.8rem; max-height: 300px; min-width: 170px; }
+  #pt-filter-menu, #biv-filter-menu { position: absolute; z-index: 9999; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 8px 28px rgba(30, 27, 24, 0.18); padding: 6px; font-size: 0.8rem; max-height: 300px; min-width: 170px; }
   .pt-filter-menu-opts { overflow-y: auto; }
   .pt-filter-opt { display: block; padding: 5px 6px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
   .pt-filter-opt:hover { background: var(--accent-soft, rgba(0,0,0,0.06)); }
@@ -2249,7 +2249,7 @@
       </div>
       <div class="form-group">
         <label>Tea type</label>
-        <input type="text" id="f-tea-type" value="Black, English Breakfast (Twinings)" data-hist-field="teaType" autocomplete="off" />
+        <input type="text" id="f-tea-type" value="Black, CTC Malawi (Satemwa)" data-hist-field="teaType" autocomplete="off" />
       </div>
       <div class="form-group">
         <label>Steep time</label>
@@ -4226,7 +4226,7 @@ function resetForm() {
   document.getElementById('f-sugar').value = '';
   document.getElementById('f-sugar-src').value = 'White sugar (Najjar Modern Mills)';
   document.getElementById('f-tea').value = '';
-  document.getElementById('f-tea-type').value = 'Black, English Breakfast (Twinings)';
+  document.getElementById('f-tea-type').value = 'Black, CTC Malawi (Satemwa)';
   document.getElementById('f-steep').value = '5';
   document.getElementById('f-hot').value = '';
   document.getElementById('f-cold').value = '';
@@ -6825,14 +6825,157 @@ function bivSortedLog() {
   });
   return list;
 }
+/* ---- per-column filters for the movement log: Stage, Size and Flavour
+   each get a multi-select popover, opened by clicking the column header
+   itself — same pattern as the Production Timeline task table (see
+   ptColumnFilters etc. below), just re-implemented against bottleInventory
+   so the two features stay independent. Filter option lists are always
+   built from the full unfiltered log, not the currently-filtered one, so
+   picking a value in one column never removes options from another. Only
+   the movement log is affected — the KPI totals above it are always
+   computed from the complete, unfiltered ledger. ---- */
+var bivColumnFilters = { date: [], stage: [], size: [], flavour: [], qty: [], notes: [] };
+var bivFilterMenuEl = null;
+var bivFilterMenuField = null;
+var bivFilterMenuAnchor = null;
+var bivFilterMenuDraft = [];
+function ensureBivFilterMenu() {
+  if (!bivFilterMenuEl) {
+    bivFilterMenuEl = document.createElement('div');
+    bivFilterMenuEl.id = 'biv-filter-menu';
+    bivFilterMenuEl.style.display = 'none';
+    document.body.appendChild(bivFilterMenuEl);
+  }
+  return bivFilterMenuEl;
+}
+// Single source of truth for "what does this row show/match under column X"
+// — used both to build each popover's checkbox list and to test a row
+// against the applied filters, so the two are always in sync (e.g. the
+// Date column filters on the same formatted string the cell displays, not
+// the raw ISO value).
+function bivDisplayValueForField(e, field) {
+  if (field === 'stage') return bivStageLabel(e.stage);
+  if (field === 'date') return fmtDate(e.date);
+  if (field === 'qty') { var q = parseFloat(e.qty) || 0; return (q > 0 ? '+' : '') + fmtNum(q); }
+  return e[field] || '';
+}
+function bivDistinctFilterValues(field) {
+  var seen = {}, out = [];
+  for (var i = 0; i < bottleInventory.length; i++) {
+    var v = bivDisplayValueForField(bottleInventory[i], field);
+    var key = '' + v;
+    if (!seen[key]) { seen[key] = 1; out.push(v); }
+  }
+  return out;
+}
+function bivActiveFilterCount() {
+  var n = 0;
+  for (var k in bivColumnFilters) { if (bivColumnFilters[k].length) n++; }
+  return n;
+}
+function positionBivFilterMenu(anchorEl) {
+  var r = anchorEl.getBoundingClientRect();
+  bivFilterMenuEl.style.left = (window.pageXOffset + r.left) + 'px';
+  bivFilterMenuEl.style.top = (window.pageYOffset + r.bottom + 4) + 'px';
+}
+function renderBivFilterMenu() {
+  var menu = ensureBivFilterMenu();
+  var field = bivFilterMenuField;
+  var values = bivDistinctFilterValues(field);
+  var optsHtml = values.map(function (v) {
+    var checked = bivFilterMenuDraft.indexOf(v) !== -1 ? ' checked' : '';
+    return '<label class="pt-filter-opt"><input type="checkbox" class="task-check" data-bfv="' + esc(v) + '"' + checked + ' /> ' + esc(v || '(none)') + '</label>';
+  }).join('');
+  var footHtml = '<div class="pt-filter-menu-foot">'
+    + '<button type="button" class="pt-filter-clear-link" onclick="bivClearColumnFilter(\'' + field + '\')">Clear</button>'
+    + '<button type="button" class="btn-primary pt-filter-apply-btn" onclick="applyBivFilterMenu()">Apply</button>'
+    + '</div>';
+  menu.innerHTML = '<div class="pt-filter-menu-opts">' + (optsHtml || '<div class="pt-filter-empty">Nothing to filter yet</div>') + '</div>' + footHtml;
+  menu.style.display = 'block';
+  if (bivFilterMenuAnchor) positionBivFilterMenu(bivFilterMenuAnchor);
+}
+function toggleBivFilterMenu(e, field) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  var anchor = (e && (e.currentTarget || e.target)) || null;
+  if (bivFilterMenuField === field && bivFilterMenuEl && bivFilterMenuEl.style.display === 'block') { hideBivFilterMenu(); return; }
+  bivFilterMenuField = field;
+  bivFilterMenuAnchor = anchor;
+  bivFilterMenuDraft = bivColumnFilters[field].slice();
+  renderBivFilterMenu();
+}
+function hideBivFilterMenu() {
+  if (bivFilterMenuEl) bivFilterMenuEl.style.display = 'none';
+  bivFilterMenuField = null;
+  bivFilterMenuAnchor = null;
+  bivFilterMenuDraft = [];
+}
+function toggleBivFilterDraftValue(value, checked) {
+  var idx = bivFilterMenuDraft.indexOf(value);
+  if (checked && idx === -1) bivFilterMenuDraft.push(value);
+  else if (!checked && idx !== -1) bivFilterMenuDraft.splice(idx, 1);
+}
+function applyBivFilterMenu() {
+  if (!bivFilterMenuField) return;
+  bivColumnFilters[bivFilterMenuField] = bivFilterMenuDraft.slice();
+  hideBivFilterMenu();
+  renderBottleInventory();
+}
+function bivClearColumnFilter(field) {
+  bivColumnFilters[field] = [];
+  hideBivFilterMenu();
+  renderBottleInventory();
+}
+function bivClearFilters() {
+  bivColumnFilters = { date: [], stage: [], size: [], flavour: [], qty: [], notes: [] };
+  hideBivFilterMenu();
+  renderBottleInventory();
+}
+document.addEventListener('change', function (e) {
+  var t = e.target;
+  if (!t || !t.getAttribute || t.getAttribute('data-bfv') == null) return;
+  if (!bivFilterMenuEl || !(t.closest && t.closest('#biv-filter-menu'))) return;
+  toggleBivFilterDraftValue(t.getAttribute('data-bfv'), !!t.checked);
+});
+document.addEventListener('click', function (e) {
+  if (!bivFilterMenuField) return;
+  var t = e.target;
+  if (t.closest && (t.closest('#biv-filter-menu') || t.closest('.pt-filter-th'))) return;
+  hideBivFilterMenu();
+});
+document.addEventListener('scroll', function (e) {
+  if (bivFilterMenuField && bivFilterMenuEl && e.target !== bivFilterMenuEl && !(bivFilterMenuEl.contains && bivFilterMenuEl.contains(e.target))) {
+    hideBivFilterMenu();
+  }
+}, true);
+function bivFilteredSortedLog() {
+  return bivSortedLog().filter(function (e) {
+    for (var field in bivColumnFilters) {
+      var active = bivColumnFilters[field];
+      if (active.length && active.indexOf(bivDisplayValueForField(e, field)) === -1) return false;
+    }
+    return true;
+  });
+}
+// Renders a whole clickable <th> for a filterable column — clicking the
+// header cell itself opens its popover (reuses the same .pt-filter-th /
+// #.../.pt-filter-menu-opts styling as the Production Timeline table).
+function bivFilterThHtml(field, label) {
+  var n = bivColumnFilters[field].length;
+  return '<th class="pt-filter-th' + (n ? ' pt-filter-active' : '') + '" onclick="toggleBivFilterMenu(event,\'' + field + '\')" title="Filter ' + esc(label) + '">'
+    + esc(label) + ' <span class="pt-filter-chevron">▾</span>' + (n ? '<span class="pt-filter-badge">' + n + '</span>' : '') + '</th>';
+}
 function bivLogTableHtml() {
-  var list = bivSortedLog();
+  var list = bivFilteredSortedLog();
   var rows = '';
   for (var i = 0; i < list.length; i++) rows += bivRowHtml(list[i]);
-  if (!rows) rows = '<tr><td colspan="8" class="muted" style="text-align:center;padding:24px 0;">No movements logged yet.</td></tr>';
+  if (!rows) {
+    rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px 0;">'
+      + (bivActiveFilterCount() ? 'No movements match the current filters. <span class="pt-filter-clear-link" onclick="bivClearFilters()">Clear filters</span>' : 'No movements logged yet.')
+      + '</td></tr>';
+  }
   return '<div class="an-section"><div class="sec-title">Movement log</div>'
     + '<div class="table-scroll"><table class="biv-table">'
-    + '<thead><tr><th>Date</th><th>Stage</th><th>Size</th><th>Flavour</th><th>Qty</th><th>Notes</th><th></th></tr></thead>'
+    + '<thead><tr>' + bivFilterThHtml('date', 'Date') + bivFilterThHtml('stage', 'Stage') + bivFilterThHtml('size', 'Size') + bivFilterThHtml('flavour', 'Flavour') + bivFilterThHtml('qty', 'Qty') + bivFilterThHtml('notes', 'Notes') + '<th></th></tr></thead>'
     + '<tbody>' + rows + '</tbody>'
     + '</table></div></div>';
 }
