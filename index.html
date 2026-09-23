@@ -17,7 +17,7 @@
      than iOS does. -->
 <link rel="icon" type="image/png" href="toka-icon.png"/>
 <title>toka</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&family=Inter+Tight:wght@700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&family=Inter:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet"/>
 <style>
   :root {
     --bg: #faf8f4;
@@ -119,7 +119,11 @@
   .view-bar .btn-primary { margin-left: auto; }
 
   .content-head { padding: 36px 48px 18px; }
-  .content-title { font-family: 'DM Sans', sans-serif; font-size: 1.15rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+  /* Section headings share the page-title font (Inter bold, slightly tight),
+     just smaller: 1.45rem for sections, 1.2rem for sub-sections (the ones
+     marked with an inline 0.98rem size, overridden here). */
+  .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
+  .content-title[style*="0.98rem"] { font-size: 1.2rem !important; }
   .content-sub { font-size: 0.8rem; color: var(--ink-faint); }
   /* Page hero — the top-of-page title block on every page, in the same
      format as the original Bottle Math artifact: small mono eyebrow line,
@@ -129,7 +133,7 @@
      section headings further down (Archived, Infusions, …) stay as they
      were. The eyebrow and accent rule are injected by decoratePageHeads(). */
   [id^="view-"] > .view-bar + .content-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 44px 48px 40px; margin-bottom: 28px; }
-  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Inter Tight', 'DM Sans', sans-serif; font-weight: 800; font-size: 3.4rem; line-height: 1.02; letter-spacing: -0.035em; color: var(--ink); margin-bottom: 0; }
+  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-weight: 700; font-size: 3.4rem; line-height: 1.05; letter-spacing: -0.025em; color: var(--ink); margin-bottom: 0; }
   [id^="view-"] > .view-bar + .content-head .content-sub { font-family: 'Newsreader', Georgia, serif; font-size: 1.15rem; line-height: 1.6; color: #5a534c; max-width: 660px; }
   .page-eyebrow { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 26px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px 32px; }
   .page-accent { width: 66px; height: 3px; background: var(--terra); margin: 28px 0 24px; }
@@ -678,7 +682,7 @@
   .pt-filter-clear-link { border: none; background: none; color: var(--terra); font-size: 0.72rem; cursor: pointer; padding: 0; text-decoration: underline; }
   .pt-filter-apply-btn { padding: 6px 14px !important; font-size: 0.66rem !important; }
   .pt-gantt-section { padding: 26px 48px 6px; }
-  .pt-gantt-section .content-title { font-size: 0.98rem; }
+  .pt-gantt-section .content-title { font-size: 1.2rem; }
   .pt-gantt-legend { display: -webkit-flex; display: flex; align-items: center; gap: 18px; margin: 2px 0 12px; }
   .pt-legend-item { display: -webkit-flex; display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); }
   .pt-legend-swatch { width: 16px; height: 10px; border-radius: 20px; box-sizing: border-box; }
@@ -911,7 +915,7 @@
 #view-bottlemath .bm-page { padding: 0 48px 92px; }
 #view-bottlemath .bm-section { margin-top: 40px; }
 #view-bottlemath .bm-section:first-child { margin-top: 0; }
-#view-bottlemath .bm-section-label { font-family: 'DM Sans', sans-serif; font-size: 0.98rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
+#view-bottlemath .bm-section-label { font-family: 'Inter', 'DM Sans', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
 #view-bottlemath .bm-section-intro { font-size: 0.8rem; color: var(--ink-faint); line-height: 1.6; margin-bottom: 16px; max-width: 720px; }
 /* A section with no intro paragraph (01, 02) goes straight from the title
    into its cards/table — give that a bit more breathing room, matching
@@ -945,7 +949,7 @@
 #view-bottlemath .bm-card-unit { font-size: 1.15rem; color: var(--ink); font-weight: 400; }
 
 #view-bottlemath .bm-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-#view-bottlemath .bm-table-title { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.92rem; color: var(--ink); padding: 14px 16px; border-bottom: 1px solid var(--border); }
+#view-bottlemath .bm-table-title { font-family: 'Inter', 'DM Sans', sans-serif; font-weight: 600; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--ink); padding: 14px 16px; border-bottom: 1px solid var(--border); }
 #view-bottlemath table.bm-table th, #view-bottlemath table.bm-table td { text-align: right; }
 #view-bottlemath table.bm-table th:first-child, #view-bottlemath table.bm-table td:first-child { text-align: left; }
 #view-bottlemath table.bm-table tbody tr.bm-total-row td { font-weight: 700; background: var(--terra-pale); }
@@ -1018,7 +1022,7 @@
 #view-bottlemath .bm-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #view-bottlemath .bm-price-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 #view-bottlemath .bm-price-head { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin-bottom: 10px; }
-#view-bottlemath .bm-price-title { font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 0.92rem; color: var(--ink); }
+#view-bottlemath .bm-price-title { font-family: 'Inter', 'DM Sans', sans-serif; font-weight: 600; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--ink); }
 #view-bottlemath .bm-price-fullcost { font-size: 0.7rem; color: var(--ink-faint); }
 #view-bottlemath .bm-price-fullcost strong { color: var(--ink); font-family: 'DM Mono', monospace; }
 #view-bottlemath .bm-price-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); gap: 10px; }
