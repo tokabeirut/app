@@ -17,7 +17,7 @@
      than iOS does. -->
 <link rel="icon" type="image/png" href="toka-icon.png"/>
 <title>toka</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&family=Inter:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&family=Inter:opsz,wght@14..32,500..800&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet"/>
 <style>
   :root {
     --bg: #faf8f4;
@@ -122,7 +122,7 @@
   /* Section headings share the page-title font (Inter bold, slightly tight),
      just smaller: 1.45rem for sections, 1.2rem for sub-sections (the ones
      marked with an inline 0.98rem size, overridden here). */
-  .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
+  .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-optical-sizing: auto; font-size: 1.45rem; font-weight: 650; letter-spacing: -0.012em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
   .content-title[style*="0.98rem"] { font-size: 1.2rem !important; }
   .content-sub { font-size: 0.8rem; color: var(--ink-faint); }
   /* Page hero — the top-of-page title block on every page, in the same
@@ -133,7 +133,7 @@
      section headings further down (Archived, Infusions, …) stay as they
      were. The eyebrow and accent rule are injected by decoratePageHeads(). */
   [id^="view-"] > .view-bar + .content-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 44px 48px 40px; margin-bottom: 28px; }
-  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-weight: 700; font-size: 3.4rem; line-height: 1.05; letter-spacing: -0.025em; color: var(--ink); margin-bottom: 0; }
+  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-optical-sizing: auto; font-variation-settings: 'opsz' 32; font-weight: 650; font-size: 3.4rem; line-height: 1.05; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 0; }
   [id^="view-"] > .view-bar + .content-head .content-sub { font-family: 'Newsreader', Georgia, serif; font-size: 1.15rem; line-height: 1.6; color: #5a534c; max-width: 660px; }
   .page-eyebrow { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 26px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px 32px; }
   .page-accent { width: 66px; height: 3px; background: var(--terra); margin: 28px 0 24px; }
@@ -915,7 +915,7 @@
 #view-bottlemath .bm-page { padding: 0 48px 92px; }
 #view-bottlemath .bm-section { margin-top: 40px; }
 #view-bottlemath .bm-section:first-child { margin-top: 0; }
-#view-bottlemath .bm-section-label { font-family: 'Inter', 'DM Sans', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
+#view-bottlemath .bm-section-label { font-family: 'Inter', 'DM Sans', sans-serif; font-optical-sizing: auto; font-size: 1.45rem; font-weight: 650; letter-spacing: -0.012em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
 #view-bottlemath .bm-section-intro { font-size: 0.8rem; color: var(--ink-faint); line-height: 1.6; margin-bottom: 16px; max-width: 720px; }
 /* A section with no intro paragraph (01, 02) goes straight from the title
    into its cards/table — give that a bit more breathing room, matching
