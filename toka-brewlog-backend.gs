@@ -1419,6 +1419,141 @@ function deleteExpenseDeposit_(data) {
   return json_({ ok: false, error: 'deposit not found' });
 }
 
+/* ---------- Bottle Math: real sheet instead of one JSON cell ----------
+   Was a single JSON string in the shared settings sheet (cell C1) — every
+   number lived inside one blob, unreadable/uneditable directly in Sheets.
+   Now each figure is its own row/cell in its own sheet, in a flat
+   section|key|label|field1..field4 shape general enough to cover every kind
+   of line item Bottle Math has (a single fixed number, a buy/amount pair, a
+   user-added row with a unit and per-size applicability, a label/price pair,
+   or a low/high price range) without a different schema per section.
+   Editing still happens in the app (per the settings sheet UI, not here) —
+   this only changes where the numbers are stored, not how they're changed.
+   The wire format to/from the frontend is UNCHANGED: getBottleMathSettings
+   and getAll still return a JSON string under `settings` that
+   bmApplyLoadedSettings() JSON.parses exactly as before, and
+   setBottleMathSettings still receives the same bmState-shaped object it
+   always has — only the translation to/from sheet rows is new. */
+var BOTTLE_MATH_SHEET = 'bottle_math';
+var BOTTLE_MATH_HEADERS = ['section', 'key', 'label', 'field1', 'field2', 'field3', 'field4'];
+
+function getBottleMathSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(BOTTLE_MATH_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(BOTTLE_MATH_SHEET);
+    sh.getRange(1, 1, 1, BOTTLE_MATH_HEADERS.length).setValues([BOTTLE_MATH_HEADERS]);
+  }
+  return sh;
+}
+
+function bmNum_(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+// settings is the same shape as the frontend's bmState: { recipe, ingredients,
+// packaging, customRows, oneOff, running, pricing, litresPerMonth }. Every
+// save is a full overwrite of the sheet (same debounced-whole-state pattern
+// the JSON blob already used), so there's no row-matching/diffing to get
+// wrong.
+function writeBottleMathSettings_(settings) {
+  var rows = [];
+  if (settings.recipe) {
+    for (var rk in settings.recipe) rows.push(['recipe', rk, '', bmNum_(settings.recipe[rk]), '', '', '']);
+  }
+  if (settings.ingredients) {
+    for (var ik in settings.ingredients) {
+      var ing = settings.ingredients[ik] || {};
+      rows.push(['ingredient', ik, '', bmNum_(ing.buy), bmNum_(ing.amount), '', '']);
+    }
+  }
+  if (settings.packaging) {
+    for (var pk in settings.packaging) {
+      var pkg = settings.packaging[pk] || {};
+      rows.push(['packaging', pk, '', bmNum_(pkg.buy), bmNum_(pkg.amount), '', '']);
+    }
+  }
+  (settings.customRows || []).forEach(function (r) {
+    var applies = [];
+    if (r.applies && r.applies.bottle750) applies.push('bottle750');
+    if (r.applies && r.applies.bottle375) applies.push('bottle375');
+    rows.push(['custom', r.key, r.label || '', bmNum_(r.buy), bmNum_(r.amount), r.unit || '', applies.join(',')]);
+  });
+  (settings.oneOff || []).forEach(function (r) {
+    rows.push(['oneOff', r.key, r.label || '', bmNum_(r.ours), '', '', '']);
+  });
+  (settings.running || []).forEach(function (r) {
+    rows.push(['running', r.key, r.label || '', bmNum_(r.ours), '', '', '']);
+  });
+  if (settings.pricing) {
+    for (var szk in settings.pricing) {
+      ['wholesale', 'retail'].forEach(function (ch) {
+        var p = (settings.pricing[szk] || {})[ch];
+        if (!p) return;
+        rows.push(['pricing', szk, ch, bmNum_(p.low), bmNum_(p.high), '', '']);
+      });
+    }
+  }
+  if (settings.litresPerMonth != null) rows.push(['meta', 'litresPerMonth', '', bmNum_(settings.litresPerMonth), '', '', '']);
+
+  var sh = getBottleMathSheet_();
+  var lastRow = sh.getLastRow();
+  if (lastRow > 1) sh.getRange(2, 1, lastRow - 1, BOTTLE_MATH_HEADERS.length).clearContent();
+  if (rows.length) sh.getRange(2, 1, rows.length, BOTTLE_MATH_HEADERS.length).setValues(rows);
+}
+
+// Reconstructs the same bmState-shaped object the frontend already sends —
+// returns null when the sheet has no data rows yet (mirrors the old empty-
+// cell case) so callers can fall back to '' on the wire, same as before.
+function readBottleMathSettingsObj_() {
+  var sh = getBottleMathSheet_();
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return null;
+  var rows = sh.getRange(2, 1, lastRow - 1, BOTTLE_MATH_HEADERS.length).getValues();
+  var out = { recipe: {}, ingredients: {}, packaging: {}, customRows: [], oneOff: [], running: [], pricing: {} };
+  rows.forEach(function (row) {
+    var section = row[0], key = row[1], label = row[2], f1 = row[3], f2 = row[4], f3 = row[5], f4 = row[6];
+    if (!section || !key) return;
+    if (section === 'recipe') { out.recipe[key] = bmNum_(f1); return; }
+    if (section === 'ingredient') { out.ingredients[key] = { buy: bmNum_(f1), amount: bmNum_(f2) }; return; }
+    if (section === 'packaging') { out.packaging[key] = { buy: bmNum_(f1), amount: bmNum_(f2) }; return; }
+    if (section === 'custom') {
+      var appliesStr = String(f4 || '');
+      out.customRows.push({
+        key: String(key), label: String(label || ''), buy: bmNum_(f1), amount: bmNum_(f2), unit: String(f3 || ''),
+        applies: { bottle750: appliesStr.indexOf('bottle750') !== -1, bottle375: appliesStr.indexOf('bottle375') !== -1 }
+      });
+      return;
+    }
+    if (section === 'oneOff') { out.oneOff.push({ key: String(key), label: String(label || ''), ours: bmNum_(f1) }); return; }
+    if (section === 'running') { out.running.push({ key: String(key), label: String(label || ''), ours: bmNum_(f1) }); return; }
+    if (section === 'pricing') {
+      out.pricing[key] = out.pricing[key] || {};
+      out.pricing[key][label] = { low: bmNum_(f1), high: bmNum_(f2) };
+      return;
+    }
+    if (section === 'meta' && key === 'litresPerMonth') { out.litresPerMonth = bmNum_(f1); return; }
+  });
+  return out;
+}
+
+// One-time migration path: if the new sheet is still empty but the old
+// single-cell JSON blob (settings!C1) has data from before this change,
+// parse it, write it into the new sheet so it becomes the source of truth
+// going forward, and return it — so switching storage doesn't drop whatever
+// was already saved live.
+function readOrMigrateBottleMathSettings_() {
+  var obj = readBottleMathSettingsObj_();
+  if (obj) return obj;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var oldSheet = ss.getSheetByName(EXPENSES_SETTINGS_SHEET);
+  var oldVal = oldSheet ? oldSheet.getRange('C1').getValue() : '';
+  if (!oldVal) return null;
+  var parsed;
+  try { parsed = JSON.parse(String(oldVal)); } catch (e) { return null; }
+  if (!parsed || typeof parsed !== 'object') return null;
+  writeBottleMathSettings_(parsed);
+  return readBottleMathSettingsObj_();
+}
+
 /* ---------- web app entry points ---------- */
 
 function doGet(e) {
@@ -1483,15 +1618,14 @@ function doGet(e) {
     return json_({ ok: true, rate: frVal || 13.32 });
   }
   // Bottle Math (Business > Volume to bottle converter's cost/pricing
-  // sibling page) has ~50 individually-editable figures, but they're all
-  // one coherent settings object rather than a ledger, so — same as the
-  // faucet rate above — they're stored as a single value, this time a
-  // JSON string, in one more cell (C1) of the shared settings sheet.
+  // sibling page) has ~50 individually-editable figures, now stored one per
+  // cell in its own sheet (BOTTLE_MATH_SHEET) instead of a single JSON blob
+  // — see the block above doGet for the row shape and the read/write
+  // helpers. The wire contract here is unchanged: still a JSON string under
+  // `settings`, so the frontend's existing JSON.parse keeps working as-is.
   if (action === 'getBottleMathSettings') {
-    var bmSs = SpreadsheetApp.getActiveSpreadsheet();
-    var bmSheet = bmSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || bmSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    var bmVal = bmSheet.getRange('C1').getValue();
-    return json_({ ok: true, settings: bmVal ? String(bmVal) : '' });
+    var bmObj = readOrMigrateBottleMathSettings_();
+    return json_({ ok: true, settings: bmObj ? JSON.stringify(bmObj) : '' });
   }
   if (action === 'getExpenseDeposits') {
     return getExpenseDeposits_();
@@ -1503,9 +1637,7 @@ function doGet(e) {
   // read. The frontend falls back to the individual actions above if this
   // one isn't available yet, so redeploying is safe at any time.
   if (action === 'getAll') {
-    var gaSs = SpreadsheetApp.getActiveSpreadsheet();
-    var gaSettingsSheet = gaSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || gaSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    var gaBmVal = gaSettingsSheet.getRange('C1').getValue();
+    var gaBmObj = readOrMigrateBottleMathSettings_();
     return json_({
       ok: true,
       batches: readAll_(),
@@ -1518,7 +1650,7 @@ function doGet(e) {
       plannedInfusions: readAllPlannedInfusions_(),
       plannedBrews: readAllPlannedBrews_(),
       bottleInventory: readAllBottleInv_(),
-      bottleMathSettings: gaBmVal ? String(gaBmVal) : ''
+      bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : ''
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
@@ -1569,9 +1701,7 @@ function handleAction_(body) {
   }
 
   if (action === 'setBottleMathSettings') {
-    var bmsSs = SpreadsheetApp.getActiveSpreadsheet();
-    var bmsSheet = bmsSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || bmsSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    bmsSheet.getRange('C1').setValue(JSON.stringify(body.settings || {}));
+    writeBottleMathSettings_(body.settings || {});
     return json_({ ok: true });
   }
 
