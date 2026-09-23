@@ -66,6 +66,23 @@
   .sync-dot.live { background: #4caf7d; }
   .sync-dot.error { background: var(--terra); }
   .sync-dot.saving { -webkit-animation: pulse 1s infinite; animation: pulse 1s infinite; background: #f0a050; }
+  /* "showing saved data · updating…" / "loading latest data…" notice — see
+     the snapshot block in the script. Fixed at the top so it's visible on
+     every page, including Bottle Math with its own fixed bottom bar. */
+  #data-state-badge { position: fixed; top: 12px; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); z-index: 700; max-width: calc(100vw - 32px); padding: 7px 16px 7px 30px; border-radius: 99px; background: var(--terra-pale); border: 1px solid var(--border); color: var(--terra); font-family: 'Jost', sans-serif; font-size: 0.74rem; box-shadow: 0 2px 12px rgba(30,27,24,0.10); cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #data-state-badge::before { content: ''; position: absolute; left: 13px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #f0a050; -webkit-animation: pulse 1s infinite; animation: pulse 1s infinite; }
+  #data-state-badge.is-error { cursor: pointer; }
+  #data-state-badge.is-error::before { background: var(--terra); -webkit-animation: none; animation: none; }
+  #data-state-badge.pulse { -webkit-animation: dataBadgeNudge 0.45s ease; animation: dataBadgeNudge 0.45s ease; }
+  @-webkit-keyframes dataBadgeNudge { 0%, 100% { -webkit-transform: translateX(-50%); } 25% { -webkit-transform: translateX(calc(-50% - 5px)); } 75% { -webkit-transform: translateX(calc(-50% + 5px)); } }
+  @keyframes dataBadgeNudge { 0%, 100% { transform: translateX(-50%); } 25% { transform: translateX(calc(-50% - 5px)); } 75% { transform: translateX(calc(-50% + 5px)); } }
+  /* Saved copy on screen: dim the page content slightly so it reads as
+     "not live yet" (the back bar stays normal). No copy at all: hide the
+     content entirely until the live data lands, so no default/zero numbers
+     ever show. */
+  body.data-stale .data-view > :not(.view-bar) { opacity: 0.6; -webkit-transition: opacity 0.2s; transition: opacity 0.2s; }
+  body.data-empty .data-view > :not(.view-bar) { visibility: hidden; }
+  body.data-empty #view-bottlemath .bm-summary-bar { visibility: hidden; }
   @-webkit-keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .sync-reconfig { margin-left: auto; -webkit-appearance: none; appearance: none; background: none; border: 0; padding: 5px; margin: -5px -5px -5px auto; display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 5px; font: inherit; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; cursor: pointer; color: var(--ink-faint); opacity: 0.5; -webkit-transition: opacity .15s ease, color .15s ease; transition: opacity .15s ease, color .15s ease; }
@@ -1318,6 +1335,9 @@
     <button class="config-btn" onclick="saveConfig()">connect &amp; open toka</button>
   </div>
 </div>
+
+<!-- DATA STATE BADGE (saved-copy / loading / couldn't-reach notice) -->
+<div id="data-state-badge" style="display:none" onclick="retryDataLoad()" role="status" aria-live="polite"></div>
 
 <!-- SYNC BAR -->
 <div id="sync-bar" style="display:none">
@@ -4155,10 +4175,12 @@ function loadParallel(fns, done) {
   var remaining = fns.length;
   if (!remaining) { if (done) done(); return; }
   var settled = false;
+  var firstErr = null;
   fns.forEach(function (fn) {
-    fn(function () {
+    fn(function (err) {
+      if (err && !firstErr) firstErr = err;
       remaining--;
-      if (remaining === 0 && !settled) { settled = true; if (done) done(); }
+      if (remaining === 0 && !settled) { settled = true; if (done) done(firstErr); }
     });
   });
 }
@@ -4174,9 +4196,21 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings], function () { if (cb) cb(); });
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings], function (pErr) {
+        if (pErr) markDataLoadFailed(); else markDataFresh();
+        if (cb) cb();
+      });
       return;
     }
+    applyAllData(res);
+    setSyncStatus('live', 'connected \u00b7 google sheets');
+    markDataFresh();
+    if (cb) cb();
+  });
+}
+// Copies a getAll-shaped object (a live response, or the snapshot saved in
+// this browser from the last successful load) into the page's globals.
+function applyAllData(res) {
     batches = res.batches || [];
     bottles = res.bottles || [];
     infusions = res.infusions || [];
@@ -4194,9 +4228,6 @@ function loadAll(cb) {
     for (var pbi = 0; pbi < plannedBrews.length; pbi++) planBrewOriginal[plannedBrews[pbi].id] = clonePlan(plannedBrews[pbi]);
     feedbackByKey = {};
     for (var i = 0; i < feedback.length; i++) feedbackByKey[feedback[i].key] = feedback[i];
-    setSyncStatus('live', 'connected \u00b7 google sheets');
-    if (cb) cb();
-  });
 }
 // Called once at boot (see "boot" at the bottom of this file) right after
 // the Home screen is shown, so every page's data is already sitting in
@@ -4206,12 +4237,159 @@ function loadAll(cb) {
 // background fetch finishes (those views render as soon as they're opened,
 // then re-render for free once this callback lands).
 function loadAllInBackground() {
+  hydrateFromSnapshot();
   loadAll(function () {
     renderTable();
     if (typeof renderBottles === 'function') renderBottles();
     if (typeof renderReadings === 'function') renderReadings();
   });
 }
+
+/* ---- last-known-data snapshot ("show old values, then update") ----
+   The slow part of every load is the Apps Script round-trip, not the data.
+   So after each successful full load, a copy of everything getAll returned
+   is kept in this browser. On the next visit every page renders straight
+   away from that copy, with a badge saying it's the saved view and that
+   fresh data is on its way; the real load then replaces it.
+   Because several computers share the sheet, a computer's copy can be out
+   of date — so while the page is showing the copy, editing is locked on
+   the pages it covers (any change made on top of old numbers could
+   overwrite something newer saved from another computer). Editing unlocks
+   as soon as the first live load of this visit lands.
+   A computer that has never loaded the app has no copy: those pages show
+   only a "loading" state until the live data arrives, never placeholder or
+   default numbers. Expenses, the faucet timer and the bottle calculator
+   load their own data separately and aren't affected. */
+var SNAPSHOT_KEY = 'toka_data_snapshot_v1';
+var DATA_VIEW_IDS = ['view-f1', 'view-bottling', 'view-infusion', 'view-readings', 'view-analytics', 'view-today', 'view-tasting', 'view-overview', 'view-production', 'view-inventory', 'view-bottlemath'];
+var dataFresh = false;       // true once a live load has landed this visit
+var snapshotSavedAt = 0;     // when the copy currently on screen was taken
+
+function snapshotFromGlobals() {
+  return {
+    batches: batches, bottles: bottles, infusions: infusions, readings: readings,
+    feedback: feedback, productionTasks: productionTasks, dailyChecklist: dailyChecklist,
+    plannedInfusions: plannedInfusions, plannedBrews: plannedBrews,
+    bottleInventory: bottleInventory, bottleMathSettings: bottleMathSettingsRaw,
+    savedAt: Date.now()
+  };
+}
+function saveSnapshot() {
+  if (!dataFresh) return;   // never save a copy of a copy
+  try { localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(snapshotFromGlobals())); }
+  catch (e) { try { localStorage.removeItem(SNAPSHOT_KEY); } catch (e2) {} }
+}
+function hydrateFromSnapshot() {
+  DATA_VIEW_IDS.forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add('data-view'); });
+  if (dataFresh) return;
+  var snap = null;
+  try { var raw = localStorage.getItem(SNAPSHOT_KEY); if (raw) snap = JSON.parse(raw); } catch (e) { snap = null; }
+  if (snap && snap.batches) {
+    try {
+      applyAllData(snap);
+      if (typeof bmApplyLoadedSettings === 'function') bmApplyLoadedSettings(bottleMathSettingsRaw);
+      snapshotSavedAt = snap.savedAt || 0;
+      setDataState('stale');
+      return;
+    } catch (e) { /* unreadable copy — fall through to the plain loading state */ }
+  }
+  setDataState('empty');
+}
+function fmtSnapshotTime(ts) {
+  if (!ts) return '';
+  var d = new Date(ts), now = new Date();
+  var hm = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  if (d.toDateString() === now.toDateString()) return 'today ' + hm;
+  return d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + hm;
+}
+// state: 'fresh' | 'stale' (showing the saved copy, live load pending) |
+// 'empty' (no copy, live load pending) | 'error' (live load failed)
+function setDataState(state) {
+  var body = document.body;
+  var badge = document.getElementById('data-state-badge');
+  body.classList.remove('data-stale', 'data-empty');
+  if (state === 'fresh') { if (badge) badge.style.display = 'none'; return; }
+  var hasCopy = !!snapshotSavedAt;
+  body.classList.add(hasCopy ? 'data-stale' : 'data-empty');
+  if (!badge) return;
+  var txt;
+  if (state === 'error') {
+    txt = hasCopy
+      ? 'Couldn’t reach the sheet — showing saved data from ' + fmtSnapshotTime(snapshotSavedAt) + ', editing locked · tap to retry'
+      : 'Couldn’t reach the sheet · tap to retry';
+    badge.classList.add('is-error');
+  } else {
+    txt = hasCopy
+      ? 'Showing saved data from ' + fmtSnapshotTime(snapshotSavedAt) + ' · updating…'
+      : 'Loading latest data…';
+    badge.classList.remove('is-error');
+  }
+  badge.textContent = txt;
+  badge.style.display = '';
+}
+function markDataFresh() {
+  var wasFresh = dataFresh;
+  dataFresh = true;
+  setDataState('fresh');
+  saveSnapshot();
+  // First live load of this visit: whatever page is open was drawn from the
+  // saved copy (or not drawn at all), so redraw it from the live data now.
+  if (!wasFresh) {
+    // Bottle Math keeps its own working copy (bmState) separate from the raw
+    // data, so bring it up to date even if that page isn't open right now.
+    if (typeof bmApplyLoadedSettings === 'function') bmApplyLoadedSettings(bottleMathSettingsRaw);
+    renderCurrentViewData();
+  }
+}
+function markDataLoadFailed() {
+  if (dataFresh) return;   // an already-live page stays live on a later hiccup
+  setDataState('error');
+}
+function retryDataLoad() {
+  if (dataFresh) return;
+  setDataState(snapshotSavedAt ? 'stale' : 'empty');
+  loadAll();
+}
+function renderCurrentViewData() {
+  var v = currentView;
+  try {
+    if (v === 'f1') renderTable();
+    else if (v === 'bottling') renderBottles();
+    else if (v === 'infusion') renderInfusions();
+    else if (v === 'readings') renderReadings();
+    else if (v === 'analytics') renderAnalytics();
+    else if (v === 'today') renderToday();
+    else if (v === 'tasting') renderTasting();
+    else if (v === 'overview') renderOverview();
+    else if (v === 'production') renderProduction();
+    else if (v === 'inventory') renderBottleInventory();
+  } catch (e) {}
+}
+// Editing lock while the saved copy is on screen: swallows focus/clicks on
+// form fields, buttons, inline-edit cells and drag handles inside the
+// covered pages (the back button stays usable) and nudges the badge.
+function isDataLocked() {
+  var c = document.body.classList;
+  return c.contains('data-stale') || c.contains('data-empty');
+}
+function blockIfDataLocked(e) {
+  if (!isDataLocked()) return;
+  var t = e.target;
+  if (!t || !t.closest || !t.closest('.data-view') || t.closest('.back-link')) return;
+  if (!t.closest('input, select, textarea, button, [contenteditable="true"], .ed, [draggable="true"]')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.type === 'focusin' && t.blur) t.blur();
+  var badge = document.getElementById('data-state-badge');
+  if (badge) { badge.classList.remove('pulse'); void badge.offsetWidth; badge.classList.add('pulse'); }
+}
+['click', 'mousedown', 'focusin', 'dragstart'].forEach(function (evt) {
+  document.addEventListener(evt, blockIfDataLocked, true);
+});
+// Keep the copy current with anything saved during this visit, so the next
+// visit starts from the latest numbers this computer saw.
+window.addEventListener('pagehide', saveSnapshot);
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') saveSnapshot(); });
 
 /* ---- views ---- */
 var viewHistory = [];
@@ -11015,8 +11193,16 @@ function bmNum(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function bmPriceAvg(p) { return (bmNum(p && p.low) + bmNum(p && p.high)) / 2; }
 function bmNewKey(prefix) { return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function bmMoney2(n) { return '$ ' + fmtUSD(bmNum(n)); }
-function bmMoney3(n) { return '$ ' + bmNum(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 }); }
-function bmMoneyWhole(n) { return '$ ' + Math.round(bmNum(n)).toLocaleString('en-US'); }
+// Every money value on the page shows exactly 2 decimals ($ 595.10, not
+// $ 595.1) — these two used to show up to 3 decimals / whole dollars, kept
+// as aliases so the call sites don't need to change.
+function bmMoney3(n) { return bmMoney2(n); }
+function bmMoneyWhole(n) { return bmMoney2(n); }
+// Editable money inputs (buy prices, one-off/running prices, B2B/B2C
+// ranges) get the same 2-decimal format whenever they're painted or the
+// field loses focus — never while typing, so the cursor isn't disturbed.
+function bmFmtMoneyInput(v) { return bmNum(v).toFixed(2); }
+function bmMoneyInputWidth(v) { return (bmFmtMoneyInput(v).length + 1) + 'ch'; }
 function bmLitres(n) { return fmtNum(Math.round(bmNum(n))) + ' L'; }
 function bmBottles(n) { return fmtNum(Math.round(bmNum(n))) + ' bottles'; }
 function bmRowState(def) { return def.group === 'ingredient' ? bmState.ingredients[def.key] : bmState.packaging[def.key]; }
@@ -11157,10 +11343,10 @@ function bmBuildIngredientsTable() {
   var h = '<thead><tr><th>Item</th><th>We buy</th><th>Amount</th><th>Per unit</th><th>In a 750ml</th><th>In a 375ml</th><th></th></tr></thead><tbody>';
   BM_ROW_DEFS.forEach(function (def) {
     var fn = bmEditFieldFn(def);
-    var buySize = Math.max(1, String(bmRowState(def).buy).length) + 1;
+    var buyWidth = bmMoneyInputWidth(bmRowState(def).buy);
     h += '<tr>'
       + '<td>' + esc(def.label) + '</td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-buy-' + def.key + '" min="0" step="any" style="width:' + buySize + 'ch" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input bm-money-input" id="bm-buy-' + def.key + '" min="0" step="any" style="width:' + buyWidth + '" oninput="' + fn + '(\'' + def.key + '\',\'buy\',this)" /></span></td>'
       + '<td class="num"><span class="bm-amount-cell"><input type="number" class="bm-input" id="bm-amount-' + def.key + '" min="0" step="any" oninput="' + fn + '(\'' + def.key + '\',\'amount\',this)" /><span class="bm-unit">' + esc(def.unit) + '</span></span></td>'
       + '<td class="num" id="bm-out-perunit-' + def.key + '">—</td>'
       + '<td class="num" id="bm-out-in750-' + def.key + '">—</td>'
@@ -11169,10 +11355,10 @@ function bmBuildIngredientsTable() {
       + '</tr>';
   });
   (bmState.customRows || []).forEach(function (row) {
-    var customBuySize = Math.max(1, String(row.buy).length) + 1;
+    var customBuyWidth = bmMoneyInputWidth(row.buy);
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-custom-label-' + row.key + '" placeholder="Item name" oninput="bmEditCustomField(\'' + row.key + '\',\'label\',this)" /></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-custom-buy-' + row.key + '" min="0" step="any" style="width:' + customBuySize + 'ch" oninput="bmEditCustomField(\'' + row.key + '\',\'buy\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input bm-money-input" id="bm-custom-buy-' + row.key + '" min="0" step="any" style="width:' + customBuyWidth + '" oninput="bmEditCustomField(\'' + row.key + '\',\'buy\',this)" /></span></td>'
       + '<td class="num"><span class="bm-amount-cell"><input type="number" class="bm-input" id="bm-custom-amount-' + row.key + '" min="0" step="any" oninput="bmEditCustomField(\'' + row.key + '\',\'amount\',this)" /><input type="text" class="bm-unit-input" id="bm-custom-unit-' + row.key + '" placeholder="unit" oninput="bmEditCustomField(\'' + row.key + '\',\'unit\',this)" /></span></td>'
       + '<td class="num" id="bm-out-custom-perunit-' + row.key + '">—</td>'
       + '<td class="num"><label class="bm-applies-label"><input type="checkbox" id="bm-custom-applies-' + row.key + '-bottle750" onchange="bmEditCustomApplies(\'' + row.key + '\',\'bottle750\',this)" /><span id="bm-out-custom-in750-' + row.key + '">—</span></label></td>'
@@ -11196,10 +11382,10 @@ function bmBuildOursTable(kind) {
   var rows = bmState[kind];
   var h = '<thead><tr><th>Item</th><th>Price</th><th></th></tr></thead><tbody>';
   rows.forEach(function (r) {
-    var size = Math.max(1, String(r.ours).length) + 1;
+    var oursWidth = bmMoneyInputWidth(r.ours);
     h += '<tr>'
       + '<td><input type="text" class="bm-text-input" id="bm-' + cfg.idPrefix + '-label-' + r.key + '" placeholder="Item name" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'label\',this)" /></td>'
-      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" style="width:' + size + 'ch" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
+      + '<td class="num"><span class="bm-buy-cell"><span class="bm-buy-symbol">$</span><input type="number" class="bm-input bm-price-input bm-money-input" id="bm-' + cfg.idPrefix + '-ours-' + r.key + '" min="0" step="any" style="width:' + oursWidth + '" oninput="bmEditOursField(\'' + kind + '\',\'' + r.key + '\',\'ours\',this)" /></span></td>'
       + '<td class="row-actions"><button type="button" class="del-btn" title="Remove" onclick="bmDeleteOursRow(\'' + kind + '\',\'' + r.key + '\')">&times;</button></td>'
       + '</tr>';
   });
@@ -11226,16 +11412,16 @@ function bmBuildPriceCards() {
       + '<div class="bm-price-fullcost">full cost <strong id="bm-out-price-fullcost-' + sz.key + '">—</strong></div></div>'
       + '<div class="bm-price-row"><div class="bm-price-row-label">B2B</div>'
       + '<div class="bm-price-range">'
-      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-wholesale-low" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',\'low\',this)" />'
+      + '<input type="number" class="bm-input bm-input-wide bm-money-input" id="bm-price-' + sz.key + '-wholesale-low" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',\'low\',this)" />'
       + '<span class="bm-price-range-sep">&ndash;</span>'
-      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-wholesale-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',\'high\',this)" />'
+      + '<input type="number" class="bm-input bm-input-wide bm-money-input" id="bm-price-' + sz.key + '-wholesale-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'wholesale\',\'high\',this)" />'
       + '</div>'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-wholesale">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-wholesale"></span></div></div>'
       + '<div class="bm-price-row"><div class="bm-price-row-label">B2C</div>'
       + '<div class="bm-price-range">'
-      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-retail-low" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'low\',this)" />'
+      + '<input type="number" class="bm-input bm-input-wide bm-money-input" id="bm-price-' + sz.key + '-retail-low" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'low\',this)" />'
       + '<span class="bm-price-range-sep">&ndash;</span>'
-      + '<input type="number" class="bm-input bm-input-wide" id="bm-price-' + sz.key + '-retail-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'high\',this)" />'
+      + '<input type="number" class="bm-input bm-input-wide bm-money-input" id="bm-price-' + sz.key + '-retail-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'high\',this)" />'
       + '</div>'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-retail">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-retail"></span></div></div>'
       + '</div>';
@@ -11291,19 +11477,19 @@ function bmPaintInputs() {
   });
   BM_ROW_DEFS.forEach(function (def) {
     var row = bmRowState(def);
-    var buyEl = document.getElementById('bm-buy-' + def.key); if (buyEl) { buyEl.value = row.buy; buyEl.style.width = (Math.max(1, String(row.buy).length) + 1) + 'ch'; }
+    var buyEl = document.getElementById('bm-buy-' + def.key); if (buyEl) { buyEl.value = bmFmtMoneyInput(row.buy); buyEl.style.width = bmMoneyInputWidth(row.buy); }
     var amtEl = document.getElementById('bm-amount-' + def.key); if (amtEl) amtEl.value = row.amount;
   });
   ['oneOff', 'running'].forEach(function (kind) {
     var prefix = BM_OURS_TABLES[kind].idPrefix;
     bmState[kind].forEach(function (r) {
       var lbl = document.getElementById('bm-' + prefix + '-label-' + r.key); if (lbl) lbl.value = r.label;
-      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = r.ours; ou.style.width = (Math.max(1, String(r.ours).length) + 1) + 'ch'; }
+      var ou = document.getElementById('bm-' + prefix + '-ours-' + r.key); if (ou) { ou.value = bmFmtMoneyInput(r.ours); ou.style.width = bmMoneyInputWidth(r.ours); }
     });
   });
   (bmState.customRows || []).forEach(function (row) {
     var lbl = document.getElementById('bm-custom-label-' + row.key); if (lbl) lbl.value = row.label;
-    var buy = document.getElementById('bm-custom-buy-' + row.key); if (buy) { buy.value = row.buy; buy.style.width = (Math.max(1, String(row.buy).length) + 1) + 'ch'; }
+    var buy = document.getElementById('bm-custom-buy-' + row.key); if (buy) { buy.value = bmFmtMoneyInput(row.buy); buy.style.width = bmMoneyInputWidth(row.buy); }
     var amt = document.getElementById('bm-custom-amount-' + row.key); if (amt) amt.value = row.amount;
     var unit = document.getElementById('bm-custom-unit-' + row.key); if (unit) unit.value = row.unit;
     BM_SIZES.forEach(function (sz) {
@@ -11315,8 +11501,8 @@ function bmPaintInputs() {
   BM_SIZES.forEach(function (sz) {
     ['wholesale', 'retail'].forEach(function (ch) {
       var p = bmState.pricing[sz.key][ch];
-      var lo = document.getElementById('bm-price-' + sz.key + '-' + ch + '-low'); if (lo) lo.value = p.low;
-      var hi = document.getElementById('bm-price-' + sz.key + '-' + ch + '-high'); if (hi) hi.value = p.high;
+      var lo = document.getElementById('bm-price-' + sz.key + '-' + ch + '-low'); if (lo) lo.value = bmFmtMoneyInput(p.low);
+      var hi = document.getElementById('bm-price-' + sz.key + '-' + ch + '-high'); if (hi) hi.value = bmFmtMoneyInput(p.high);
     });
   });
 }
@@ -11481,6 +11667,9 @@ function bmSaveNow() {
   setSyncStatus('saving', 'saving…');
   apiPost({ action: 'setBottleMathSettings', settings: bmState }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); return; }
+    // Keep the raw copy in step with what was just saved, so the browser
+    // snapshot (see saveSnapshot) carries the latest Bottle Math numbers.
+    bottleMathSettingsRaw = JSON.stringify(bmState);
     setSyncStatus('live', 'connected · google sheets');
   });
 }
@@ -11549,6 +11738,9 @@ function bmMergeDefaults(loaded) {
   return d;
 }
 function bmApplyLoadedSettings(raw) {
+  // An edit is waiting to be saved — don't let a load that was already in
+  // flight overwrite it with the older server copy.
+  if (bmSaveTimer) return;
   var parsed = null;
   if (raw) { try { parsed = JSON.parse(raw); } catch (e) { parsed = null; } }
   bmState = bmMergeDefaults(parsed);
@@ -11558,6 +11750,15 @@ function bmInit() {
   if (!bmBuilt) { bmBuildAll(); bmPaintInputs(); }
   bmPaintComputed();
 }
+// Snap a money input to 2 decimals once the user leaves it (e.g. "595.1"
+// becomes "595.10") — done on blur rather than per keystroke so typing
+// isn't interrupted.
+document.addEventListener('focusout', function (e) {
+  var el = e.target;
+  if (!el || !el.classList || !el.classList.contains('bm-money-input') || el.value === '') return;
+  el.value = bmFmtMoneyInput(el.value);
+  if (el.classList.contains('bm-price-input')) el.style.width = bmMoneyInputWidth(el.value);
+});
 // Individual fallback loader, used by loadAll()'s loadParallel(...) path
 // when the deployed backend predates the combined getAll action — mirrors
 // loadBottleInventory immediately below it.
