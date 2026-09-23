@@ -17,7 +17,7 @@
      than iOS does. -->
 <link rel="icon" type="image/png" href="toka-icon.png"/>
 <title>toka</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&family=Inter:opsz,wght@14..32,500..800&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
   :root {
     --bg: #faf8f4;
@@ -42,19 +42,19 @@
      which shows up as odd shadow/vignette artifacts at the screen edge when
      the page is scrolled/rubber-banded horizontally. */
   html, body { overflow-x: hidden; }
-  body { background: var(--bg); font-family: 'Jost', sans-serif; font-weight: 300; color: var(--ink); min-height: 100vh; letter-spacing: 0.01em; font-size: 16px; }
+  body { background: var(--bg); font-family: 'Newsreader', Georgia, serif; font-weight: 400; color: var(--ink); min-height: 100vh; letter-spacing: 0.01em; font-size: 16px; }
 
   /* -- HEADER -- */
   header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 48px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-wrap: wrap; flex-wrap: wrap; min-height: 80px; }
   header img { height: 112px; width: auto; display: block; margin-right: 16px; }
   .header-divider { width: 1px; height: 28px; background: var(--border); margin: 0 20px; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .header-page-title { font-family: 'Jost', sans-serif; font-size: 0.8rem; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-faint); }
+  .header-page-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-faint); }
 
   /* -- CROSS-PAGE TABS -- */
   #view-tabs { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0 40px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .view-tab-group { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .view-tab-divider { width: 1px; height: 18px; background: var(--border); margin: 0 6px; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .view-tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; padding: 12px 12px 10px; font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-transition: color .15s, border-color .15s; transition: color .15s, border-color .15s; }
+  .view-tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; padding: 12px 12px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-transition: color .15s, border-color .15s; transition: color .15s, border-color .15s; }
   .view-tab:hover { color: var(--ink); }
   .view-tab.active { color: var(--terra); border-bottom-color: var(--terra); }
   .view-tab-icon { margin-right: 5px; }
@@ -69,7 +69,7 @@
   /* "showing saved data · updating…" / "loading latest data…" notice — see
      the snapshot block in the script. Fixed at the top so it's visible on
      every page, including Bottle Math with its own fixed bottom bar. */
-  #data-state-badge { position: fixed; top: 12px; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); z-index: 700; max-width: calc(100vw - 32px); padding: 7px 16px 7px 30px; border-radius: 99px; background: var(--terra-pale); border: 1px solid var(--border); color: var(--terra); font-family: 'Jost', sans-serif; font-size: 0.74rem; box-shadow: 0 2px 12px rgba(30,27,24,0.10); cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #data-state-badge { position: fixed; top: 12px; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); z-index: 700; max-width: calc(100vw - 32px); padding: 7px 16px 7px 30px; border-radius: 99px; background: var(--terra-pale); border: 1px solid var(--border); color: var(--terra); font-family: 'Newsreader', Georgia, serif; font-size: 0.74rem; box-shadow: 0 2px 12px rgba(30,27,24,0.10); cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #data-state-badge::before { content: ''; position: absolute; left: 13px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #f0a050; -webkit-animation: pulse 1s infinite; animation: pulse 1s infinite; }
   #data-state-badge.is-error { cursor: pointer; }
   #data-state-badge.is-error::before { background: var(--terra); -webkit-animation: none; animation: none; }
@@ -93,28 +93,28 @@
   /* -- HOME CONTENT -- */
   .content { padding: 48px; }
   .intro { margin-bottom: 64px; }
-  .intro-title { font-family: 'DM Sans', sans-serif; font-size: 1.15rem; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
+  .intro-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
   .intro-sub { font-size: 0.84rem; color: var(--ink-faint); line-height: 1.7; max-width: 560px; }
 
   .home-section { margin-bottom: 40px; }
   .home-section:last-child { margin-bottom: 0; }
-  .home-section-title { font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .home-section-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
   .home-section-grid { display: -webkit-grid; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .feature-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
   .feature-card.clickable { cursor: pointer; -webkit-transition: border-color .15s, box-shadow .15s, -webkit-transform .15s; transition: border-color .15s, box-shadow .15s, transform .15s; }
   .feature-card.clickable:hover { border-color: var(--terra-light); box-shadow: var(--shadow-lg); -webkit-transform: translateY(-2px); transform: translateY(-2px); }
   .feature-card .card-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 11px; margin-bottom: 9px; }
   .feature-card .icon { font-size: 1.85rem; line-height: 1; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .feature-card .name { font-family: 'Jost', sans-serif; font-size: 0.74rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink); margin-bottom: 0; }
-  .feature-card .desc { font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.82rem; color: var(--ink-faint); line-height: 1.6; }
+  .feature-card .name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink); margin-bottom: 0; }
+  .feature-card .desc { font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 0.82rem; color: var(--ink-faint); line-height: 1.6; }
   .soon-tag { position: absolute; top: 16px; right: 16px; font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 99px; padding: 2px 8px; }
   .open-tag { position: absolute; top: 16px; right: 16px; font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--terra); border: 1px solid var(--terra-light); background: var(--terra-pale); border-radius: 99px; padding: 2px 8px; }
 
   /* -- VIEW BAR (f1) -- */
   .view-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 48px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 18px; }
-  .back-link { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0; }
+  .back-link { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; padding: 0; }
   .back-link:hover { color: var(--terra); }
-  .btn-primary { background: var(--ink); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; -webkit-transition: background .15s; transition: background .15s; }
+  .btn-primary { background: var(--ink); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; -webkit-transition: background .15s; transition: background .15s; }
   .btn-primary:hover { background: #000; }
   .view-bar .btn-primary { margin-left: auto; }
 
@@ -122,7 +122,7 @@
   /* Section headings share the page-title font (Inter bold, slightly tight),
      just smaller: 1.45rem for sections, 1.2rem for sub-sections (the ones
      marked with an inline 0.98rem size, overridden here). */
-  .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-optical-sizing: auto; font-size: 1.45rem; font-weight: 650; letter-spacing: -0.012em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
+  .content-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
   .content-title[style*="0.98rem"] { font-size: 1.2rem !important; }
   .content-sub { font-size: 0.8rem; color: var(--ink-faint); }
   /* Page hero — the top-of-page title block on every page, in the same
@@ -133,14 +133,14 @@
      section headings further down (Archived, Infusions, …) stay as they
      were. The eyebrow and accent rule are injected by decoratePageHeads(). */
   [id^="view-"] > .view-bar + .content-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 44px 48px 40px; margin-bottom: 28px; }
-  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Inter', 'DM Sans', sans-serif; font-optical-sizing: auto; font-variation-settings: 'opsz' 32; font-weight: 650; font-size: 3.4rem; line-height: 1.05; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 0; }
+  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 3.4rem; line-height: 1.05; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 0; }
   [id^="view-"] > .view-bar + .content-head .content-sub { font-family: 'Newsreader', Georgia, serif; font-size: 1.15rem; line-height: 1.6; color: #5a534c; max-width: 660px; }
-  .page-eyebrow { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 26px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px 32px; }
+  .page-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 26px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px 32px; }
   .page-accent { width: 66px; height: 3px; background: var(--terra); margin: 28px 0 24px; }
 
   .archived-fold-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 4px 12px; cursor: pointer; -webkit-user-select: none; user-select: none; }
   .archived-fold-head .content-title, .archived-fold-head .content-sub { margin-bottom: 0; }
-  .archived-fold-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 5px; background: none; border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.03em; cursor: pointer; padding: 5px 12px; border-radius: 20px; margin-left: auto; -webkit-transition: all .12s; transition: all .12s; }
+  .archived-fold-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 5px; background: none; border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Newsreader', Georgia, serif; font-size: 0.72rem; letter-spacing: 0.03em; cursor: pointer; padding: 5px 12px; border-radius: 20px; margin-left: auto; -webkit-transition: all .12s; transition: all .12s; }
   .archived-fold-btn:hover, .archived-fold-btn.open { border-color: var(--terra-light); color: var(--terra); }
   .archived-fold-btn .brew-tri { font-size: 0.65rem; -webkit-transition: -webkit-transform .15s; transition: transform .15s; }
   .archived-fold-btn.open .brew-tri { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
@@ -149,7 +149,7 @@
   .table-wrap { padding: 0 48px 48px; }
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
   table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
-  thead th { background: var(--surface2); text-align: left; padding: 11px 14px; font-family: 'Jost', sans-serif; font-weight: 500; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); white-space: nowrap; border-bottom: 1px solid var(--border); }
+  thead th { background: var(--surface2); text-align: left; padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); white-space: nowrap; border-bottom: 1px solid var(--border); }
   tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--ink); vertical-align: top; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: #fcfaf7; }
@@ -158,7 +158,7 @@
   /* Testing data: subject group headers (vessel / bottle) */
   #view-readings tr.rgroup td { background: var(--surface2); border-top: 2px solid var(--border); padding: 9px 12px; }
   #view-readings tr.rgroup + tr td { border-top: none; }
-  .rgroup-name { font-family: 'Jost', sans-serif; font-weight: 500; color: var(--ink); }
+  .rgroup-name { font-family: 'Newsreader', Georgia, serif; font-weight: 500; color: var(--ink); }
   .rgroup-link { cursor: pointer; }
   .rgroup-link:hover { color: var(--terra); text-decoration: underline; }
   .rgroup-tag { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 20px; margin-left: 9px; vertical-align: middle; }
@@ -167,8 +167,8 @@
   .rgroup-infusion { background: #f0e6d6; color: #8a6a2f; }
   .rgroup-unlinked { background: #f3e6e6; color: #a34a4a; }
   .rgroup-count { color: var(--ink-faint); font-size: 0.72rem; margin-left: 9px; }
-  .num { font-family: 'DM Mono', monospace; }
-  .id-cell { font-family: 'DM Mono', monospace; color: var(--terra); font-size: 0.8rem; }
+  .num { font-family: 'IBM Plex Mono', monospace; }
+  .id-cell { font-family: 'IBM Plex Mono', monospace; color: var(--terra); font-size: 0.8rem; }
   .muted { color: var(--ink-faint); }
   .notes-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
   /* Bottling table: fixed column widths (as a share of the table's own
@@ -272,7 +272,7 @@
   /* analytics */
   .an-section { margin-top: 28px; }
   #an-body { padding: 0 48px 48px; }
-  .an-section .sec-title { font-family: 'Jost', sans-serif; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--ink); margin-bottom: 4px; }
+  .an-section .sec-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--ink); margin-bottom: 4px; }
   .an-section .sec-note { font-size: 0.74rem; color: var(--ink-faint); margin-bottom: 12px; }
   /* Daily operations dashboard: each section (plus the manual checklist) gets
      a visible card so the page reads as a set of separate boxes rather than
@@ -305,13 +305,13 @@
   }
   .brew-plan-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
   .brew-plan-head .sec-title { margin-bottom: 0; }
-  .recipe-open-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 5px; background: none; border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.03em; cursor: pointer; padding: 5px 12px; border-radius: 20px; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-transition: all .12s; transition: all .12s; }
+  .recipe-open-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 5px; background: none; border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Newsreader', Georgia, serif; font-size: 0.72rem; letter-spacing: 0.03em; cursor: pointer; padding: 5px 12px; border-radius: 20px; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-transition: all .12s; transition: all .12s; }
   .recipe-open-btn:hover, .recipe-open-btn.open { border-color: var(--terra-light); color: var(--terra); }
   .recipe-open-btn .brew-tri { font-size: 0.65rem; -webkit-transition: -webkit-transform .15s; transition: transform .15s; }
   .recipe-open-btn.open .brew-tri { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
   .kpi-row { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px; }
   .kpi { -webkit-flex: 1 1 150px; flex: 1 1 150px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-  .kpi .k-val { font-family: 'Jost', sans-serif; font-size: 1.55rem; line-height: 1.1; color: var(--ink); }
+  .kpi .k-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.55rem; line-height: 1.1; color: var(--ink); }
   .kpi .k-lab { font-size: 0.68rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.09em; margin-top: 5px; }
   .kpi .k-sub { font-size: 0.7rem; color: var(--ink-faint); margin-top: 3px; }
   /* ── BOTTLE INVENTORY ── */
@@ -320,16 +320,16 @@
   .biv-summary-grid { display: grid; grid-template-columns: minmax(140px, 1.4fr) 1fr 1fr; -webkit-column-gap: 24px; column-gap: 24px; align-items: center; }
   .biv-progress-row { margin-top: 10px; }
   .biv-progress-label { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; font-size: 0.9rem; color: var(--ink); margin-bottom: 7px; }
-  .biv-progress-pct { font-family: 'DM Mono', monospace; font-size: 0.76rem; color: var(--ink-faint); }
+  .biv-progress-pct { font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; color: var(--ink-faint); }
   .biv-progress-track { height: 10px; border-radius: 20px; background: var(--surface2); overflow: hidden; }
   .biv-progress-fill { height: 100%; background: var(--terra); border-radius: 20px; }
   .biv-stat-table { margin-top: 24px; }
   .biv-stat-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
   .biv-stat-row:last-child { border-bottom: none; }
-  .biv-stat-row.biv-stat-head { font-family: 'Jost', sans-serif; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); }
+  .biv-stat-row.biv-stat-head { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.09em; color: var(--ink-faint); }
   .biv-stat-label { font-size: 0.9rem; color: var(--ink); }
-  .biv-stat-val { text-align: right; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--ink); }
-  .biv-stat-colhead { font-family: 'Jost', sans-serif; text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.66rem; color: var(--ink-faint); }
+  .biv-stat-val { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 1rem; color: var(--ink); }
+  .biv-stat-colhead { font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.09em; font-size: 0.66rem; color: var(--ink-faint); }
   /* Flavour breakdown, indented under "Filled bottles at atelier" — shares
      the .biv-summary-grid column layout so the Small/Big numbers still
      line up under their matching columns; only the label is indented
@@ -337,7 +337,7 @@
      it don't shift). */
   .biv-stat-subrow { padding: 4px 0; }
   .biv-stat-sublabel { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); padding-left: 20px; }
-  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'DM Mono', monospace; text-align: right; }
+  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
      italic so they read as a consequence of another entry rather than
@@ -345,23 +345,23 @@
      their "parent" row (the log sorts by stage), so the distinction lives
      on the row itself rather than in its border/spacing. */
   .biv-table tr.biv-auto-row td { font-size: 0.86em; font-style: italic; color: var(--ink-faint); }
-  .biv-auto-tag { display: inline-block; font-style: normal; font-family: 'Jost', sans-serif; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; }
+  .biv-auto-tag { display: inline-block; font-style: normal; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
   .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
   .biv-form .plan-field-row { margin-bottom: 10px; }
   .biv-form .plan-field-label { -webkit-flex-basis: 90px; flex-basis: 90px; }
-  .biv-form-title { font-family: 'Jost', sans-serif; font-size: 0.8rem; color: var(--ink); margin-bottom: 12px; }
+  .biv-form-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.8rem; color: var(--ink); margin-bottom: 12px; }
   .biv-form .btn-primary { width: 100%; margin-top: auto; }
   /* ── FERMENTATION TIMELINE ── */
   .ferm-timeline { margin-top: 6px; }
   .ftl-head-row { display: -webkit-flex; display: flex; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
   .ftl-head-spacer { width: 280px; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .ftl-head-track { -webkit-flex: 1; flex: 1; max-width: 520px; position: relative; height: 22px; }
-  .ftl-tick { position: absolute; bottom: 0; font-size: 0.84rem; font-family: 'DM Mono', monospace; color: var(--ink-faint); -webkit-transform: translateX(-50%); transform: translateX(-50%); }
+  .ftl-tick { position: absolute; bottom: 0; font-size: 0.84rem; font-family: 'IBM Plex Mono', monospace; color: var(--ink-faint); -webkit-transform: translateX(-50%); transform: translateX(-50%); }
   .ftl-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .ftl-row:last-child { border-bottom: none; }
   .ftl-label { width: 280px; -webkit-flex-shrink: 0; flex-shrink: 0; padding-right: 16px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; }
-  .ftl-batch-id { font-family: 'DM Mono', monospace; font-size: 0.84rem; color: var(--terra); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-flex: 1; flex: 1; min-width: 0; }
+  .ftl-batch-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.84rem; color: var(--terra); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-flex: 1; flex: 1; min-width: 0; }
   .ftl-label .count-badge { -webkit-flex-shrink: 0; flex-shrink: 0; }
   .ftl-track-outer { -webkit-flex: 1; flex: 1; max-width: 520px; position: relative; height: 58px; }
   .ftl-track-scaled { position: relative; height: 100%; }
@@ -372,19 +372,19 @@
   .ftl-day-guide.multi { opacity: 0.38; }
   .ftl-cursor { position: absolute; top: 50%; width: 15px; height: 15px; border-radius: 50%; background: var(--terra); border: 2px solid var(--bg); -webkit-box-shadow: 0 1px 4px rgba(0,0,0,.18); box-shadow: 0 1px 4px rgba(0,0,0,.18); -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); z-index: 2; }
   .ftl-ph-dot { position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%; background: #4a8a7a; border: 1.5px solid var(--bg); -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); z-index: 1; }
-  .ftl-ph-val { position: absolute; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); bottom: calc(100% + 6px); font-size: 0.84rem; font-family: 'DM Mono', monospace; color: var(--ink-faint); white-space: nowrap; line-height: 1; }
+  .ftl-ph-val { position: absolute; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); bottom: calc(100% + 6px); font-size: 0.84rem; font-family: 'IBM Plex Mono', monospace; color: var(--ink-faint); white-space: nowrap; line-height: 1; }
   .ftl-ph-dot.below .ftl-ph-val { bottom: auto; top: calc(100% + 6px); }
-  .ftl-meta { width: 56px; -webkit-flex-shrink: 0; flex-shrink: 0; text-align: right; padding-left: 10px; font-family: 'DM Mono', monospace; font-size: 0.67rem; color: var(--ink-faint); }
+  .ftl-meta { width: 56px; -webkit-flex-shrink: 0; flex-shrink: 0; text-align: right; padding-left: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.67rem; color: var(--ink-faint); }
   .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
   .chart-card + .chart-card { margin-top: 12px; }
   .chart-card .cc-title { font-size: 0.78rem; color: var(--ink-faint); margin-bottom: 8px; }
   .chart { width: 100%; height: auto; display: block; }
   .chart .grid { stroke: var(--border); stroke-width: 1; }
-  .chart .ax-y, .chart .ax-x { fill: var(--ink-faint); font-size: 10px; font-family: 'DM Mono', monospace; }
+  .chart .ax-y, .chart .ax-x { fill: var(--ink-faint); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
   .chart .ax-y { text-anchor: end; }
   .chart .ax-x { text-anchor: middle; }
   .chart .ax-x.sub { font-size: 9px; }
-  .chart .bar-val { fill: var(--ink); font-size: 11px; text-anchor: middle; font-family: 'Jost', sans-serif; }
+  .chart .bar-val { fill: var(--ink); font-size: 11px; text-anchor: middle; font-family: 'IBM Plex Mono', monospace; }
   .legend { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
   .legend-item { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); }
   .legend-sw { width: 14px; height: 3px; border-radius: 2px; -webkit-flex-shrink: 0; flex-shrink: 0; }
@@ -407,27 +407,27 @@
   .ftl-cursor.due { background: var(--red); }
   .ftl-meta .ftl-due { color: var(--red); font-size: 0.62rem; display: block; margin-top: 2px; }
   .plan-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
-  .plan-headline { font-family: 'Jost', sans-serif; font-size: 1.1rem; color: var(--ink); margin-bottom: 2px; }
+  .plan-headline { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--ink); margin-bottom: 2px; }
   .plan-headline .plan-when { color: var(--terra); }
   .plan-headline.due .plan-when { color: var(--red); }
   .plan-sub { font-size: 0.74rem; color: var(--ink-faint); margin-bottom: 16px; }
   .plan-vol { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .plan-vol label { font-size: 0.72rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.09em; }
-  .plan-vol input { width: 84px; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Mono', monospace; font-size: 0.86rem; background: var(--bg); color: var(--ink); }
-  .vol-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; font-family: 'Jost', sans-serif; font-size: 0.7rem; letter-spacing: 0.06em; color: var(--ink-faint); cursor: pointer; -webkit-transition: all .12s; transition: all .12s; }
+  .plan-vol input { width: 84px; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.86rem; background: var(--bg); color: var(--ink); }
+  .vol-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.06em; color: var(--ink-faint); cursor: pointer; -webkit-transition: all .12s; transition: all .12s; }
   .vol-chip:hover { border-color: var(--terra-light); color: var(--terra); }
   .vol-chip.active { background: var(--terra); border-color: var(--terra); color: #fff; }
   .plan-steps { font-size: 0.82rem; color: var(--ink); line-height: 1.65; background: var(--terra-pale); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; }
   .plan-steps b { color: var(--terra); font-weight: 600; }
   .need-tbl { width: 100%; border-collapse: collapse; }
-  .need-tbl th { text-align: left; font-family: 'Jost', sans-serif; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); font-weight: 500; padding: 0 10px 7px; border-bottom: 1px solid var(--border); }
+  .need-tbl th { text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); font-weight: 500; padding: 0 10px 7px; border-bottom: 1px solid var(--border); }
   .need-tbl th.col-amt { width: 120px; }
   .need-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.84rem; }
   .need-tbl tr:last-child td { border-bottom: none; }
   .need-tbl .ni-item { color: var(--ink); }
-  .need-tbl .ni-amt { font-family: 'DM Mono', monospace; color: var(--terra); white-space: nowrap; }
+  .need-tbl .ni-amt { font-family: 'IBM Plex Mono', monospace; color: var(--terra); white-space: nowrap; }
   .need-tbl .ni-amt .ni-sub { color: var(--ink-faint); font-size: 0.74rem; }
-  .note-input { width: 100%; box-sizing: border-box; border: 1px solid transparent; background: transparent; border-radius: var(--radius-sm); padding: 5px 7px; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.8rem; color: var(--ink); -webkit-transition: border-color .12s, background .12s; transition: border-color .12s, background .12s; }
+  .note-input { width: 100%; box-sizing: border-box; border: 1px solid transparent; background: transparent; border-radius: var(--radius-sm); padding: 5px 7px; font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 0.8rem; color: var(--ink); -webkit-transition: border-color .12s, background .12s; transition: border-color .12s, background .12s; }
   .note-input:hover { border-color: var(--border); }
   .note-input:focus { outline: none; border-color: var(--terra-light); background: var(--bg); }
   .task-list { list-style: none; margin: 0; padding: 0; }
@@ -446,10 +446,10 @@
   .ov-archived-head .content-title, .ov-archived-head .content-sub { margin-bottom: 0; }
   .ov-archived-head .archived-fold-btn { margin-left: auto; }
   .ov-filter-banner { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; gap: 12px; background: var(--terra-pale); border: 1px solid var(--terra-light); border-radius: var(--radius); padding: 10px 16px; margin-bottom: 16px; font-size: 0.82rem; color: var(--ink); }
-  .ov-filter-clear { -webkit-flex-shrink: 0; flex-shrink: 0; background: none; border: 1px solid var(--terra-light); color: var(--terra); font-family: 'Jost', sans-serif; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; padding: 5px 12px; border-radius: 20px; -webkit-transition: all .12s; transition: all .12s; }
+  .ov-filter-clear { -webkit-flex-shrink: 0; flex-shrink: 0; background: none; border: 1px solid var(--terra-light); color: var(--terra); font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase; cursor: pointer; padding: 5px 12px; border-radius: 20px; -webkit-transition: all .12s; transition: all .12s; }
   .ov-filter-clear:hover { background: var(--surface); }
   .ov-kind-filter { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-  .ov-kind-btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.04em; cursor: pointer; padding: 6px 14px; border-radius: 20px; -webkit-transition: all .12s; transition: all .12s; }
+  .ov-kind-btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink-faint); font-family: 'Newsreader', Georgia, serif; font-size: 0.72rem; letter-spacing: 0.04em; cursor: pointer; padding: 6px 14px; border-radius: 20px; -webkit-transition: all .12s; transition: all .12s; }
   .ov-kind-btn:hover { border-color: var(--terra-light); color: var(--terra); }
   .ov-kind-btn.active { background: var(--ink); border-color: var(--ink); color: var(--bg); }
   .lineage-svg { width: 15px; height: 15px; display: block; }
@@ -460,9 +460,9 @@
   .ov-node-wrap { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
   .ov-node { position: relative; -webkit-box-sizing: border-box; box-sizing: border-box; width: 100%; min-height: 32px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; cursor: pointer; -webkit-transition: border-color .12s, background .12s, box-shadow .12s; transition: border-color .12s, background .12s, box-shadow .12s; }
   .ov-node:hover { border-color: var(--terra-light); background: var(--surface); }
-  .ov-node-label { -webkit-box-flex: 1; -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--ink); white-space: nowrap; }
+  .ov-node-label { -webkit-box-flex: 1; -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: var(--ink); white-space: nowrap; }
   .ov-node-live { border-color: var(--terra); -webkit-box-shadow: 0 0 0 2px var(--terra), 0 0 0 5px var(--terra-pale); box-shadow: 0 0 0 2px var(--terra), 0 0 0 5px var(--terra-pale); }
-  .ov-node-days { font-family: 'DM Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); margin-top: 4px; white-space: nowrap; }
+  .ov-node-days { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); margin-top: 4px; white-space: nowrap; }
   .ov-spark-wrap { cursor: pointer; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 2px; border-radius: 4px; }
   .ov-spark-wrap:hover { background: var(--bg); }
   .ov-spark { width: 40px; height: 16px; display: block; }
@@ -478,7 +478,7 @@
   .ov-chart-label { font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink); margin: 6px 0 6px; }
   .ov-chart-single { font-size: 0.92rem; color: var(--ink); margin: 4px 0; }
   /* Tasting page */
-  .taste-chip { display: inline-block; margin: 0 4px 4px 0; padding: 2px 9px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--terra); font-family: 'DM Mono', monospace; font-size: 0.72rem; cursor: pointer; }
+  .taste-chip { display: inline-block; margin: 0 4px 4px 0; padding: 2px 9px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--terra); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; cursor: pointer; }
   .agg-tog { background: none; border: none; cursor: pointer; color: var(--ink-faint); font-size: 0.82rem; padding: 0 2px; vertical-align: middle; line-height: 1; }
   .agg-tog.on { color: var(--terra); }
   #tasting-body tr[draggable="true"], #pt-tbody tr[draggable="true"] { cursor: grab; }
@@ -490,30 +490,30 @@
   .taste-filter-clear { color: var(--terra); cursor: pointer; text-decoration: underline; }
   .agg-tog:hover { color: var(--terra); }
   .fb-table { table-layout: fixed; }
-  .fb-sel { font-family: 'Jost', sans-serif; font-size: 0.78rem; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); cursor: pointer; width: 100%; box-sizing: border-box; }
+  .fb-sel { font-family: 'Newsreader', Georgia, serif; font-size: 0.78rem; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); cursor: pointer; width: 100%; box-sizing: border-box; }
   .fb-sel:focus { outline: none; border-color: var(--terra-light); }
   .fb-other-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; padding: 4px 6px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); cursor: default; }
-  .fb-other-label { font-family: 'Jost', sans-serif; font-size: 0.78rem; color: var(--ink-faint); white-space: nowrap; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .fb-other-inline { -webkit-flex: 1; flex: 1; min-width: 0; border: none; background: none; padding: 0; font-family: 'Jost', sans-serif; font-size: 0.78rem; color: var(--ink); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+  .fb-other-label { font-family: 'Newsreader', Georgia, serif; font-size: 0.78rem; color: var(--ink-faint); white-space: nowrap; -webkit-flex-shrink: 0; flex-shrink: 0; }
+  .fb-other-inline { -webkit-flex: 1; flex: 1; min-width: 0; border: none; background: none; padding: 0; font-family: 'Newsreader', Georgia, serif; font-size: 0.78rem; color: var(--ink); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
   .fb-other-inline:focus { outline: none; }
   .fb-other-clear { -webkit-flex-shrink: 0; flex-shrink: 0; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0 1px; }
   .fb-other-clear:hover { color: var(--red); }
   .fb-note-cell { min-width: 180px; }
-  .fb-note { width: 100%; box-sizing: border-box; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.82rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+  .fb-note { width: 100%; box-sizing: border-box; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 0.82rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
   .fb-note:focus { outline: none; border-color: var(--terra-light); }
   .taste-chip:hover { border-color: var(--terra); background: var(--terra-pale); }
   .taste-bottles { max-width: 280px; white-space: normal; }
   .taste-notes { max-width: 220px; white-space: pre-line; }
   .taste-qty { font-weight: 500; }
-  .taste-vessel { font-family: 'Jost', sans-serif; white-space: normal; max-width: 130px; }
+  .taste-vessel { font-family: 'Newsreader', Georgia, serif; white-space: normal; max-width: 130px; }
   .taste-fb-cell { min-width: 210px; }
-  .taste-fb { width: 100%; box-sizing: border-box; resize: none; overflow: hidden; min-height: 34px; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; line-height: 1.5; font-size: 0.85rem; }
+  .taste-fb { width: 100%; box-sizing: border-box; resize: none; overflow: hidden; min-height: 34px; padding: 6px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); font-family: 'Newsreader', Georgia, serif; font-weight: 300; line-height: 1.5; font-size: 0.85rem; }
   .taste-fb:focus { outline: none; border-color: var(--terra-light); }
-  .task-when { font-family: 'Jost', sans-serif; font-size: 0.78rem; font-weight: 500; color: var(--terra); white-space: nowrap; -webkit-flex-shrink: 0; flex-shrink: 0; min-width: 96px; }
+  .task-when { font-family: 'Newsreader', Georgia, serif; font-size: 0.78rem; font-weight: 500; color: var(--terra); white-space: nowrap; -webkit-flex-shrink: 0; flex-shrink: 0; min-width: 96px; }
   .task-item.due .task-when { color: var(--red); }
   .task-what { font-size: 0.82rem; color: var(--ink); }
-  .task-what .task-id { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); }
-  .today-notes { width: 100%; box-sizing: border-box; min-height: 120px; resize: vertical; border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.86rem; line-height: 1.6; color: var(--ink); background: var(--surface); }
+  .task-what .task-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); }
+  .today-notes { width: 100%; box-sizing: border-box; min-height: 120px; resize: vertical; border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 15px; font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 0.86rem; line-height: 1.6; color: var(--ink); background: var(--surface); }
   .today-notes:focus { outline: none; border-color: var(--terra-light); }
   .local-hint { font-size: 0.64rem; color: var(--ink-faint); margin-top: 6px; letter-spacing: 0.04em; }
   /* daily tasks — titles match other pages; body content at 10pt; full-width bars; day-x marker; hover readings */
@@ -523,7 +523,7 @@
   #today-body .an-empty { font-size: 10pt; }
   #today-body .ftl-head-track, #today-body .ftl-track-outer { max-width: none; }
   #today-body .ftl-batch-id { font-size: 10pt; }
-  .ftl-day-label { position: absolute; top: 5px; font-family: 'DM Mono', monospace; font-size: 0.84rem; color: var(--ink-faint); white-space: nowrap; line-height: 1; z-index: 2; }
+  .ftl-day-label { position: absolute; top: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 0.84rem; color: var(--ink-faint); white-space: nowrap; line-height: 1; z-index: 2; }
   #today-body .ftl-day-label { font-size: 10pt; color: var(--ink); }
   #today-body .ftl-row[data-tiphtml] { cursor: default; }
   #today-body .ftl-row[data-tiphtml]:hover { background: var(--surface2); }
@@ -548,7 +548,7 @@
   .plan-src { color: var(--ink-faint); margin: 0 0 12px; }
   .plan-vol-unit { color: var(--ink-faint); font-size: 0.8rem; }
   .prep-num { color: var(--red); font-weight: 600; }
-  .prep-title { font-family: 'Jost', sans-serif; font-weight: 500; color: var(--ink); margin: 2px 0 6px; }
+  .prep-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; color: var(--ink); margin: 2px 0 6px; }
   .prep-list { margin: 0 0 16px 18px; padding: 0; }
   .prep-list li { margin-bottom: 7px; line-height: 1.55; color: var(--ink); }
   .brew-check { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 9px; margin-top: 14px; cursor: pointer; color: var(--ink); }
@@ -582,7 +582,7 @@
   .recipe-grid { display: -webkit-grid; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-bottom: 10px; }
   .recipe-field label { display: block; font-size: 9pt; color: var(--ink-faint); margin-bottom: 4px; }
   .recipe-inp { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; }
-  .recipe-inp input { width: 68px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Jost', sans-serif; font-size: 0.85rem; background: var(--surface); color: var(--ink); }
+  .recipe-inp input { width: 68px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Newsreader', Georgia, serif; font-size: 0.85rem; background: var(--surface); color: var(--ink); }
   .recipe-inp input:focus { outline: none; border-color: var(--terra-light); }
   .recipe-inp span { font-size: 9pt; color: var(--ink-faint); white-space: nowrap; }
   .recipe-actions { margin-bottom: 6px; }
@@ -594,7 +594,7 @@
   .task-row.done .task-card { text-decoration: line-through; color: var(--ink-faint); }
   .tasks-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
   .tasks-head .sec-title { margin-bottom: 0; }
-  .tasks-clear { background: none; border: none; color: var(--ink-faint); font-family: 'Jost', sans-serif; cursor: pointer; padding: 4px 9px; border-radius: var(--radius-sm); -webkit-flex-shrink: 0; flex-shrink: 0; }
+  .tasks-clear { background: none; border: none; color: var(--ink-faint); font-family: 'Newsreader', Georgia, serif; cursor: pointer; padding: 4px 9px; border-radius: var(--radius-sm); -webkit-flex-shrink: 0; flex-shrink: 0; }
   .tasks-clear:hover { color: var(--red); background: var(--surface2); }
   .task-when-wrap { position: relative; -webkit-flex-shrink: 0; flex-shrink: 0; min-width: 96px; }
   .task-row.due .task-when { color: var(--red); }
@@ -603,13 +603,13 @@
   .task-what { -webkit-flex: 1; flex: 1; min-width: 0; }
   .task-card { display: block; color: var(--ink); white-space: pre-wrap; word-break: break-word; line-height: 1.5; cursor: text; }
   .task-card.empty { color: var(--ink-faint); }
-  .task-edit { display: none; width: 100%; box-sizing: border-box; resize: none; overflow: hidden; padding: 6px 9px; border: 1px solid var(--terra-light); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); font-family: 'Jost', sans-serif; font-weight: 300; line-height: 1.5; }
+  .task-edit { display: none; width: 100%; box-sizing: border-box; resize: none; overflow: hidden; padding: 6px 9px; border: 1px solid var(--terra-light); border-radius: var(--radius-sm); background: var(--bg); color: var(--ink); font-family: 'Newsreader', Georgia, serif; font-weight: 300; line-height: 1.5; }
   .task-edit:focus { outline: none; }
   .task-row.editing .task-card { display: none; }
   .task-row.editing .task-edit { display: block; }
   .task-remove { -webkit-flex-shrink: 0; flex-shrink: 0; width: 26px; height: 26px; border: none; background: none; color: var(--ink-faint); font-size: 1.25rem; line-height: 1; cursor: pointer; border-radius: var(--radius-sm); }
   .task-remove:hover { color: var(--red); background: var(--surface2); }
-  .task-add { width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px dashed var(--border); border-radius: var(--radius); background: none; color: var(--ink-faint); font-family: 'Jost', sans-serif; cursor: pointer; -webkit-transition: all .12s; transition: all .12s; }
+  .task-add { width: 100%; box-sizing: border-box; padding: 12px; border: 1.5px dashed var(--border); border-radius: var(--radius); background: none; color: var(--ink-faint); font-family: 'Newsreader', Georgia, serif; cursor: pointer; -webkit-transition: all .12s; transition: all .12s; }
   .task-add:hover { border-color: var(--terra-light); color: var(--terra); }
   .task-add-plus { font-weight: 600; }
   #today-body .task-card, #today-body .task-edit { font-size: 10pt; }
@@ -620,7 +620,7 @@
   .edit-btn { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 0.9rem; padding: 0 4px; line-height: 1; }
   .edit-btn:hover { color: var(--terra); }
   .row-actions { white-space: nowrap; }
-  .act-link { background: none; cursor: pointer; font-family: 'Jost', sans-serif; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); padding: 3px 9px; border: 1px solid var(--border); border-radius: 99px; margin: 0 2px; }
+  .act-link { background: none; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); padding: 3px 9px; border: 1px solid var(--border); border-radius: 99px; margin: 0 2px; }
   .act-link:hover { color: var(--terra); border-color: var(--terra-light); }
   .icon-btn { background: none; border: none; color: var(--ink-faint); cursor: pointer; padding: 0 4px; line-height: 1; display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; vertical-align: middle; }
   .icon-btn:hover { color: var(--terra); }
@@ -631,7 +631,7 @@
   /* -- FORMS -- */
   .form-group { margin-bottom: 15px; }
   label { display: block; font-size: 0.72rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 5px; }
-  input, select, textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.96rem; color: var(--ink); outline: none; -webkit-appearance: none; -webkit-transition: border-color .15s; transition: border-color .15s; }
+  input, select, textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 0.96rem; color: var(--ink); outline: none; -webkit-appearance: none; -webkit-transition: border-color .15s; transition: border-color .15s; }
   input:focus, select:focus, textarea:focus { border-color: var(--terra); background: var(--surface); }
   textarea { resize: vertical; min-height: 60px; }
   select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a9088'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
@@ -643,7 +643,7 @@
   .hint { font-size: 0.66rem; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.04em; }
 
   .form-section { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 16px; }
-  .form-section-title { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 500; color: var(--ink); margin-bottom: 12px; letter-spacing: 0.03em; }
+  .form-section-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.8rem; font-weight: 700; color: var(--ink); margin-bottom: 12px; letter-spacing: 0.03em; }
 
   /* -- PRODUCTION TIMELINE -- */
   .pt-list-wrap { padding: 0 0 28px; }
@@ -733,13 +733,13 @@
   .modal-confirm-field { padding-left: 14px; margin: 4px 0; }
   .modal-confirm-actions { display: -webkit-flex; display: flex; gap: 10px; -webkit-justify-content: flex-end; justify-content: flex-end; }
   .drawer-head { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .drawer-head-title { font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 500; color: var(--ink); }
+  .drawer-head-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1rem; font-weight: 700; color: var(--ink); }
   .drawer-close { background: none; border: none; cursor: pointer; color: var(--ink-faint); font-size: 1.2rem; line-height: 1; padding: 2px 4px; }
   .drawer-close:hover { color: var(--terra); }
   .drawer-body { padding: 20px 24px; overflow-y: auto; -webkit-flex: 1; flex: 1; }
   .drawer-foot { padding: 16px 24px; border-top: 1px solid var(--border); display: -webkit-flex; display: flex; gap: 10px; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .drawer-foot .btn-primary { -webkit-flex: 1; flex: 1; padding: 11px; }
-  .btn-ghost { padding: 11px 16px; background: transparent; color: var(--ink-faint); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+  .btn-ghost { padding: 11px 16px; background: transparent; color: var(--ink-faint); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
   .btn-ghost:hover { color: var(--ink); }
 
   /* -- SETUP OVERLAY -- */
@@ -751,12 +751,12 @@
   .config-note { font-size: 0.72rem; color: var(--ink-faint); line-height: 1.8; background: var(--surface2); border-radius: var(--radius-sm); padding: 16px 18px; }
   .config-note strong { color: var(--ink); font-weight: 500; }
   .config-note a { color: var(--terra); text-decoration: none; }
-  .config-note code { font-family: 'DM Mono', monospace; font-size: 0.68rem; background: var(--border); padding: 1px 5px; border-radius: 3px; color: var(--ink); }
+  .config-note code { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; background: var(--border); padding: 1px 5px; border-radius: 3px; color: var(--ink); }
   .config-section { font-size: 0.6rem; letter-spacing: 0.2em; color: var(--ink-faint); text-transform: uppercase; margin: 22px 0 10px; padding-top: 18px; border-top: 1px solid var(--border); }
   .config-box label { font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 5px; margin-top: 14px; }
-  .config-box input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--ink); outline: none; -webkit-appearance: none; }
+  .config-box input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: var(--ink); outline: none; -webkit-appearance: none; }
   .config-box input:focus { border-color: var(--terra); }
-  .config-btn { width: 100%; margin-top: 22px; padding: 12px; background: var(--ink); color: var(--bg); border: none; border-radius: var(--radius-sm); font-family: 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; -webkit-appearance: none; }
+  .config-btn { width: 100%; margin-top: 22px; padding: 12px; background: var(--ink); color: var(--bg); border: none; border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; -webkit-appearance: none; }
   .config-btn:hover { background: var(--terra); }
   .config-error { color: var(--terra); font-size: 0.72rem; margin-top: 10px; display: none; }
 
@@ -788,7 +788,7 @@
     .home-section-grid { grid-template-columns: 1fr; }
     .config-box { padding: 28px 24px; }
   }
-  .count-badge { display: inline-block; font-family: 'Jost', sans-serif; font-size: 0.7rem; letter-spacing: 0.06em; background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 1px 8px; }
+  .count-badge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.06em; background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 1px 8px; }
   tr.bgroup-head { cursor: pointer; background: var(--surface2); }
   tr.bgroup-head:hover { background: var(--terra-pale); }
   .bgroup-tri { display: inline-block; margin-right: 6px; color: var(--ink-faint); font-size: 0.65rem; -webkit-transition: -webkit-transform .15s; transition: transform .15s; }
@@ -848,16 +848,16 @@
 #view-faucet .ft-page, #view-bottlecalc .ft-page { max-width: 820px; margin: 0 auto; padding: 0 48px 48px; }
 #view-faucet .ft-rate-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 14px; margin-bottom: 24px; }
 #view-faucet .ft-rate-label { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.76rem; }
-#view-faucet .ft-rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 5px 14px; font-family: 'DM Mono', monospace; font-size: 0.78rem; cursor: pointer; -webkit-transition: background 0.15s; transition: background 0.15s; }
+#view-faucet .ft-rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 5px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; cursor: pointer; -webkit-transition: background 0.15s; transition: background 0.15s; }
 #view-faucet .ft-rate-badge:hover { background: var(--terra-light); }
 #view-faucet .ft-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
-#view-faucet .ft-panel-head { padding: 13px 22px; border-bottom: 1px solid var(--border); background: var(--surface2); font-family: 'Jost', sans-serif; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); }
+#view-faucet .ft-panel-head { padding: 13px 22px; border-bottom: 1px solid var(--border); background: var(--surface2); font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); }
 #view-faucet .ft-panel-body { padding: 22px; }
 #view-faucet .ft-panel-body .form-group { max-width: 240px; }
 #view-faucet .ft-result { display: none; margin-top: 14px; padding: 20px 22px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 #view-faucet .ft-result-label { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 8px; }
-#view-faucet .ft-result-time { font-family: 'DM Mono', monospace; font-size: 1.9rem; font-weight: 500; color: var(--ink); letter-spacing: 0.02em; line-height: 1.1; }
-#view-faucet .ft-result-seconds { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
+#view-faucet .ft-result-time { font-family: 'IBM Plex Mono', monospace; font-size: 1.9rem; font-weight: 500; color: var(--ink); letter-spacing: 0.02em; line-height: 1.1; }
+#view-faucet .ft-result-seconds { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
 #view-faucet .ft-chart-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; table-layout: fixed; }
 #view-faucet .ft-chart-table thead th { text-align: left; width: 33%; padding: 11px 22px; font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); border-bottom: 1px solid var(--border); background: var(--surface2); }
 #view-faucet .ft-chart-table thead th:last-child { width: 34%; }
@@ -865,7 +865,7 @@
 #view-faucet .ft-chart-table tbody tr:nth-child(odd) { background: var(--surface); }
 #view-faucet .ft-chart-table tbody tr:nth-child(even) { background: var(--bg); }
 #view-faucet .ft-chart-table tbody tr:hover { background: var(--terra-pale); }
-#view-faucet .ft-chart-table tbody td { padding: 11px 22px; font-family: 'DM Mono', monospace; }
+#view-faucet .ft-chart-table tbody td { padding: 11px 22px; font-family: 'IBM Plex Mono', monospace; }
 #view-faucet .ft-chart-table .col-vol { color: var(--ink); }
 #view-faucet .ft-chart-table .col-secs { color: var(--ink-faint); }
 #view-faucet .ft-chart-table .col-min { color: var(--terra); }
@@ -885,11 +885,11 @@
 #view-bottlecalc .bc-diagram { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; justify-content: center; gap: 22px; flex-wrap: wrap; margin: 8px 0 4px; }
 #view-bottlecalc .bc-sizes { display: -webkit-flex; display: flex; gap: 22px; -webkit-align-items: flex-start; align-items: flex-start; }
 #view-bottlecalc .bc-box-group { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
-#view-bottlecalc .bc-pct-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; gap: 3px; height: 26px; margin-bottom: 10px; font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--ink-faint); }
+#view-bottlecalc .bc-pct-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; gap: 3px; height: 26px; margin-bottom: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; color: var(--ink-faint); }
 #view-bottlecalc .bc-pct-box.bc-pct-box-spacer { visibility: hidden; }
-#view-bottlecalc .bc-pct-input { width: 48px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 3px 7px; font-family: 'DM Mono', monospace; font-size: 0.88rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
+#view-bottlecalc .bc-pct-input { width: 48px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 3px 7px; font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
 #view-bottlecalc .bc-box { width: 160px; height: 160px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--surface); display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; justify-content: center; gap: 8px; padding: 10px; }
-#view-bottlecalc .bc-box-input { width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; border: none; background: transparent; text-align: center; font-family: 'DM Mono', monospace; font-weight: 700; font-size: 2.1rem; color: var(--ink); outline: none; -webkit-appearance: none; padding: 0; }
+#view-bottlecalc .bc-box-input { width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; border: none; background: transparent; text-align: center; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 2.1rem; color: var(--ink); outline: none; -webkit-appearance: none; padding: 0; }
 #view-bottlecalc .bc-box-unit { font-size: 0.76rem; color: var(--ink-faint); text-align: center; line-height: 1.35; }
 #view-bottlecalc .bc-arrow-wrap { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
 #view-bottlecalc .bc-arrow { width: 90px; height: 160px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; font-size: 1.9rem; color: var(--ink-faint); }
@@ -915,7 +915,7 @@
 #view-bottlemath .bm-page { padding: 0 48px 92px; }
 #view-bottlemath .bm-section { margin-top: 40px; }
 #view-bottlemath .bm-section:first-child { margin-top: 0; }
-#view-bottlemath .bm-section-label { font-family: 'Inter', 'DM Sans', sans-serif; font-optical-sizing: auto; font-size: 1.45rem; font-weight: 650; letter-spacing: -0.012em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
+#view-bottlemath .bm-section-label { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.45rem; font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; color: var(--ink); margin-bottom: 6px; }
 #view-bottlemath .bm-section-intro { font-size: 0.8rem; color: var(--ink-faint); line-height: 1.6; margin-bottom: 16px; max-width: 720px; }
 /* A section with no intro paragraph (01, 02) goes straight from the title
    into its cards/table — give that a bit more breathing room, matching
@@ -937,35 +937,35 @@
 #view-bottlemath .bm-summary-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 400; display: -webkit-flex; display: flex; -webkit-flex-wrap: nowrap; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; border-top: 1px solid var(--border); background: var(--surface); -webkit-box-shadow: 0 -2px 14px rgba(30,27,24,0.08); box-shadow: 0 -2px 14px rgba(30,27,24,0.08); }
 #view-bottlemath .bm-summary-item { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 150px; padding: 11px 22px; border-right: 1px solid var(--border); white-space: nowrap; text-align: center; }
 #view-bottlemath .bm-summary-item:last-child { border-right: none; }
-#view-bottlemath .bm-summary-label { font-family: 'DM Mono', monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; white-space: nowrap; }
-#view-bottlemath .bm-summary-val { font-family: 'DM Mono', monospace; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
+#view-bottlemath .bm-summary-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; white-space: nowrap; }
+#view-bottlemath .bm-summary-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
 #view-bottlemath .bm-summary-val.accent { color: var(--terra); }
 
 #view-bottlemath .bm-cards { display: -webkit-flex; display: flex; gap: 16px; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
 #view-bottlemath .bm-card { -webkit-flex: 1 1 180px; flex: 1 1 180px; min-width: 160px; max-width: 240px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
-#view-bottlemath .bm-card-label { font-family: 'DM Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
-#view-bottlemath .bm-card-val { font-family: 'DM Mono', monospace; font-size: 2.1rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 6px; }
+#view-bottlemath .bm-card-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 12px; }
+#view-bottlemath .bm-card-val { font-family: 'IBM Plex Mono', monospace; font-size: 2.1rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 6px; }
 #view-bottlemath .bm-card-val input { text-align: left; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
 #view-bottlemath .bm-card-unit { font-size: 1.15rem; color: var(--ink); font-weight: 400; }
 
 #view-bottlemath .bm-table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-#view-bottlemath .bm-table-title { font-family: 'Inter', 'DM Sans', sans-serif; font-weight: 600; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--ink); padding: 14px 16px; border-bottom: 1px solid var(--border); }
+#view-bottlemath .bm-table-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--ink); padding: 14px 16px; border-bottom: 1px solid var(--border); }
 #view-bottlemath table.bm-table th, #view-bottlemath table.bm-table td { text-align: right; }
 #view-bottlemath table.bm-table th:first-child, #view-bottlemath table.bm-table td:first-child { text-align: left; }
 #view-bottlemath table.bm-table tbody tr.bm-total-row td { font-weight: 700; background: var(--terra-pale); }
-#view-bottlemath table.bm-table tbody tr.bm-total-row td.num { color: var(--terra); font-family: 'DM Mono', monospace; }
+#view-bottlemath table.bm-table tbody tr.bm-total-row td.num { color: var(--terra); font-family: 'IBM Plex Mono', monospace; }
 /* Custom/added rows: free-text label + unit, and a remove button, on top
    of the same pill inputs used for the fixed rows above them. */
 #view-bottlemath .bm-text-input { width: 100%; min-width: 90px; border: none; border-bottom: 1px solid transparent; background: transparent; font: inherit; color: var(--ink); padding: 3px 0; -webkit-appearance: none; }
 #view-bottlemath .bm-text-input:focus { border-bottom-color: var(--border); outline: none; }
-#view-bottlemath .bm-unit-input { width: 52px; border: none; background: transparent; font-family: 'Jost', sans-serif; font-size: 0.78rem; color: var(--ink-faint); padding: 0; -webkit-appearance: none; }
+#view-bottlemath .bm-unit-input { width: 52px; border: none; background: transparent; font-family: 'Newsreader', Georgia, serif; font-size: 0.78rem; color: var(--ink-faint); padding: 0; -webkit-appearance: none; }
 #view-bottlemath .bm-unit-input:focus { color: var(--ink); outline: none; }
 #view-bottlemath .bm-applies-label { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; cursor: pointer; }
 #view-bottlemath table.bm-table tbody tr.bm-add-row td { padding: 9px 14px; border-top: 1px dashed var(--border); text-align: left; }
-#view-bottlemath .bm-add-link { background: none; border: 1px dashed var(--border); border-radius: 99px; padding: 5px 14px; font-family: 'Jost', sans-serif; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terra); cursor: pointer; }
+#view-bottlemath .bm-add-link { background: none; border: 1px dashed var(--border); border-radius: 99px; padding: 5px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terra); cursor: pointer; }
 #view-bottlemath .bm-add-link:hover { background: var(--terra-pale); border-color: var(--terra-light); }
 
-#view-bottlemath .bm-input { width: 68px; text-align: right; border: none; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 1px; font-family: 'DM Mono', monospace; font-size: 0.8rem; background: transparent; color: var(--ink); -webkit-appearance: none; }
+#view-bottlemath .bm-input { width: 68px; text-align: right; border: none; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 1px; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; background: transparent; color: var(--ink); -webkit-appearance: none; }
 #view-bottlemath .bm-input:focus { border-bottom-color: var(--border); outline: none; }
 #view-bottlemath .bm-input.bm-input-wide { width: 78px; }
 /* Now that inputs read as plain text (no pill), italics is what marks a
@@ -993,7 +993,7 @@
 #view-bottlemath .bm-amount-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 7px; }
 #view-bottlemath .bm-unit { width: 52px; text-align: left; color: var(--ink-faint); font-size: 0.78rem; white-space: nowrap; }
 #view-bottlemath .bm-buy-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; }
-#view-bottlemath .bm-buy-symbol { color: var(--ink-faint); font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+#view-bottlemath .bm-buy-symbol { color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
 /* Price inputs in the one-off/running cost tables: size to the value's own
    length so the "$" sits one space away from the figure, instead of a fixed
    box leaving a big gap for short numbers. */
@@ -1004,8 +1004,8 @@
 
 #view-bottlemath .bm-result-grid { display: -webkit-flex; display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
 #view-bottlemath .bm-result-card { -webkit-flex: 1 1 220px; flex: 1 1 220px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
-#view-bottlemath .bm-result-label { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
-#view-bottlemath .bm-result-val { font-family: 'DM Mono', monospace; font-size: 1.5rem; font-weight: 700; color: var(--ink); }
+#view-bottlemath .bm-result-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+#view-bottlemath .bm-result-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.5rem; font-weight: 700; color: var(--ink); }
 
 #view-bottlemath .bm-overhead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #view-bottlemath .bm-overhead-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
@@ -1022,16 +1022,16 @@
 #view-bottlemath .bm-price-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #view-bottlemath .bm-price-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 #view-bottlemath .bm-price-head { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin-bottom: 10px; }
-#view-bottlemath .bm-price-title { font-family: 'Inter', 'DM Sans', sans-serif; font-weight: 600; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--ink); }
+#view-bottlemath .bm-price-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.02rem; letter-spacing: -0.01em; color: var(--ink); }
 #view-bottlemath .bm-price-fullcost { font-size: 0.7rem; color: var(--ink-faint); }
-#view-bottlemath .bm-price-fullcost strong { color: var(--ink); font-family: 'DM Mono', monospace; }
+#view-bottlemath .bm-price-fullcost strong { color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
 #view-bottlemath .bm-price-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); gap: 10px; }
 #view-bottlemath .bm-price-row:first-of-type { border-top: none; }
-#view-bottlemath .bm-price-row-label { font-family: 'DM Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-flex-shrink: 0; flex-shrink: 0; width: 68px; }
+#view-bottlemath .bm-price-row-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-flex-shrink: 0; flex-shrink: 0; width: 68px; }
 #view-bottlemath .bm-price-range { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; -webkit-flex-shrink: 0; flex-shrink: 0; }
 #view-bottlemath .bm-price-range-sep { color: var(--ink-faint); font-size: 0.78rem; }
 #view-bottlemath .bm-price-keep { font-size: 0.8rem; color: var(--ink); text-align: right; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
-#view-bottlemath .bm-price-keep strong { color: var(--terra); font-family: 'DM Mono', monospace; }
+#view-bottlemath .bm-price-keep strong { color: var(--terra); font-family: 'IBM Plex Mono', monospace; }
 #view-bottlemath .bm-price-pct { color: var(--ink-faint); font-size: 0.72rem; }
 
 #view-bottlemath .bm-note { font-size: 0.76rem; color: var(--ink-faint); margin-top: 10px; }
@@ -1046,7 +1046,7 @@
 #view-expenses .exp-stats-inline { display: -webkit-flex; display: flex; gap: 24px; }
 #view-expenses .exp-stat { text-align: right; }
 #view-expenses .exp-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-faint); margin-bottom: 4px; }
-#view-expenses .exp-stat-value { font-family: 'DM Mono', monospace; font-size: 1.05rem; color: var(--ink); }
+#view-expenses .exp-stat-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.05rem; color: var(--ink); }
 #view-expenses .currency-bar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -1058,9 +1058,9 @@
   }
 #view-expenses .currency-bar label { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.76rem; margin: 0; }
 #view-expenses .rate-input-wrap { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; }
-#view-expenses .currency-bar input { width: 110px; background: var(--surface2); border: 1px solid var(--border); color: var(--ink); font-family: 'DM Mono', monospace; font-size: 0.8rem; padding: 4px 8px; border-radius: var(--radius-sm); outline: none; -webkit-appearance: none; }
+#view-expenses .currency-bar input { width: 110px; background: var(--surface2); border: 1px solid var(--border); color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 4px 8px; border-radius: var(--radius-sm); outline: none; -webkit-appearance: none; }
 #view-expenses .currency-bar input:focus { border-color: var(--terra); }
-#view-expenses .rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 4px 12px; font-family: 'DM Mono', monospace; font-size: 0.75rem; -webkit-transition: background 0.15s; transition: background 0.15s; }
+#view-expenses .rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 4px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; -webkit-transition: background 0.15s; transition: background 0.15s; }
 #view-expenses .rate-badge:hover { background: var(--terra-light); }
 #view-expenses .app-layout {
     display: -webkit-flex; display: flex;
@@ -1103,8 +1103,8 @@
     -webkit-flex-shrink: 0; flex-shrink: 0;
   }
 #view-expenses .drawer-head-title {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1rem; font-weight: 500; color: var(--ink);
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 1rem; font-weight: 700; color: var(--ink);
   }
 #view-expenses .drawer-close {
     background: none; border: none; cursor: pointer;
@@ -1138,7 +1138,7 @@
 #view-expenses input, #view-expenses select, #view-expenses textarea {
     width: 100%; background: var(--bg); border: 1px solid var(--border);
     border-radius: var(--radius-sm); padding: 9px 12px;
-    font-family: 'Jost', sans-serif; font-weight: 300; font-size: 0.96rem;
+    font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 0.96rem;
     color: var(--ink); outline: none; -webkit-appearance: none;
     -webkit-transition: border-color 0.15s; transition: border-color 0.15s;
   }
@@ -1150,7 +1150,7 @@
 #view-expenses .category-pills { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 5px; position: relative; }
 #view-expenses .pill {
     padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border);
-    background: transparent; font-family: 'Jost', sans-serif; font-size: 0.76rem;
+    background: transparent; font-family: 'Newsreader', Georgia, serif; font-size: 0.76rem;
     font-weight: 400; letter-spacing: 0.06em; cursor: pointer; color: var(--ink-faint);
     -webkit-user-select: none; user-select: none; display: inline-block;
     -webkit-transition: all 0.12s; transition: all 0.12s;
@@ -1160,7 +1160,7 @@
 #view-expenses #exp-pill-tooltip {
     position: fixed; z-index: 9999;
     background: var(--ink); color: var(--bg);
-    font-family: 'Jost', sans-serif; font-size: 0.78rem; font-weight: 300;
+    font-family: 'Newsreader', Georgia, serif; font-size: 0.78rem; font-weight: 300;
     line-height: 1.6; padding: 8px 12px; border-radius: var(--radius-sm);
     width: 220px; pointer-events: none; display: none;
     box-shadow: 0 4px 16px rgba(30,27,24,0.22);
@@ -1168,7 +1168,7 @@
 #view-expenses .btn {
     width: 100%; padding: 10px; background: var(--ink); color: var(--bg);
     border: none; border-radius: var(--radius-sm);
-    font-family: 'Jost', sans-serif; font-size: 0.82rem; font-weight: 400;
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; font-weight: 400;
     letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
     margin-top: 6px; -webkit-appearance: none;
     -webkit-transition: background 0.15s; transition: background 0.15s;
@@ -1179,10 +1179,10 @@
 #view-expenses .btn-danger { background: transparent; color: var(--ink-faint); border: 1px solid var(--border); }
 #view-expenses .btn-danger:hover { background: var(--red); color: #fff; border-color: var(--red); }
 #view-expenses .dual-amount { display: -webkit-grid; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; -webkit-align-items: end; align-items: end; }
-#view-expenses .curr-label { font-size: 0.58rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; font-family: 'Jost', sans-serif; }
+#view-expenses .curr-label { font-size: 0.58rem; font-weight: 400; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; font-family: 'IBM Plex Mono', monospace; }
 #view-expenses .usd-color { color: #326638; }
 #view-expenses .lbp-color { color: #8a4a10; }
-#view-expenses .dual-amount input { font-family: 'DM Mono', monospace; }
+#view-expenses .dual-amount input { font-family: 'IBM Plex Mono', monospace; }
 #view-expenses .upload-zone {
     border: 1px dashed var(--border); border-radius: var(--radius-sm);
     padding: 14px 12px; text-align: center; cursor: pointer; background: transparent;
@@ -1258,15 +1258,15 @@
 #view-expenses tbody tr:nth-child(even) { background: var(--bg); }
 #view-expenses tbody tr:hover { background: var(--terra-pale) !important; }
 #view-expenses tbody td { padding: 11px 14px; vertical-align: middle; white-space: nowrap; }
-#view-expenses .amount-cell { font-family: 'DM Mono', monospace; font-weight: 400; }
+#view-expenses .amount-cell { font-family: 'IBM Plex Mono', monospace; font-weight: 400; }
 #view-expenses .desc-cell { color: var(--ink-faint); font-size: 0.75rem; margin-top: 2px; white-space: normal; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 #view-expenses .item-cell { max-width: 200px; white-space: normal; overflow: hidden; vertical-align: middle; text-align: left; }
-#view-expenses .date-cell { font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--ink-faint); }
+#view-expenses .date-cell { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: var(--ink-faint); }
 #view-expenses .buyer-tag { font-size: 0.84rem; color: var(--ink-faint); }
 #view-expenses .dual-cell { line-height: 1.5; }
-#view-expenses .dual-cell .usd { font-family: 'DM Mono', monospace; font-weight: 400; }
-#view-expenses .dual-cell .lbp { font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); }
-#view-expenses .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; font-family: 'Jost', sans-serif; }
+#view-expenses .dual-cell .usd { font-family: 'IBM Plex Mono', monospace; font-weight: 400; }
+#view-expenses .dual-cell .lbp { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); }
+#view-expenses .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; font-family: 'IBM Plex Mono', monospace; }
 #view-expenses .badge-ingredients { background: #dff0e0; color: #326638; }
 #view-expenses .badge-production { background: #fff0cc; color: #7a5a00; }
 #view-expenses .badge-utilities { background: #e0f0f5; color: #1a5a6a; }
@@ -1279,17 +1279,17 @@
 #view-expenses .badge-atelier { background: #e4f0e8; color: #2a6a4a; }
 #view-expenses .badge-legal { background: #e8ecf5; color: #2a3f8a; }
 #view-expenses .badge-other { background: #ede8df; color: #9a9088; }
-#view-expenses .empty-state { text-align: center; padding: 80px 20px; color: var(--ink-faint); font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 1rem; background: var(--surface); }
+#view-expenses .empty-state { text-align: center; padding: 80px 20px; color: var(--ink-faint); font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 1rem; background: var(--surface); }
 #view-expenses .empty-icon { font-size: 1.8rem; margin-bottom: 10px; opacity: 0.2; }
 #view-expenses .summary-grid { display: -webkit-grid; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 14px 20px; background: var(--surface2); border-top: 1px solid var(--border); }
 #view-expenses .sum-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 13px; }
 #view-expenses .sum-card-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 4px; }
-#view-expenses .sum-card-amount { font-family: 'DM Mono', monospace; font-size: 1rem; }
+#view-expenses .sum-card-amount { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; }
 #view-expenses .receipt-thumb { width: 28px; height: 28px; object-fit: cover; border-radius: 3px; border: 1px solid var(--border); cursor: pointer; -webkit-transition: opacity 0.12s; transition: opacity 0.12s; }
 #view-expenses .receipt-thumb:hover { opacity: 0.75; }
 #view-expenses .receipt-link { font-size: 1rem; opacity: 0.45; text-decoration: none; -webkit-transition: opacity 0.12s; transition: opacity 0.12s; }
 #view-expenses .receipt-link:hover { opacity: 1; }
-#view-expenses .btn-edit { background: transparent; color: var(--ink-faint); border: 1px solid var(--border); cursor: pointer; padding: 3px 9px; border-radius: var(--radius-sm); font-size: 0.65rem; font-family: 'Jost', sans-serif; letter-spacing: 0.06em; -webkit-transition: all 0.12s; transition: all 0.12s; }
+#view-expenses .btn-edit { background: transparent; color: var(--ink-faint); border: 1px solid var(--border); cursor: pointer; padding: 3px 9px; border-radius: var(--radius-sm); font-size: 0.65rem; font-family: 'Newsreader', Georgia, serif; letter-spacing: 0.06em; -webkit-transition: all 0.12s; transition: all 0.12s; }
 #view-expenses .btn-edit:hover { border-color: var(--terra); color: var(--terra); }
 #view-expenses .row-actions { display: -webkit-flex; display: flex; gap: 4px; }
 #view-expenses #exp-lightbox { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; background: rgba(30,27,24,0.78); -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; }
@@ -1298,16 +1298,16 @@
 #view-expenses #exp-lightbox img { max-width: 100%; max-height: 70vh; display: block; }
 #view-expenses #exp-lightbox-close { position: absolute; top: 12px; right: 16px; font-size: 1.1rem; cursor: pointer; color: var(--ink-faint); background: none; border: none; }
 #view-expenses #exp-lightbox-close:hover { color: var(--terra); }
-#view-expenses #exp-lightbox-title { font-family: 'DM Sans', sans-serif; font-weight: 400; font-size: 0.95rem; margin-bottom: 14px; color: var(--ink-faint); padding-right: 28px; }
+#view-expenses #exp-lightbox-title { font-family: 'Newsreader', Georgia, serif; font-weight: 400; font-size: 0.95rem; margin-bottom: 14px; color: var(--ink-faint); padding-right: 28px; }
 #view-expenses #exp-edit-modal { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1500; background: rgba(30,27,24,0.5); -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; padding: 24px; }
 #view-expenses #exp-edit-modal.open { display: -webkit-flex; display: flex; }
 #view-expenses .edit-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); }
-#view-expenses .edit-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; padding: 16px 22px 12px; border-bottom: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--ink); letter-spacing: 0.01em; }
+#view-expenses .edit-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; padding: 16px 22px 12px; border-bottom: 1px solid var(--border); font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.95rem; font-weight: 700; color: var(--ink); letter-spacing: 0.01em; }
 #view-expenses .edit-close { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--ink-faint); padding: 0; line-height: 1; }
 #view-expenses .edit-close:hover { color: var(--terra); }
 #view-expenses .edit-body { padding: 20px 22px; }
 #view-expenses .edit-pills { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 5px; }
-#view-expenses .edit-pill { padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border); background: transparent; font-family: 'Jost', sans-serif; font-size: 0.68rem; font-weight: 400; letter-spacing: 0.06em; cursor: pointer; color: var(--ink-faint); display: inline-block; -webkit-user-select: none; user-select: none; }
+#view-expenses .edit-pill { padding: 3px 10px; border-radius: 99px; border: 1px solid var(--border); background: transparent; font-family: 'Newsreader', Georgia, serif; font-size: 0.68rem; font-weight: 400; letter-spacing: 0.06em; cursor: pointer; color: var(--ink-faint); display: inline-block; -webkit-user-select: none; user-select: none; }
 #view-expenses .edit-pill:hover { border-color: var(--terra); color: var(--terra); }
 #view-expenses .edit-pill.active { background: var(--terra); border-color: var(--terra); color: #fff; }
 #view-expenses .edit-receipt-current { font-size: 0.7rem; color: var(--ink-faint); background: var(--surface2); border-radius: var(--radius-sm); padding: 7px 10px; margin-bottom: 8px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; }
@@ -1315,7 +1315,7 @@
 #view-expenses .edit-actions .btn { margin-top: 0; }
 #view-expenses .btn-secondary { background: transparent; color: var(--ink-faint); border: 1px solid var(--border); }
 #view-expenses .btn-secondary:hover { background: var(--surface2); color: var(--ink); }
-#view-expenses #exp-toast { position: fixed; bottom: 28px; left: 50%; -webkit-transform: translateX(-50%) translateY(80px); transform: translateX(-50%) translateY(80px); background: var(--ink); color: var(--bg); padding: 9px 22px; border-radius: 99px; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0; z-index: 999; pointer-events: none; font-family: 'Jost', sans-serif; -webkit-transition: all 0.3s; transition: all 0.3s; }
+#view-expenses #exp-toast { position: fixed; bottom: 28px; left: 50%; -webkit-transform: translateX(-50%) translateY(80px); transform: translateX(-50%) translateY(80px); background: var(--ink); color: var(--bg); padding: 9px 22px; border-radius: 99px; font-size: 0.75rem; letter-spacing: 0.1em; opacity: 0; z-index: 999; pointer-events: none; font-family: 'Newsreader', Georgia, serif; -webkit-transition: all 0.3s; transition: all 0.3s; }
 #view-expenses #exp-toast.show { opacity: 1; -webkit-transform: translateX(-50%) translateY(0); transform: translateX(-50%) translateY(0); }
 @media (max-width: 800px) {
   #view-expenses .add-drawer { width: 100%; }
@@ -1764,17 +1764,17 @@
 <!-- FAUCET RATE EDIT MODAL -->
 <div id="ft-rate-modal" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:1500;background:rgba(30,27,24,0.5);-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;" onclick="ftCloseRateModalBg(event)">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;width:340px;box-shadow:var(--shadow-lg);">
-    <div style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;color:var(--ink);margin-bottom:4px;">Update flow rate</div>
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:1rem;font-weight: 700;color:var(--ink);margin-bottom:4px;">Update flow rate</div>
     <div style="font-size:0.75rem;color:var(--ink-faint);margin-bottom:4px;">Saved on this device and used for all calculations until you change it again.</div>
     <div id="ft-rate-updated-note" style="font-size:0.7rem;color:var(--ink-faint);margin-bottom:20px;"></div>
     <label style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">Seconds per litre</label>
     <div style="display:-webkit-flex;display:flex;gap:10px;-webkit-align-items:center;align-items:center;">
-      <input type="number" id="ft-rate-input" value="13.32" min="0.1" step="0.01" style="font-family:'DM Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;"/>
+      <input type="number" id="ft-rate-input" value="13.32" min="0.1" step="0.01" style="font-family:'IBM Plex Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;"/>
       <span style="color:var(--ink-faint);white-space:nowrap;font-size:0.85rem;">s / L</span>
     </div>
     <div style="display:-webkit-flex;display:flex;gap:10px;margin-top:18px;">
       <button onclick="ftSaveRateModal()" class="btn-primary" style="-webkit-flex:1;flex:1;">save</button>
-      <button onclick="ftCloseRateModal()" style="padding:10px 16px;background:transparent;color:var(--ink-faint);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Jost',sans-serif;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">cancel</button>
+      <button onclick="ftCloseRateModal()" style="padding:10px 16px;background:transparent;color:var(--ink-faint);border:1px solid var(--border);border-radius:var(--radius-sm);font-family: 'IBM Plex Mono', monospace;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">cancel</button>
     </div>
   </div>
 </div>
@@ -2046,16 +2046,16 @@
 <!-- RATE EDIT MODAL -->
 <div id="exp-rate-modal" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:1500;background:rgba(30,27,24,0.5);-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;" onclick="closeRateModalBg(event)">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;width:320px;box-shadow:0 8px 32px rgba(30,27,24,0.16);">
-    <div style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:500;color:var(--ink);margin-bottom:4px;">Update exchange rate</div>
+    <div style="font-family:'Bricolage Grotesque',sans-serif;font-size:1rem;font-weight: 700;color:var(--ink);margin-bottom:4px;">Update exchange rate</div>
     <div style="font-size:0.75rem;color:var(--ink-faint);margin-bottom:20px;">Set the current USD → LBP rate. Saved expenses keep their original rate.</div>
     <label style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">$1 USD =</label>
     <div style="display:-webkit-flex;display:flex;gap:10px;-webkit-align-items:center;align-items:center;">
-      <input type="number" id="exp-rate-input" value="89550" min="1" step="1" style="font-family:'DM Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;" onkeydown="if(event.key==='Enter')saveRateModal()"/>
+      <input type="number" id="exp-rate-input" value="89550" min="1" step="1" style="font-family:'IBM Plex Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;" onkeydown="if(event.key==='Enter')saveRateModal()"/>
       <span style="color:var(--ink-faint);white-space:nowrap;font-size:0.85rem;">LBP</span>
     </div>
     <div style="display:-webkit-flex;display:flex;gap:10px;margin-top:18px;">
-      <button onclick="saveRateModal()" style="flex:1;padding:10px;background:var(--ink);color:var(--bg);border:none;border-radius:var(--radius-sm);font-family:'Jost',sans-serif;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">save</button>
-      <button onclick="closeRateModal()" style="padding:10px 16px;background:transparent;color:var(--ink-faint);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Jost',sans-serif;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">cancel</button>
+      <button onclick="saveRateModal()" style="flex:1;padding:10px;background:var(--ink);color:var(--bg);border:none;border-radius:var(--radius-sm);font-family: 'IBM Plex Mono', monospace;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">save</button>
+      <button onclick="closeRateModal()" style="padding:10px 16px;background:transparent;color:var(--ink-faint);border:1px solid var(--border);border-radius:var(--radius-sm);font-family: 'IBM Plex Mono', monospace;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">cancel</button>
     </div>
   </div>
 </div>
@@ -2119,11 +2119,11 @@
           <div class="dual-amount">
             <div>
               <div class="curr-label usd-color">$ USD</div>
-              <input type="text" id="exp-f-amount-usd" placeholder="0.00" inputmode="decimal" oninput="syncAmount('usd')" onblur="formatUSDField('exp-f-amount-usd')" style="font-family:'DM Mono',monospace;"/>
+              <input type="text" id="exp-f-amount-usd" placeholder="0.00" inputmode="decimal" oninput="syncAmount('usd')" onblur="formatUSDField('exp-f-amount-usd')" style="font-family:'IBM Plex Mono',monospace;"/>
             </div>
             <div>
               <div class="curr-label lbp-color">LBP</div>
-              <input type="text" id="exp-f-amount-lbp" placeholder="0" inputmode="numeric" oninput="syncAmount('lbp')" style="font-family:'DM Mono',monospace;"/>
+              <input type="text" id="exp-f-amount-lbp" placeholder="0" inputmode="numeric" oninput="syncAmount('lbp')" style="font-family:'IBM Plex Mono',monospace;"/>
             </div>
           </div>
         </div>
@@ -2214,31 +2214,31 @@
         </div>
         <div style="position:relative;">
           <label>Date</label>
-          <button id="exp-date-filter-btn" onclick="toggleDatePicker(event)" style="width:100%;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 10px;font-family:'Jost',sans-serif;font-weight:300;font-size:0.85rem;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">All dates</button>
+          <button id="exp-date-filter-btn" onclick="toggleDatePicker(event)" style="width:100%;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 10px;font-family: 'Newsreader', Georgia, serif;font-weight:300;font-size:0.85rem;color:var(--ink);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">All dates</button>
           <div id="exp-date-picker-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:16px;width:260px;">
             <!-- Mode toggle -->
             <div style="display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;">
-              <button id="exp-dp-mode-months" onclick="setDateMode('months')" style="flex:1;padding:5px;font-family:'Jost',sans-serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--ink);color:var(--bg);">Months</button>
-              <button id="exp-dp-mode-date" onclick="setDateMode('date')" style="flex:1;padding:5px;font-family:'Jost',sans-serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;border:none;cursor:pointer;background:transparent;color:var(--ink-faint);">Exact date</button>
+              <button id="exp-dp-mode-months" onclick="setDateMode('months')" style="flex:1;padding:5px;font-family: 'IBM Plex Mono', monospace;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;border:none;cursor:pointer;background:var(--ink);color:var(--bg);">Months</button>
+              <button id="exp-dp-mode-date" onclick="setDateMode('date')" style="flex:1;padding:5px;font-family: 'IBM Plex Mono', monospace;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;border:none;cursor:pointer;background:transparent;color:var(--ink-faint);">Exact date</button>
             </div>
             <!-- Months mode -->
             <div id="exp-dp-months-ui">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                 <button onclick="shiftYear(-1)" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink-faint);padding:0 4px;">‹</button>
-                <span id="exp-dp-year-label" style="font-family:'DM Mono',monospace;font-size:0.82rem;color:var(--ink);"></span>
+                <span id="exp-dp-year-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--ink);"></span>
                 <button onclick="shiftYear(1)" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink-faint);padding:0 4px;">›</button>
               </div>
               <div id="exp-dp-month-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;"></div>
               <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
-                <button onclick="clearDateFilter()" style="background:none;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);">clear</button>
-                <button onclick="applyDateFilter()" style="background:var(--ink);color:var(--bg);border:none;border-radius:var(--radius-sm);padding:5px 12px;font-family:'Jost',sans-serif;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">apply</button>
+                <button onclick="clearDateFilter()" style="background:none;border:none;cursor:pointer;font-family: 'IBM Plex Mono', monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);">clear</button>
+                <button onclick="applyDateFilter()" style="background:var(--ink);color:var(--bg);border:none;border-radius:var(--radius-sm);padding:5px 12px;font-family: 'IBM Plex Mono', monospace;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;">apply</button>
               </div>
             </div>
             <!-- Exact date mode -->
             <div id="exp-dp-date-ui" style="display:none;">
               <input type="date" id="exp-dp-exact-date" style="width:100%;font-size:0.85rem;" oninput="applyExactDate()"/>
               <div style="margin-top:8px;text-align:right;">
-                <button onclick="clearDateFilter()" style="background:none;border:none;cursor:pointer;font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);">clear</button>
+                <button onclick="clearDateFilter()" style="background:none;border:none;cursor:pointer;font-family: 'IBM Plex Mono', monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-faint);">clear</button>
               </div>
             </div>
           </div>
@@ -2285,7 +2285,7 @@
 <div id="exp-caisse-modal" onclick="closeCaisseModalBg(event)" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;z-index:1500;background:rgba(30,27,24,0.5);-webkit-align-items:center;align-items:center;-webkit-justify-content:center;justify-content:center;padding:24px;">
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px 12px;border-bottom:1px solid var(--border);">
-      <span style="font-family:'DM Sans',sans-serif;font-size:0.95rem;font-weight:500;color:var(--ink);">caisse</span>
+      <span style="font-family:'Bricolage Grotesque',sans-serif;font-size:0.95rem;font-weight: 700;color:var(--ink);">caisse</span>
       <button onclick="closeCaisseModal()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink-faint);padding:0;line-height:1;">✕</button>
     </div>
     <div style="padding:20px 22px;">
@@ -2294,11 +2294,11 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
           <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Total deposited</div>
-          <div style="font-family:'DM Mono',monospace;font-size:1.05rem;" id="exp-cm-total">$0.00</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.05rem;" id="exp-cm-total">$0.00</div>
         </div>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
           <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Remaining</div>
-          <div style="font-family:'DM Mono',monospace;font-size:1.05rem;" id="exp-cm-remaining">$0.00</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.05rem;" id="exp-cm-remaining">$0.00</div>
         </div>
       </div>
 
@@ -2312,14 +2312,14 @@
           </div>
           <div>
             <label>Amount (USD)</label>
-            <input type="text" id="exp-cd-amount" placeholder="0.00" inputmode="decimal" style="font-family:'DM Mono',monospace;font-size:0.85rem;"/>
+            <input type="text" id="exp-cd-amount" placeholder="0.00" inputmode="decimal" style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;"/>
           </div>
         </div>
         <div style="margin-bottom:12px;">
           <label>Note (optional)</label>
           <input type="text" id="exp-cd-note" placeholder="e.g. initial deposit, top-up…"/>
         </div>
-        <button onclick="addDeposit()" id="exp-cd-btn" style="width:100%;padding:9px;background:var(--ink);color:var(--bg);border:none;border-radius:var(--radius-sm);font-family:'Jost',sans-serif;font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;">add deposit</button>
+        <button onclick="addDeposit()" id="exp-cd-btn" style="width:100%;padding:9px;background:var(--ink);color:var(--bg);border:none;border-radius:var(--radius-sm);font-family: 'IBM Plex Mono', monospace;font-size:0.75rem;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;">add deposit</button>
       </div>
 
       <!-- deposit history -->
@@ -2394,11 +2394,11 @@
         <div class="dual-amount">
           <div>
             <div class="curr-label usd-color">$ USD</div>
-            <input type="text" id="exp-edit-amount-usd" inputmode="decimal" oninput="syncEditAmount('usd')" onblur="formatUSDField('exp-edit-amount-usd')" style="font-family:'DM Mono',monospace;"/>
+            <input type="text" id="exp-edit-amount-usd" inputmode="decimal" oninput="syncEditAmount('usd')" onblur="formatUSDField('exp-edit-amount-usd')" style="font-family:'IBM Plex Mono',monospace;"/>
           </div>
           <div>
             <div class="curr-label lbp-color">LBP</div>
-            <input type="text" id="exp-edit-amount-lbp" inputmode="numeric" oninput="syncEditAmount('lbp')" style="font-family:'DM Mono',monospace;"/>
+            <input type="text" id="exp-edit-amount-lbp" inputmode="numeric" oninput="syncEditAmount('lbp')" style="font-family:'IBM Plex Mono',monospace;"/>
           </div>
         </div>
       </div>
@@ -3387,7 +3387,7 @@ function renderMonthGrid() {
       + 'padding:5px 4px;border-radius:var(--radius-sm);border:1px solid '
       + (active ? 'var(--terra)' : 'var(--border)') + ';background:'
       + (active ? 'var(--terra)' : 'transparent') + ';color:'
-      + (active ? '#fff' : 'var(--ink)') + ';font-family:\'Jost\',sans-serif;'
+      + (active ? '#fff' : 'var(--ink)') + ';font-family: \'Newsreader\', Georgia, serif;'
       + 'font-size:0.72rem;letter-spacing:0.04em;cursor:pointer;transition:all .1s;"'
       + ' id="exp-dp-m-' + mm + '">' + MONTH_LABELS[i] + '</button>';
   }
@@ -3535,7 +3535,7 @@ function renderExpTable() {
     return '<div class="sum-card">'
       + '<div class="sum-card-label">' + label + '</div>'
       + '<div class="sum-card-amount" style="color:var(--terra)">$' + fmtUSD(t.usd) + '</div>'
-      + '<div style="font-family:\'DM Mono\',monospace;font-size:0.72rem;color:var(--ink-faint);margin-top:1px">' + fmtLBP(t.lbp) + ' LBP</div>'
+      + '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.72rem;color:var(--ink-faint);margin-top:1px">' + fmtLBP(t.lbp) + ' LBP</div>'
       + '</div>';
   }).join('');
 
@@ -3886,11 +3886,11 @@ function renderCaisse() {
       hist.innerHTML = sorted.map(function(d) {
         var dateStr = d.date ? d.date.slice(0,10).split('-').reverse().join('/').replace(/^0/,'').replace(/\/0/g,'/') : '—';
         return '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-          + '<div><span style="font-family:\'DM Mono\',monospace;font-size:0.75rem;color:var(--ink-faint);">' + escHtml(dateStr) + '</span>'
+          + '<div><span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.75rem;color:var(--ink-faint);">' + escHtml(dateStr) + '</span>'
           + (d.note ? '<span style="margin-left:10px;color:var(--ink-faint);font-size:0.78rem;">' + escHtml(d.note) + '</span>' : '')
           + '</div>'
           + '<div style="display:flex;align-items:center;gap:8px;">'
-          + '<span style="font-family:\'DM Mono\',monospace;font-size:0.88rem;">$' + fmtUSD(parseFloat(d.amountUSD)||0) + '</span>'
+          + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.88rem;">$' + fmtUSD(parseFloat(d.amountUSD)||0) + '</span>'
           + '<button onclick="deleteDeposit(\'' + escHtml(d.uid) + '\')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:0.85rem;padding:0 2px;line-height:1;" title="Delete">✕</button>'
           + '</div></div>';
       }).join('');
