@@ -17,7 +17,7 @@
      than iOS does. -->
 <link rel="icon" type="image/png" href="toka-icon.png"/>
 <title>toka</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&family=DM+Mono:wght@400;500&family=Inter+Tight:wght@700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap" rel="stylesheet"/>
 <style>
   :root {
     --bg: #faf8f4;
@@ -121,6 +121,18 @@
   .content-head { padding: 36px 48px 18px; }
   .content-title { font-family: 'DM Sans', sans-serif; font-size: 1.15rem; font-weight: 500; color: var(--ink); margin-bottom: 6px; }
   .content-sub { font-size: 0.8rem; color: var(--ink-faint); }
+  /* Page hero — the top-of-page title block on every page, in the same
+     format as the original Bottle Math artifact: small mono eyebrow line,
+     big tight heavy title, short accent rule, serif intro line, all on a
+     white band above the page's beige content area. Only the FIRST
+     content-head of each view (the one right after its back bar) gets this;
+     section headings further down (Archived, Infusions, …) stay as they
+     were. The eyebrow and accent rule are injected by decoratePageHeads(). */
+  [id^="view-"] > .view-bar + .content-head { background: var(--surface); border-bottom: 1px solid var(--border); padding: 44px 48px 40px; margin-bottom: 28px; }
+  [id^="view-"] > .view-bar + .content-head .content-title { font-family: 'Inter Tight', 'DM Sans', sans-serif; font-weight: 800; font-size: 3.4rem; line-height: 1.02; letter-spacing: -0.035em; color: var(--ink); margin-bottom: 0; }
+  [id^="view-"] > .view-bar + .content-head .content-sub { font-family: 'Newsreader', Georgia, serif; font-size: 1.15rem; line-height: 1.6; color: #5a534c; max-width: 660px; }
+  .page-eyebrow { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 26px; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 6px 32px; }
+  .page-accent { width: 66px; height: 3px; background: var(--terra); margin: 28px 0 24px; }
 
   .archived-fold-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 4px 12px; cursor: pointer; -webkit-user-select: none; user-select: none; }
   .archived-fold-head .content-title, .archived-fold-head .content-sub { margin-bottom: 0; }
@@ -755,6 +767,11 @@
     .content { padding: 28px 20px; }
     .view-bar { padding: 12px 20px; }
     .content-head { padding: 24px 20px 14px; }
+    [id^="view-"] > .view-bar + .content-head { padding: 30px 20px 28px; margin-bottom: 18px; }
+    [id^="view-"] > .view-bar + .content-head .content-title { font-size: 2.3rem; }
+    [id^="view-"] > .view-bar + .content-head .content-sub { font-size: 1.02rem; }
+    .page-eyebrow { margin-bottom: 18px; gap: 4px 20px; }
+    .page-accent { margin: 20px 0 18px; }
     .table-wrap { padding: 0 20px 28px; }
     #an-body, #today-body, #biv-body { padding: 0 20px 28px; }
     .daily-checklist { margin-left: 20px; margin-right: 20px; }
@@ -4085,7 +4102,50 @@ function hideConfig() {
   el.style.display = 'none';
   el.classList.add('hidden');
 }
+// Eyebrow line + accent rule for each page's title block (see the
+// "Page hero" CSS). Eyebrow = the Home section the page lives under, plus
+// an optional second note, like the Bottle Math artifact's
+// "INTERNAL — COSTS AND PRICING · ALL FIGURES IN USD".
+var PAGE_EYEBROWS = {
+  'view-f1': ['Toka \u2014 Brewing process'],
+  'view-infusion': ['Toka \u2014 Brewing process'],
+  'view-bottling': ['Toka \u2014 Brewing process'],
+  'view-faucet': ['Toka \u2014 Brewing process'],
+  'view-bottlecalc': ['Toka \u2014 Brewing process'],
+  'view-readings': ['Toka \u2014 Quality control'],
+  'view-tasting': ['Toka \u2014 Quality control'],
+  'view-overview': ['Toka \u2014 Quality control'],
+  'view-analytics': ['Toka \u2014 Quality control'],
+  'view-today': ['Toka \u2014 Business'],
+  'view-production': ['Toka \u2014 Business'],
+  'view-expenses': ['Toka \u2014 Business', 'All figures in USD'],
+  'view-inventory': ['Toka \u2014 Business'],
+  'view-bottlemath': ['Toka \u2014 Costs and pricing', 'All figures in USD']
+};
+function decoratePageHeads() {
+  for (var id in PAGE_EYEBROWS) {
+    var view = document.getElementById(id);
+    if (!view) continue;
+    var bar = view.querySelector(':scope > .view-bar');
+    var head = bar && bar.nextElementSibling;
+    if (!head || !head.classList.contains('content-head') || head.querySelector('.page-eyebrow')) continue;
+    var eb = document.createElement('div');
+    eb.className = 'page-eyebrow';
+    PAGE_EYEBROWS[id].forEach(function (t) { var sp = document.createElement('span'); sp.textContent = t; eb.appendChild(sp); });
+    var title = head.querySelector('.content-title');
+    // Usually the title sits directly in the head; Expenses wraps it in its
+    // own block next to the stat boxes, so the eyebrow goes in that block.
+    var titleBox = title ? title.parentNode : head;
+    titleBox.insertBefore(eb, titleBox.firstChild);
+    if (title) {
+      var rule = document.createElement('div');
+      rule.className = 'page-accent';
+      title.parentNode.insertBefore(rule, title.nextSibling);
+    }
+  }
+}
 function revealApp() {
+  decoratePageHeads();
   document.getElementById('main-header').style.display = '';
   document.getElementById('sync-bar').style.display = '';
   showView('home');
