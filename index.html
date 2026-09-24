@@ -17,8 +17,18 @@
      than iOS does. -->
 <link rel="icon" type="image/png" href="toka-icon.png"/>
 <title>toka</title>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
+  /* Newsreader, self-declared (instead of via the Google Fonts link) so its
+     vertical metrics can be evened out: out of the box it keeps much less
+     space above its letters than IBM Plex Mono does, so in any row mixing
+     the two (dates/labels next to numbers) the serif text sat ~2px higher.
+     The ascent/descent overrides below give it the same balance as Plex
+     Mono — letters are unchanged, only where they sit in the line. */
+  @font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 400; font-display: swap; ascent-override: 102%; descent-override: 25.4%; line-gap-override: 0%; src: url(https://fonts.gstatic.com/s/newsreader/v26/cY9XfjOCX1hbuyalUrK439vogqCz_goCYw7oRd6JFYgzbARA_n8IsQ.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 400; font-display: swap; ascent-override: 102%; descent-override: 25.4%; line-gap-override: 0%; src: url(https://fonts.gstatic.com/s/newsreader/v26/cY9XfjOCX1hbuyalUrK439vogqCz_goCYw7oRd6JFYYzbARA_n8.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 400 500; font-display: swap; ascent-override: 102%; descent-override: 25.4%; line-gap-override: 0%; src: url(https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK439DyjIJFJpeBZQ.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Newsreader'; font-style: normal; font-weight: 400 500; font-display: swap; ascent-override: 102%; descent-override: 25.4%; line-gap-override: 0%; src: url(https://fonts.gstatic.com/s/newsreader/v26/cY9AfjOCX1hbuyalUrK4397yjIJFJpc.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
   :root {
     --bg: #faf8f4;
     --surface: #ffffff;
@@ -149,8 +159,13 @@
   .table-wrap { padding: 0 48px 48px; }
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); }
   table { border-collapse: collapse; width: 100%; font-size: 0.84rem; }
-  thead th { background: var(--surface2); text-align: left; padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); white-space: nowrap; border-bottom: 1px solid var(--border); }
-  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--ink); vertical-align: top; }
+  thead th { background: var(--surface2); text-align: left; padding: 14px 14px; font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); white-space: nowrap; border-bottom: 1px solid var(--border); }
+  tbody td { padding: 14px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--ink); vertical-align: middle; }
+  /* Every table cell on every page centres its text vertically. The serif
+     (Newsreader) and mono (IBM Plex Mono) fonts carry different amounts of
+     empty space above and below their letters, so the Newsreader metrics
+     are evened out in its @font-face rules at the top of this stylesheet. */
+  table td, table th { vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover td { background: #fcfaf7; }
   /* Testing data: visually separate readings taken on different days */
