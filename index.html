@@ -198,7 +198,7 @@
      an iPhone every column's text spilled over the next one (letters even
      stacking vertically) instead of the table scrolling sideways. Now it
      fills the screen on a laptop and scrolls sideways on a phone. */
-  .bottling-table { table-layout: fixed; width: 1341px; width: max(1341px, 100%); }
+  .bottling-table { table-layout: fixed; min-width: 1341px; width: 1341px; width: max(1341px, 100%); }
   .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 160px; }
   .bottling-table th:nth-child(2), .bottling-table td:nth-child(2) { width: 160px; }
   .bottling-table th:nth-child(3), .bottling-table td:nth-child(3) { width: 120px; }
@@ -239,7 +239,7 @@
      every column gets enough room on its own, and the table's own width is
      simply the sum of them (again via max(), so it still fills a wide
      desktop screen rather than leaving dead space). */
-  .infusion-table { table-layout: fixed; width: 1226px; width: max(1226px, 100%); }
+  .infusion-table { table-layout: fixed; min-width: 1226px; width: 1226px; width: max(1226px, 100%); }
   .infusion-table th:nth-child(1), .infusion-table td:nth-child(1) { width: 170px; }
   .infusion-table th:nth-child(2), .infusion-table td:nth-child(2) { width: 170px; }
   .infusion-table th:nth-child(3), .infusion-table td:nth-child(3) { width: 120px; }
