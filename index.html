@@ -189,27 +189,27 @@
   .id-cell { font-family: 'IBM Plex Mono', monospace; color: var(--terra); font-size: 0.8rem; }
   .muted { color: var(--ink-faint); }
   .notes-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
-  /* Bottling table: fixed column widths (as a share of the table's own
-     width) so unfolding a bottle group — which reveals rows whose cell
-     content differs from the group-summary row (e.g. individual dates
-     instead of "mixed", or a longer/shorter spice list) — never reflows
-     the columns. Widths are percentages, so they still scale with the
-     device/window, they just don't change based on which rows are shown. */
-  .bottling-table { table-layout: fixed; }
-  .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 13%; }
-  .bottling-table th:nth-child(2), .bottling-table td:nth-child(2) { width: 13%; }
-  .bottling-table th:nth-child(3), .bottling-table td:nth-child(3) { width: 8%; }
-  .bottling-table th:nth-child(4), .bottling-table td:nth-child(4) { width: 8%; }
-  .bottling-table th:nth-child(5), .bottling-table td:nth-child(5) { width: 8%; }
-  .bottling-table th:nth-child(6), .bottling-table td:nth-child(6) { width: 7%; }
-  .bottling-table th:nth-child(7), .bottling-table td:nth-child(7) { width: 7%; }
-  .bottling-table th:nth-child(8), .bottling-table td:nth-child(8) { width: 14%; }
-  .bottling-table th:nth-child(9), .bottling-table td:nth-child(9) { width: 5%; }
-  .bottling-table th:nth-child(10), .bottling-table td:nth-child(10) { width: 13%; }
-  /* Fixed px, not %: this column holds 4 icon buttons (lineage/edit/archive/
-     delete) that need real room — a percentage here was too narrow, so the
-     icons overflowed past the cell's own background, breaking the row
-     color when the table was scrolled horizontally. */
+  /* Bottling table: fixed column widths so unfolding a bottle group (whose
+     rows differ from the group-summary row — individual dates instead of
+     "mixed", longer/shorter spice lists) never reflows the columns.
+     Widths are in px sized to each column's real content, and the table's
+     own width is max(sum, 100%) — same fix as the Infusion table below:
+     percentages of a phone-width table left columns a few px wide, so on
+     an iPhone every column's text spilled over the next one (letters even
+     stacking vertically) instead of the table scrolling sideways. Now it
+     fills the screen on a laptop and scrolls sideways on a phone. */
+  .bottling-table { table-layout: fixed; width: 1341px; width: max(1341px, 100%); }
+  .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 160px; }
+  .bottling-table th:nth-child(2), .bottling-table td:nth-child(2) { width: 160px; }
+  .bottling-table th:nth-child(3), .bottling-table td:nth-child(3) { width: 120px; }
+  .bottling-table th:nth-child(4), .bottling-table td:nth-child(4) { width: 120px; }
+  .bottling-table th:nth-child(5), .bottling-table td:nth-child(5) { width: 90px; }
+  .bottling-table th:nth-child(6), .bottling-table td:nth-child(6) { width: 80px; }
+  .bottling-table th:nth-child(7), .bottling-table td:nth-child(7) { width: 80px; }
+  .bottling-table th:nth-child(8), .bottling-table td:nth-child(8) { width: 160px; }
+  .bottling-table th:nth-child(9), .bottling-table td:nth-child(9) { width: 85px; }
+  .bottling-table th:nth-child(10), .bottling-table td:nth-child(10) { width: 170px; }
+  /* This column holds 4 icon buttons (lineage/edit/archive/delete). */
   .bottling-table th:nth-child(11), .bottling-table td:nth-child(11) { width: 116px; }
   /* Spices had no wrap rule (unlike Notes/Batch ID), so with a fixed-width
      column its text needs to wrap within the cell instead of forcing the
