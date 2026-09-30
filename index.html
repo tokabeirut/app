@@ -4389,14 +4389,23 @@ function setDataState(state) {
   body.classList.remove('data-stale', 'data-empty');
   if (state === 'fresh') { if (badge) badge.style.display = 'none'; return; }
   var hasCopy = !!snapshotSavedAt;
-  body.classList.add(hasCopy ? 'data-stale' : 'data-empty');
+  // A catch-up refresh starts from live data that's merely a bit old, so the
+  // page stays visible (dimmed + locked), never hidden.
+  var catchingUp = (typeof refreshPending !== 'undefined') && refreshPending;
+  body.classList.add((hasCopy || catchingUp) ? 'data-stale' : 'data-empty');
   if (!badge) return;
   var txt;
-  if (state === 'error') {
+  if (state === 'error' && catchingUp) {
+    txt = 'Couldn\u2019t reach the sheet to check for changes \u2014 editing locked \u00b7 tap to retry';
+    badge.classList.add('is-error');
+  } else if (state === 'error') {
     txt = hasCopy
       ? 'Couldn’t reach the sheet — showing saved data from ' + fmtSnapshotTime(snapshotSavedAt) + ', editing locked · tap to retry'
       : 'Couldn’t reach the sheet · tap to retry';
     badge.classList.add('is-error');
+  } else if (state === 'refreshing') {
+    txt = 'Checking for changes from other devices\u2026';
+    badge.classList.remove('is-error');
   } else {
     txt = hasCopy
       ? 'Showing saved data from ' + fmtSnapshotTime(snapshotSavedAt) + ' · updating…'
@@ -4408,12 +4417,16 @@ function setDataState(state) {
 }
 function markDataFresh() {
   var wasFresh = dataFresh;
+  var wasRefresh = refreshPending;
   dataFresh = true;
+  refreshPending = false;
+  lastLiveLoadAt = Date.now();
   setDataState('fresh');
   saveSnapshot();
-  // First live load of this visit: whatever page is open was drawn from the
-  // saved copy (or not drawn at all), so redraw it from the live data now.
-  if (!wasFresh) {
+  // First live load of this visit, or a catch-up refresh after coming back
+  // to the app: whatever page is open was drawn from older data, so redraw
+  // it from the live data now.
+  if (!wasFresh || wasRefresh) {
     // Bottle Math keeps its own working copy (bmState) separate from the raw
     // data, so bring it up to date even if that page isn't open right now.
     if (typeof bmApplyLoadedSettings === 'function') bmApplyLoadedSettings(bottleMathSettingsRaw);
@@ -4421,14 +4434,63 @@ function markDataFresh() {
   }
 }
 function markDataLoadFailed() {
-  if (dataFresh) return;   // an already-live page stays live on a later hiccup
+  // An already-live page stays live on a later hiccup — unless it was
+  // locked for a catch-up refresh, in which case say so and offer a retry.
+  if (dataFresh && !refreshPending) return;
   setDataState('error');
 }
 function retryDataLoad() {
-  if (dataFresh) return;
-  setDataState(snapshotSavedAt ? 'stale' : 'empty');
+  if (dataFresh && !refreshPending) return;
+  setDataState(refreshPending ? 'refreshing' : (snapshotSavedAt ? 'stale' : 'empty'));
   loadAll();
 }
+
+/* ---- catch-up refresh when coming back to an app left open ----
+   The same app is often open on several devices at once (e.g. a laptop left
+   open in the background while numbers get entered on a phone). Whenever
+   this tab comes back into use — switched back to, window focused, laptop
+   woken, or restored from the browser's back/forward cache — and the data
+   on screen is more than REFRESH_AFTER_MS old, everything is reloaded from
+   the sheet and the open page redrawn. Editing is locked with a "checking
+   for changes" badge until that lands, so nothing typed here can be saved
+   on top of older numbers and overwrite what was entered on the other
+   device. A slower background check also runs while the page is visible
+   but left idle, so a laptop that's simply been sitting open catches up too.
+   Skipped while something is being typed, a form drawer is open, or a
+   Bottle Math edit is still waiting to save — it retries next time. */
+var lastLiveLoadAt = 0;
+var refreshPending = false;
+var lastInteractionAt = Date.now();
+var REFRESH_AFTER_MS = 20000;
+var IDLE_POLL_MS = 120000;
+function userIsBusy() {
+  var a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+  if (document.querySelector('.add-drawer.open, .drawer-overlay.open, #exp-edit-modal.open')) return true;
+  if (typeof bmSaveTimer !== 'undefined' && bmSaveTimer) return true;
+  return false;
+}
+function refreshOnReturn() {
+  if (!dataFresh || refreshPending) return;            // first load still running, or already refreshing
+  if (Date.now() - lastLiveLoadAt < REFRESH_AFTER_MS) return;
+  if (userIsBusy()) return;
+  refreshPending = true;
+  setDataState('refreshing');
+  loadAll();
+  if (currentView === 'expenses' && typeof loadExpensesData === 'function') loadExpensesData();
+  if (currentView === 'faucet' && typeof loadFaucetRate === 'function') loadFaucetRate();
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshOnReturn(); });
+window.addEventListener('focus', refreshOnReturn);
+window.addEventListener('pageshow', function (e) { if (e.persisted) refreshOnReturn(); });
+['keydown', 'pointerdown'].forEach(function (evt) {
+  document.addEventListener(evt, function () { lastInteractionAt = Date.now(); }, true);
+});
+setInterval(function () {
+  if (document.visibilityState !== 'visible') return;
+  if (Date.now() - lastInteractionAt < IDLE_POLL_MS) return;   // actively being used — wait
+  refreshOnReturn();
+}, 30000);
 function renderCurrentViewData() {
   var v = currentView;
   try {
