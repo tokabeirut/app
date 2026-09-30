@@ -3147,9 +3147,17 @@ function loadExpenseNotes() {
   api({ action: 'getExpenseNotes' }, function (err, res) {
     if (err || !res || !res.ok) return;
     var ta = document.getElementById('exp-notes-text');
-    // Don't overwrite something being typed / not yet saved.
-    if (!ta || expNotesSaveTimer || document.activeElement === ta) return;
-    ta.value = res.notes || '';
+    var st = document.getElementById('exp-notes-status');
+    // An Apps Script backend that hasn't been redeployed with the notes
+    // actions answers without a `notes` field — say so instead of wiping
+    // the box, so it's obvious notes aren't being shared yet.
+    if (typeof res.notes !== 'string') {
+      if (st) st.textContent = 'notes not synced \u2014 backend needs redeploying';
+      return;
+    }
+    // Don't overwrite a change that's still waiting to save.
+    if (!ta || expNotesSaveTimer) return;
+    if (ta.value !== res.notes) ta.value = res.notes;
     saveExpSnapshot();
   });
 }
@@ -4613,12 +4621,17 @@ var REFRESH_AFTER_MS = 20000;
 var IDLE_POLL_MS = 120000;
 function userIsBusy() {
   var a = document.activeElement;
-  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+  // The Expenses notes box often just keeps focus after typing; with
+  // nothing left to save it shouldn't block catching up with other devices.
+  var idleNotes = a && a.id === 'exp-notes-text' && !(typeof expNotesSaveTimer !== 'undefined' && expNotesSaveTimer);
+  if (a && !idleNotes && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+  if (typeof expNotesSaveTimer !== 'undefined' && expNotesSaveTimer) return true;
   if (document.querySelector('.add-drawer.open, .drawer-overlay.open, #exp-edit-modal.open')) return true;
   if (typeof bmSaveTimer !== 'undefined' && bmSaveTimer) return true;
   return false;
 }
 function refreshOnReturn() {
+  checkForAppUpdate();
   if (!dataFresh || refreshPending) return;            // first load still running, or already refreshing
   if (Date.now() - lastLiveLoadAt < REFRESH_AFTER_MS) return;
   if (userIsBusy()) return;
@@ -4629,6 +4642,59 @@ function refreshOnReturn() {
   if (currentView === 'faucet' && typeof loadFaucetRate === 'function') loadFaucetRate();
 }
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshOnReturn(); });
+
+/* ---- self-update ----
+   A phone's home-screen copy of the app (and a laptop tab left open) can
+   keep running an old version for days, long after a fix has been pushed.
+   So the app checks itself: it fetches the current index.html from the
+   server (bypassing the cache) and compares its code — every inline
+   <script> and <style> — with the code it's running. If they differ, a
+   newer version is live, and the page reloads itself into it (after
+   saving the local snapshots), unless something is mid-edit, in which case
+   it tries again on the next check. Checks run shortly after opening and
+   whenever the app is come back to, at most once a minute. */
+var appCodeHash = null;
+var lastVersionCheckAt = 0;
+function hashAppCode(doc) {
+  // Only the app's own stylesheet (first <style> in <head>) and its main
+  // inline script (the longest one) — anything a browser extension injects
+  // into the page is ignored, so it can't make every check look like an update.
+  var txt = '';
+  var st = doc.querySelector('head style');
+  if (st) txt += st.textContent;
+  var main = '';
+  var scripts = doc.querySelectorAll('script:not([src])');
+  for (var i = 0; i < scripts.length; i++) if (scripts[i].textContent.length > main.length) main = scripts[i].textContent;
+  txt += main;
+  var h = 5381;
+  for (var j = 0; j < txt.length; j++) h = ((h << 5) + h + txt.charCodeAt(j)) | 0;
+  return h;
+}
+function checkForAppUpdate() {
+  if (Date.now() - lastVersionCheckAt < 60000) return;
+  lastVersionCheckAt = Date.now();
+  if (!window.fetch || !window.DOMParser) return;
+  if (appCodeHash === null) appCodeHash = hashAppCode(document);
+  fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.text() : null; })
+    .then(function (t) {
+      if (!t) return;
+      var fresh = hashAppCode(new DOMParser().parseFromString(t, 'text/html'));
+      if (fresh === appCodeHash) return;
+      if (userIsBusy()) { lastVersionCheckAt = 0; return; }   // retry next time
+      // Safety net against a reload loop (e.g. the server copy is still
+      // mid-update): never auto-reload twice within 5 minutes.
+      var lastAuto = 0;
+      try { lastAuto = parseInt(sessionStorage.getItem('toka_auto_reload_at') || '0', 10); } catch (e0) {}
+      if (Date.now() - lastAuto < 300000) return;
+      try { sessionStorage.setItem('toka_auto_reload_at', String(Date.now())); } catch (e1) {}
+      try { saveSnapshot(); } catch (e) {}
+      try { if (typeof saveExpSnapshot === 'function') saveExpSnapshot(); } catch (e2) {}
+      location.reload();
+    })
+    .catch(function () {});
+}
+setTimeout(checkForAppUpdate, 3000);
 window.addEventListener('focus', refreshOnReturn);
 window.addEventListener('pageshow', function (e) { if (e.persisted) refreshOnReturn(); });
 ['keydown', 'pointerdown'].forEach(function (evt) {
