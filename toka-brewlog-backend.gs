@@ -1611,6 +1611,13 @@ function doGet(e) {
   // Faucet timer's flow rate lives in the same "settings" sheet as the
   // expense exchange rate above, just a different cell (B1 instead of A1)
   // so the two unrelated numbers don't collide.
+  // Expenses page notes (free text under the stats) — cell D1 of the same
+  // shared settings sheet.
+  if (action === 'getExpenseNotes') {
+    var enSs = SpreadsheetApp.getActiveSpreadsheet();
+    var enSheet = enSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || enSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    return json_({ ok: true, notes: String(enSheet.getRange('D1').getValue() || '') });
+  }
   if (action === 'getFaucetRate') {
     var frSs = SpreadsheetApp.getActiveSpreadsheet();
     var frSheet = frSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || frSs.insertSheet(EXPENSES_SETTINGS_SHEET);
@@ -1690,6 +1697,14 @@ function handleAction_(body) {
     var srSs = SpreadsheetApp.getActiveSpreadsheet();
     var srSheet = srSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || srSs.insertSheet(EXPENSES_SETTINGS_SHEET);
     srSheet.getRange('A1').setValue(body.rate);
+    return json_({ ok: true });
+  }
+
+  if (action === 'setExpenseNotes') {
+    var snSs = SpreadsheetApp.getActiveSpreadsheet();
+    var snSheet = snSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || snSs.insertSheet(EXPENSES_SETTINGS_SHEET);
+    // Stored as plain text so a note starting with "=" isn't read as a formula.
+    snSheet.getRange('D1').setNumberFormat('@').setValue(String(body.notes || ''));
     return json_({ ok: true });
   }
 

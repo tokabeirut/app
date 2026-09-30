@@ -79,11 +79,11 @@
   /* "showing saved data · updating…" / "loading latest data…" notice — see
      the snapshot block in the script. Fixed at the top so it's visible on
      every page, including Bottle Math with its own fixed bottom bar. */
-  #data-state-badge { position: fixed; top: 12px; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); z-index: 700; max-width: calc(100vw - 32px); padding: 7px 16px 7px 30px; border-radius: 99px; background: var(--terra-pale); border: 1px solid var(--border); color: var(--terra); font-family: 'Newsreader', Georgia, serif; font-size: 0.74rem; box-shadow: 0 2px 12px rgba(30,27,24,0.10); cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  #data-state-badge::before { content: ''; position: absolute; left: 13px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #f0a050; -webkit-animation: pulse 1s infinite; animation: pulse 1s infinite; }
-  #data-state-badge.is-error { cursor: pointer; }
-  #data-state-badge.is-error::before { background: var(--terra); -webkit-animation: none; animation: none; }
-  #data-state-badge.pulse { -webkit-animation: dataBadgeNudge 0.45s ease; animation: dataBadgeNudge 0.45s ease; }
+  #data-state-badge, #exp-state-badge { position: fixed; top: 12px; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); z-index: 700; max-width: calc(100vw - 32px); padding: 7px 16px 7px 30px; border-radius: 99px; background: var(--terra-pale); border: 1px solid var(--border); color: var(--terra); font-family: 'Newsreader', Georgia, serif; font-size: 0.74rem; box-shadow: 0 2px 12px rgba(30,27,24,0.10); cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #data-state-badge::before, #exp-state-badge::before { content: ''; position: absolute; left: 13px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #f0a050; -webkit-animation: pulse 1s infinite; animation: pulse 1s infinite; }
+  #data-state-badge.is-error, #exp-state-badge.is-error { cursor: pointer; }
+  #data-state-badge.is-error::before, #exp-state-badge.is-error::before { background: var(--terra); -webkit-animation: none; animation: none; }
+  #data-state-badge.pulse, #exp-state-badge.pulse { -webkit-animation: dataBadgeNudge 0.45s ease; animation: dataBadgeNudge 0.45s ease; }
   @-webkit-keyframes dataBadgeNudge { 0%, 100% { -webkit-transform: translateX(-50%); } 25% { -webkit-transform: translateX(calc(-50% - 5px)); } 75% { -webkit-transform: translateX(calc(-50% + 5px)); } }
   @keyframes dataBadgeNudge { 0%, 100% { transform: translateX(-50%); } 25% { transform: translateX(calc(-50% - 5px)); } 75% { transform: translateX(calc(-50% + 5px)); } }
   /* Saved copy on screen: dim the page content slightly so it reads as
@@ -93,6 +93,9 @@
   body.data-stale .data-view > :not(.view-bar) { opacity: 0.6; -webkit-transition: opacity 0.2s; transition: opacity 0.2s; }
   body.data-empty .data-view > :not(.view-bar) { visibility: hidden; }
   body.data-empty #view-bottlemath .bm-summary-bar { visibility: hidden; }
+  body.on-expenses #data-state-badge, body:not(.on-expenses) #exp-state-badge { display: none !important; }
+  body.exp-stale #view-expenses > :not(.view-bar) { opacity: 0.6; -webkit-transition: opacity 0.2s; transition: opacity 0.2s; }
+  body.exp-empty #view-expenses > :not(.view-bar) { visibility: hidden; }
   @-webkit-keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
   .sync-reconfig { margin-left: auto; -webkit-appearance: none; appearance: none; background: none; border: 0; padding: 5px; margin: -5px -5px -5px auto; display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 5px; font: inherit; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; cursor: pointer; color: var(--ink-faint); opacity: 0.5; -webkit-transition: opacity .15s ease, color .15s ease; transition: opacity .15s ease, color .15s ease; }
@@ -1062,6 +1065,17 @@
 #view-expenses .exp-stat { text-align: right; }
 #view-expenses .exp-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-faint); margin-bottom: 4px; }
 #view-expenses .exp-stat-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.05rem; color: var(--ink); }
+#view-expenses .exp-head-right { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: flex-end; align-items: flex-end; gap: 14px; }
+#view-expenses .exp-notes { width: 340px; max-width: 100%; }
+#view-expenses .exp-notes-toggle { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; margin-left: auto; background: none; border: none; padding: 0; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-faint); }
+#view-expenses .exp-notes-toggle:hover { color: var(--ink); }
+#view-expenses .exp-notes-arrow { display: inline-block; font-size: 0.7rem; -webkit-transition: transform 0.15s; transition: transform 0.15s; }
+#view-expenses .exp-notes.open .exp-notes-arrow { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
+#view-expenses .exp-notes-body { display: none; margin-top: 8px; }
+#view-expenses .exp-notes.open .exp-notes-body { display: block; }
+#view-expenses #exp-notes-text { width: 100%; min-height: 120px; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-family: 'Newsreader', Georgia, serif; font-size: 0.92rem; line-height: 1.5; color: var(--ink); resize: vertical; }
+#view-expenses #exp-notes-text:focus { outline: none; border-color: var(--ink-faint); }
+#view-expenses .exp-notes-status { margin-top: 4px; min-height: 1em; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; color: var(--ink-faint); }
 #view-expenses .currency-bar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -1374,6 +1388,7 @@
 
 <!-- DATA STATE BADGE (saved-copy / loading / couldn't-reach notice) -->
 <div id="data-state-badge" style="display:none" onclick="retryDataLoad()" role="status" aria-live="polite"></div>
+<div id="exp-state-badge" style="display:none" onclick="retryExpLoad()" role="status" aria-live="polite"></div>
 
 <!-- SYNC BAR -->
 <div id="sync-bar" style="display:none">
@@ -2030,6 +2045,7 @@
       <div class="content-title">Expenses</div>
       <div class="content-sub">&nbsp;</div>
     </div>
+    <div class="exp-head-right">
     <div class="exp-stats-inline">
       <div class="exp-stat" style="cursor:pointer;" onclick="openCaisseModal()" title="Click to manage caisse">
         <div class="exp-stat-label">Caisse</div>
@@ -2043,6 +2059,18 @@
         <div class="exp-stat-label">Remaining</div>
         <div class="exp-stat-value" id="exp-caisseRemaining">$0.00</div>
       </div>
+    </div>
+    <!-- Free-text notes, folded away by default, saved to the sheet
+         (settings!D1) — see loadExpenseNotes / expNotesInput. -->
+    <div class="exp-notes" id="exp-notes">
+      <button type="button" class="exp-notes-toggle" onclick="toggleExpenseNotes()" aria-expanded="false" aria-controls="exp-notes-body">
+        Notes <span class="exp-notes-arrow" aria-hidden="true">&#9656;</span>
+      </button>
+      <div class="exp-notes-body" id="exp-notes-body">
+        <textarea id="exp-notes-text" rows="6" placeholder="Write anything you want to keep with the expenses&hellip;" oninput="expNotesInput()"></textarea>
+        <div class="exp-notes-status" id="exp-notes-status"></div>
+      </div>
+    </div>
     </div>
   </div>
   <div>
@@ -2997,26 +3025,145 @@ function triggerFileInput() {
 
 // ── LOAD DATA ─────────────────────────────────────
 // (api/apiPost/setSyncStatus reused from the shared app-level definitions)
-function loadExpensesData() {
+// mode: 'open' (page just opened), 'refresh' (catch-up after coming back to
+// the app), or nothing (a plain reload after a save).
+function loadExpensesData(mode) {
+  if (mode === 'open' && !expLiveLoaded) hydrateExpSnapshot();
+  if (mode === 'refresh' && expLiveLoaded) setExpState('refreshing');
   setSyncStatus('saving', 'loading…');
+  // The exchange rate and the expense list are fetched at the same time
+  // (they used to be one after the other — two full round-trips).
   api({ action: 'getExpenseRate' }, function(err, rateRes) {
     if (!err && rateRes && rateRes.ok && rateRes.rate) {
       rate = rateRes.rate;
       try { localStorage.setItem(RATE_KEY, rate); } catch (e) {}
       updateRateBadge();
     }
-    api({ action: 'getExpenses' }, function(err2, res) {
-      if (err2 || !res || !res.ok) {
-        setSyncStatus('error', 'connection error — check your URL');
-        toast('could not load data. check your Apps Script URL.');
-        return;
-      }
-      expenses = res.expenses || [];
-      renderAll();
-      loadDeposits();
-      setSyncStatus('live', 'connected · google sheets');
-    });
   });
+  api({ action: 'getExpenses' }, function(err2, res) {
+    if (err2 || !res || !res.ok) {
+      setSyncStatus('error', 'connection error — check your URL');
+      if (expState !== 'fresh') setExpState('error');
+      else toast('could not load data. check your Apps Script URL.');
+      return;
+    }
+    expenses = res.expenses || [];
+    expLiveLoaded = true;
+    renderAll();
+    loadDeposits();
+    loadExpenseNotes();
+    setExpState('fresh');
+    saveExpSnapshot();
+    setSyncStatus('live', 'connected · google sheets');
+  });
+}
+
+/* ---- Expenses: last-known-data snapshot ----
+   Same idea as the snapshot for the other pages (see "last-known-data
+   snapshot" further down), but Expenses loads its own data separately from
+   getAll, so it keeps its own copy: the expense list, deposits and notes
+   from the last successful load on this device. Opening the page shows
+   that copy straight away, dimmed, with a badge, and editing locked until
+   the live data lands. A device with no copy yet shows a loading state. */
+var EXP_SNAPSHOT_KEY = 'toka_exp_snapshot_v1';
+var expLiveLoaded = false;
+var expState = 'fresh';
+var expSnapshotAt = 0;
+function saveExpSnapshot() {
+  if (!expLiveLoaded) return;
+  var ta = document.getElementById('exp-notes-text');
+  try {
+    localStorage.setItem(EXP_SNAPSHOT_KEY, JSON.stringify({
+      expenses: expenses, deposits: deposits, notes: ta ? ta.value : '', savedAt: Date.now()
+    }));
+  } catch (e) { try { localStorage.removeItem(EXP_SNAPSHOT_KEY); } catch (e2) {} }
+}
+function hydrateExpSnapshot() {
+  var snap = null;
+  try { var raw = localStorage.getItem(EXP_SNAPSHOT_KEY); if (raw) snap = JSON.parse(raw); } catch (e) { snap = null; }
+  if (snap && Array.isArray(snap.expenses)) {
+    expenses = snap.expenses;
+    deposits = snap.deposits || [];
+    var ta = document.getElementById('exp-notes-text');
+    if (ta && document.activeElement !== ta) ta.value = snap.notes || '';
+    expSnapshotAt = snap.savedAt || 0;
+    try { renderAll(); } catch (e) {}
+    setExpState('stale');
+  } else {
+    setExpState('empty');
+  }
+}
+function setExpState(state) {
+  expState = state;
+  var body = document.body;
+  var badge = document.getElementById('exp-state-badge');
+  body.classList.remove('exp-stale', 'exp-empty');
+  if (state === 'fresh') { if (badge) badge.style.display = 'none'; return; }
+  var hasCopy = expLiveLoaded || !!expSnapshotAt;
+  body.classList.add(hasCopy ? 'exp-stale' : 'exp-empty');
+  if (!badge) return;
+  var txt;
+  if (state === 'error') {
+    txt = 'Couldn\u2019t reach the sheet' + (hasCopy ? ' \u2014 showing saved data, editing locked' : '') + ' \u00b7 tap to retry';
+    badge.classList.add('is-error');
+  } else {
+    badge.classList.remove('is-error');
+    if (state === 'refreshing') txt = 'Checking for changes from other devices\u2026';
+    else if (state === 'stale') txt = 'Showing saved data from ' + fmtSnapshotTime(expSnapshotAt) + ' \u00b7 updating\u2026';
+    else txt = 'Loading latest data\u2026';
+  }
+  badge.textContent = txt;
+  badge.style.display = '';
+}
+function retryExpLoad() {
+  if (expState !== 'error') return;
+  loadExpensesData(expLiveLoaded ? 'refresh' : 'open');
+}
+window.addEventListener('pagehide', saveExpSnapshot);
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') saveExpSnapshot(); });
+
+// ── NOTES (foldout under the stats) ───────────────
+// One free-text note for the Expenses page, stored in the shared settings
+// sheet (cell D1, next to the exchange rate / faucet rate). Saves itself a
+// moment after you stop typing; open/closed is remembered per device.
+var expNotesSaveTimer = null;
+var EXP_NOTES_OPEN_KEY = 'toka_exp_notes_open';
+function setExpenseNotesOpen(open) {
+  var box = document.getElementById('exp-notes');
+  if (!box) return;
+  box.classList.toggle('open', !!open);
+  var btn = box.querySelector('.exp-notes-toggle');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+function toggleExpenseNotes() {
+  var box = document.getElementById('exp-notes');
+  var open = !(box && box.classList.contains('open'));
+  setExpenseNotesOpen(open);
+  lsSet(EXP_NOTES_OPEN_KEY, open ? '1' : '0');
+  if (open) { var ta = document.getElementById('exp-notes-text'); if (ta) ta.focus(); }
+}
+function loadExpenseNotes() {
+  setExpenseNotesOpen(lsGet(EXP_NOTES_OPEN_KEY) === '1');
+  api({ action: 'getExpenseNotes' }, function (err, res) {
+    if (err || !res || !res.ok) return;
+    var ta = document.getElementById('exp-notes-text');
+    // Don't overwrite something being typed / not yet saved.
+    if (!ta || expNotesSaveTimer || document.activeElement === ta) return;
+    ta.value = res.notes || '';
+    saveExpSnapshot();
+  });
+}
+function expNotesInput() {
+  var st = document.getElementById('exp-notes-status');
+  if (st) st.textContent = 'saving\u2026';
+  if (expNotesSaveTimer) clearTimeout(expNotesSaveTimer);
+  expNotesSaveTimer = setTimeout(function () {
+    expNotesSaveTimer = null;
+    var ta = document.getElementById('exp-notes-text');
+    apiPost({ action: 'setExpenseNotes', notes: ta ? ta.value : '' }, function (err, res) {
+      if (st) st.textContent = (err || !res || !res.ok) ? 'couldn\u2019t save \u2014 check connection' : 'saved';
+    });
+  }, 800);
 }
 
 // ── EXCHANGE RATE ─────────────────────────────────
@@ -3872,6 +4019,7 @@ function loadDeposits() {
     if (err || !res) return;
     deposits = res.deposits || [];
     renderCaisse();
+    saveExpSnapshot();
   });
 }
 
@@ -4477,7 +4625,7 @@ function refreshOnReturn() {
   refreshPending = true;
   setDataState('refreshing');
   loadAll();
-  if (currentView === 'expenses' && typeof loadExpensesData === 'function') loadExpensesData();
+  if (currentView === 'expenses' && typeof loadExpensesData === 'function') loadExpensesData('refresh');
   if (currentView === 'faucet' && typeof loadFaucetRate === 'function') loadFaucetRate();
 }
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshOnReturn(); });
@@ -4513,15 +4661,22 @@ function isDataLocked() {
   var c = document.body.classList;
   return c.contains('data-stale') || c.contains('data-empty');
 }
+function isExpLocked() {
+  var c = document.body.classList;
+  return c.contains('exp-stale') || c.contains('exp-empty');
+}
 function blockIfDataLocked(e) {
-  if (!isDataLocked()) return;
   var t = e.target;
-  if (!t || !t.closest || !t.closest('.data-view') || t.closest('.back-link')) return;
+  if (!t || !t.closest || t.closest('.back-link')) return;
+  var inData = isDataLocked() && t.closest('.data-view');
+  var inExp = isExpLocked() && t.closest('#view-expenses');
+  if (!inData && !inExp) return;
   if (!t.closest('input, select, textarea, button, [contenteditable="true"], .ed, [draggable="true"]')) return;
+  if (t.closest('.exp-notes-toggle')) return;   // folding the notes open is read-only
   e.preventDefault();
   e.stopPropagation();
   if (e.type === 'focusin' && t.blur) t.blur();
-  var badge = document.getElementById('data-state-badge');
+  var badge = document.getElementById(inExp ? 'exp-state-badge' : 'data-state-badge');
   if (badge) { badge.classList.remove('pulse'); void badge.offsetWidth; badge.classList.add('pulse'); }
 }
 ['click', 'mousedown', 'focusin', 'dragstart'].forEach(function (evt) {
@@ -4554,6 +4709,8 @@ function showView(v, isBack) {
   var vbc = document.getElementById('view-bottlecalc'); if (vbc) vbc.style.display = (v === 'bottlecalc') ? 'block' : 'none';
   var vbm = document.getElementById('view-bottlemath'); if (vbm) vbm.style.display = (v === 'bottlemath') ? 'block' : 'none';
   if (typeof updateViewTabs === 'function') updateViewTabs(v);
+  // Expenses has its own loading badge; only one badge shows at a time.
+  document.body.classList.toggle('on-expenses', v === 'expenses');
   if (v === 'f1') { renderTable(); if (!readings.length) loadReadings(function () { renderTable(); }); }
   if (v === 'bottling') { renderBottles(); loadBottles(); loadInfusions(); }
   if (v === 'infusion') { renderInfusions(); loadParallel([loadData, loadInfusions], function () { renderInfusions(); }); }
@@ -4584,7 +4741,7 @@ function showView(v, isBack) {
   if (v === 'expenses') {
     initExpensesUI();
     renderAll();
-    loadExpensesData();
+    loadExpensesData('open');
   }
   if (v === 'faucet') { loadFaucetRate(); }
   if (v === 'inventory') { renderBottleInventory(); loadAll(function () { renderBottleInventory(); }); }
