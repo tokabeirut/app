@@ -3066,6 +3066,7 @@ function loadExpensesData(mode) {
    that copy straight away, dimmed, with a badge, and editing locked until
    the live data lands. A device with no copy yet shows a loading state. */
 var EXP_SNAPSHOT_KEY = 'toka_exp_snapshot_v1';
+var expLoadStarted = false;
 var expLiveLoaded = false;
 var expState = 'fresh';
 var expSnapshotAt = 0;
@@ -4631,7 +4632,6 @@ function userIsBusy() {
   return false;
 }
 function refreshOnReturn() {
-  checkForAppUpdate();
   if (!dataFresh || refreshPending) return;            // first load still running, or already refreshing
   if (Date.now() - lastLiveLoadAt < REFRESH_AFTER_MS) return;
   if (userIsBusy()) return;
@@ -4641,7 +4641,6 @@ function refreshOnReturn() {
   if (currentView === 'expenses' && typeof loadExpensesData === 'function') loadExpensesData('refresh');
   if (currentView === 'faucet' && typeof loadFaucetRate === 'function') loadFaucetRate();
 }
-document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refreshOnReturn(); });
 
 /* ---- self-update ----
    A phone's home-screen copy of the app (and a laptop tab left open) can
@@ -4651,8 +4650,7 @@ document.addEventListener('visibilitychange', function () { if (document.visibil
    <script> and <style> — with the code it's running. If they differ, a
    newer version is live, and the page reloads itself into it (after
    saving the local snapshots), unless something is mid-edit, in which case
-   it tries again on the next check. Checks run shortly after opening and
-   whenever the app is come back to, at most once a minute. */
+   it tries again later. Checked once, shortly after the app opens. */
 var appCodeHash = null;
 var lastVersionCheckAt = 0;
 function hashAppCode(doc) {
@@ -4695,16 +4693,12 @@ function checkForAppUpdate() {
     .catch(function () {});
 }
 setTimeout(checkForAppUpdate, 3000);
-window.addEventListener('focus', refreshOnReturn);
-window.addEventListener('pageshow', function (e) { if (e.persisted) refreshOnReturn(); });
 ['keydown', 'pointerdown'].forEach(function (evt) {
   document.addEventListener(evt, function () { lastInteractionAt = Date.now(); }, true);
 });
-setInterval(function () {
-  if (document.visibilityState !== 'visible') return;
-  if (Date.now() - lastInteractionAt < IDLE_POLL_MS) return;   // actively being used — wait
-  refreshOnReturn();
-}, 30000);
+// (Automatic catch-up checks on return / when idle were switched off at
+// Claire's request — data now loads once per visit. refreshOnReturn() is
+// kept for a possible manual "refresh" button later.)
 function renderCurrentViewData() {
   var v = currentView;
   try {
@@ -4777,41 +4771,33 @@ function showView(v, isBack) {
   if (typeof updateViewTabs === 'function') updateViewTabs(v);
   // Expenses has its own loading badge; only one badge shows at a time.
   document.body.classList.toggle('on-expenses', v === 'expenses');
-  if (v === 'f1') { renderTable(); if (!readings.length) loadReadings(function () { renderTable(); }); }
-  if (v === 'bottling') { renderBottles(); loadBottles(); loadInfusions(); }
-  if (v === 'infusion') { renderInfusions(); loadParallel([loadData, loadInfusions], function () { renderInfusions(); }); }
-  if (v === 'readings') { renderReadings(); loadAll(function () { renderReadings(); }); }
-  if (v === 'analytics') { renderAnalytics(); loadAll(function () { renderAnalytics(); }); }
-  if (v === 'today') { renderToday(); loadAll(function () { renderToday(); }); }
-  if (v === 'tasting') { renderTasting(); loadAll(function () { renderTasting(); }); }
+  // Data is loaded ONCE per visit (the getAll at boot, see
+  // loadAllInBackground) and pages just draw from what's in memory — opening
+  // a page doesn't fetch again. If a page is opened before that first load
+  // lands, markDataFresh() redraws it when it does. Saves still reload what
+  // they changed, as before.
+  if (v === 'f1') renderTable();
+  if (v === 'bottling') renderBottles();
+  if (v === 'infusion') renderInfusions();
+  if (v === 'readings') renderReadings();
+  if (v === 'analytics') renderAnalytics();
+  if (v === 'today') renderToday();
+  if (v === 'tasting') renderTasting();
   if (v === 'overview') {
     if (!ovKeepFilterOnce) ovFilter = null;   // fresh visits (nav/home card) start unfiltered; gotoLineage() opts in
     ovKeepFilterOnce = false;
-    renderOverview(); loadAll(function () { renderOverview(); });
+    renderOverview();
   }
-  if (v === 'production') {
-    renderProduction();
-    loadProductionTasks(function (err) {
-      if (err) {
-        setSyncStatus('error', 'backend out of date');
-        if (!ptBackendWarned) {
-          ptBackendWarned = true;
-          alert('The production timeline couldn’t load — your Google Apps Script backend is an older version that doesn’t support the production timeline yet.\n\nFix: open the brewlog sheet → Extensions → Apps Script, paste the latest toka-brewlog-backend.gs, then Deploy → Manage deployments → edit (pencil) → Version: NEW VERSION → Deploy.');
-        }
-        renderProduction();
-        return;
-      }
-      renderProduction();
-    });
-  }
+  if (v === 'production') renderProduction();
   if (v === 'expenses') {
     initExpensesUI();
     renderAll();
-    loadExpensesData('open');
+    // Expenses has its own loader — also only once per visit.
+    if (!expLoadStarted) { expLoadStarted = true; loadExpensesData('open'); }
   }
-  if (v === 'faucet') { loadFaucetRate(); }
-  if (v === 'inventory') { renderBottleInventory(); loadAll(function () { renderBottleInventory(); }); }
-  if (v === 'bottlemath') { bmInit(); loadAll(function () { bmApplyLoadedSettings(bottleMathSettingsRaw); }); }
+  if (v === 'faucet' && !faucetRateLoaded) { faucetRateLoaded = true; loadFaucetRate(); }
+  if (v === 'inventory') renderBottleInventory();
+  if (v === 'bottlemath') bmInit();
   window.scrollTo(0, 0);
 }
 function goBack() {
@@ -11299,6 +11285,7 @@ function ftUpdateRateBadge() {
 // same pattern as loadExpensesData()'s getExpenseRate call. localStorage
 // stays as a same-device fallback so the page still shows a sane number
 // immediately, before this request comes back.
+var faucetRateLoaded = false;
 function loadFaucetRate() {
   api({ action: 'getFaucetRate' }, function (err, res) {
     if (err || !res || !res.ok || !res.rate) return;
