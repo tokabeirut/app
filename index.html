@@ -2684,7 +2684,7 @@
       <div class="form-group">
         <label>Bottle volume</label>
         <div class="amt">
-          <input type="number" id="b-volume" min="0" max="1000" step="1" placeholder="e.g. 330" oninput="onBottleContentInput(); applyInfusedFlavours();" />
+          <input type="number" id="b-volume" min="0" max="1000" step="1" placeholder="e.g. 375" oninput="onBottleContentInput(); applyInfusedFlavours();" />
           <span class="unit-suffix">ml</span>
         </div>
         <div class="hint subval">&nbsp;</div>
@@ -5518,7 +5518,7 @@ var BOTTLE_MAX_FLAVORS = 4;
 // Used to compute a real (non-blank) infused-flavour estimate the moment an
 // Infusion source is picked, even before "Bottle volume" is typed in — the
 // estimate is recalculated against the real volume as soon as it's entered.
-var DEFAULT_BOTTLE_VOL_ML = 330;
+var DEFAULT_BOTTLE_VOL_ML = 375;
 
 /* ---- load ---- */
 function loadBottles(cb) {
