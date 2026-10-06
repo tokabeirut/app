@@ -264,6 +264,11 @@
   textarea.cell-edit { min-height: 62px; resize: vertical; }
   select.cell-edit { padding: 5px 6px; }
   .cell-edit:focus { outline: none; }
+  /* Editor laid over the cell (mountCellEditor): the cell's own content stays
+     in place but invisible, so the row/column never resize while editing. */
+  .cell-edit-hold { visibility: hidden; }
+  .cell-edit.cell-edit-overlay { position: absolute; left: 4px; right: 4px; top: 50%; -webkit-transform: translateY(-50%); transform: translateY(-50%); width: auto; margin: 0; z-index: 5; padding-top: 4px; padding-bottom: 4px; }
+  textarea.cell-edit.cell-edit-overlay { top: 4px; -webkit-transform: none; transform: none; min-height: 62px; box-shadow: 0 6px 18px rgba(30,27,24,0.14); }
   td.ed { cursor: text; }
   td.ed.num { cursor: text; }
   .clip-inner[data-clipped="1"] { cursor: default; }
@@ -6724,9 +6729,9 @@ function cellEd(inner, opts) {
 // inline editor can look either up without each type needing its own
 // lookup/commit function.
 function recKeyOf(rec) { return rec.uid != null ? rec.uid : rec.id; }
-function recArray(type) { return type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings)))); }
-function rerenderType(type) { if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
-function reloadType(type) { if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
+function recArray(type) { return type === 'sale' ? sales : (type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings))))); }
+function rerenderType(type) { if (type === 'sale') renderSales(); else if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
+function reloadType(type) { if (type === 'sale') loadSales(function () { renderSales(); }); else if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
 function commitInline(type, uidv, field, value) {
   var arr = recArray(type), rec = null;
   for (var i = 0; i < arr.length; i++) { if (String(recKeyOf(arr[i])) === String(uidv)) { rec = arr[i]; break; } }
@@ -6758,8 +6763,8 @@ function commitInline(type, uidv, field, value) {
     rec.dateWorst = value;
   }
   rerenderType(type);
-  var action = type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
-  var key = type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
+  var action = type === 'sale' ? 'updateSale' : type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
+  var key = type === 'sale' ? 'sale' : type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
   var body = { action: action }; body[key] = JSON.parse(JSON.stringify(rec));
   setSyncStatus('saving', 'saving\u2026');
   apiPost(body, function (err, res) {
@@ -6803,9 +6808,6 @@ function commitGroupInline(gUid, field, value) {
 function startGroupCellInline(td, gUid, field, input) {
   var members = bottles.filter(function (bb) { return String(bb.groupUid || '') === String(gUid); });
   if (!members.length) { renderBottles(); return; }
-  var lockWidth = td.offsetWidth;
-  td.style.width = lockWidth + 'px';
-  td.style.maxWidth = lockWidth + 'px';
   var cur = members[0][field]; cur = (cur == null) ? '' : String(cur);
   var el;
   if (input === 'textarea') {
@@ -6816,7 +6818,7 @@ function startGroupCellInline(td, gUid, field, input) {
     if (input === 'number') el.step = 'any';
     el.className = 'cell-edit'; el.value = cur;
   }
-  td.innerHTML = ''; td.appendChild(el); el.focus();
+  mountCellEditor(td, el);
   if ((input === 'text' || input === 'textarea') && el.setSelectionRange) { try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} }
   var done = false;
   function finish(save) {
@@ -6829,6 +6831,28 @@ function startGroupCellInline(td, gUid, field, input) {
     else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
   });
   el.addEventListener('blur', function () { finish(true); });
+}
+// Puts an inline editor ON TOP of the cell instead of in place of its
+// content: the cell keeps its exact width and height (its original text
+// stays in the layout, just invisible), so neither the row nor the column
+// changes size while editing — same feel as the Expenses table.
+function mountCellEditor(td, el) {
+  var w = td.offsetWidth, h = td.offsetHeight;
+  // border-box so the locked width/height include the cell's padding —
+  // otherwise setting them to the measured size would grow the cell by its
+  // own padding.
+  td.style.boxSizing = 'border-box';
+  td.style.width = w + 'px';
+  td.style.maxWidth = w + 'px';
+  td.style.height = h + 'px';
+  td.style.position = 'relative';
+  var hold = document.createElement('span');
+  hold.className = 'cell-edit-hold';
+  while (td.firstChild) hold.appendChild(td.firstChild);
+  td.appendChild(hold);
+  el.classList.add('cell-edit-overlay');
+  td.appendChild(el);
+  el.focus();
 }
 function startInline(td) {
   if (editingCell) return;
@@ -6844,13 +6868,8 @@ function startInline(td) {
   if (!rec) return;
   editingCell = true; hideCellTip();
   if (input === 'spices') { startSpicesInline(td, type, uidv, field, rec); return; }
-  // Lock this cell's current rendered width before swapping its content for
-  // an input/select/textarea — otherwise the table (auto layout) resizes
-  // that column to fit the edit control's own intrinsic width, shifting
-  // every other column in the row until editing finishes.
-  var lockWidth = td.offsetWidth;
-  td.style.width = lockWidth + 'px';
-  td.style.maxWidth = lockWidth + 'px';
+  // The editor is laid over the cell (see mountCellEditor) so the cell's
+  // width and height stay exactly as they were while editing.
   var cur = (field === 'steep') ? steepToMin(rec.steep) : rec[field];
   cur = (cur == null) ? '' : String(cur);
   var el;
@@ -6872,7 +6891,7 @@ function startInline(td) {
   }
   var histField = td.getAttribute('data-eh');
   if (histField && (input === 'text' || input === 'textarea')) { el.setAttribute('data-hist-field', histField); el.setAttribute('autocomplete', 'off'); }
-  td.innerHTML = ''; td.appendChild(el); el.focus();
+  mountCellEditor(td, el);
   if ((input === 'text' || input === 'textarea') && el.setSelectionRange) { try { el.setSelectionRange(el.value.length, el.value.length); } catch (e) {} }
   var done = false;
   function finish(save) {
@@ -7817,17 +7836,19 @@ function renderSales() {
       + '<th>Date</th><th>Customer</th><th>Channel</th><th>Bottle</th><th>Flavour</th><th>Qty</th><th>Price</th><th>Total</th><th>Paid</th><th>Notes</th><th></th>'
       + '</tr></thead><tbody>';
     list.forEach(function (s) {
+      // Every value cell is click-to-edit (same inline editor as the other
+      // tables); Total is worked out from Qty x Price so it isn't editable.
       h += '<tr>'
-        + '<td class="mono">' + esc(fmtDate(s.date)) + '</td>'
-        + '<td>' + esc(s.customer || '—') + '</td>'
-        + '<td class="mono">' + esc(s.channel || '') + '</td>'
-        + '<td class="mono">' + esc(s.size ? s.size + ' ml' : '') + '</td>'
-        + '<td>' + esc(s.flavour || '—') + '</td>'
-        + '<td class="mono">' + esc(fmtNum(parseFloat(s.qty) || 0)) + '</td>'
-        + '<td class="mono">' + saleMoney(parseFloat(s.unitPrice) || 0) + '</td>'
+        + cellEd(esc(fmtDate(s.date)), { type: 'sale', uid: s.id, field: 'date', input: 'date', cls: 'mono' })
+        + cellEd(esc(s.customer || '—'), { type: 'sale', uid: s.id, field: 'customer', hist: 'saleCustomer' })
+        + cellEd(esc(s.channel || ''), { type: 'sale', uid: s.id, field: 'channel', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
+        + cellEd(esc(s.size ? s.size + ' ml' : ''), { type: 'sale', uid: s.id, field: 'size', input: 'select', options: '750:750 ml,375:375 ml', cls: 'mono' })
+        + cellEd(esc(s.flavour || '—'), { type: 'sale', uid: s.id, field: 'flavour', hist: 'saleFlavour' })
+        + cellEd(esc(fmtNum(parseFloat(s.qty) || 0)), { type: 'sale', uid: s.id, field: 'qty', input: 'number', cls: 'mono' })
+        + cellEd(saleMoney(parseFloat(s.unitPrice) || 0), { type: 'sale', uid: s.id, field: 'unitPrice', input: 'number', cls: 'mono' })
         + '<td class="mono"><strong>' + saleMoney(saleTotal(s)) + '</strong></td>'
         + '<td><button type="button" class="paid-pill' + (s.paid ? ' is-paid' : '') + '" onclick="toggleSalePaid(\'' + esc(s.id) + '\')" title="Click to switch between paid and unpaid">' + (s.paid ? 'Paid' : 'Unpaid') + '</button></td>'
-        + '<td class="notes-cell">' + esc(s.notes || '') + '</td>'
+        + cellEd(esc(s.notes || ''), { type: 'sale', uid: s.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
         + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openSaleDrawer(\'' + esc(s.id) + '\')">&#9998;</button>'
         + '<button type="button" class="icon-btn" title="Delete" onclick="deleteSale(\'' + esc(s.id) + '\')">&times;</button></td>'
         + '</tr>';
