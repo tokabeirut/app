@@ -749,6 +749,10 @@
   #view-sales .sales-empty { padding: 30px 48px; color: var(--ink-faint); }
   #view-sales td.mono { font-family: 'IBM Plex Mono', monospace; }
   #view-sales td.row-actions { white-space: nowrap; text-align: right; }
+  #view-sales .sale-paid-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 7px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  #view-sales .sale-paid-cb { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: #3d7a55; }
+  #view-sales .sale-paid-cell .is-paid { color: #3d7a55; }
+  #view-sales .sale-paid-cell .is-unpaid { color: var(--terra); }
   #view-sales .paid-pill { border: 1px solid var(--terra-light, #e7b49f); background: var(--terra-pale); color: var(--terra); border-radius: 99px; padding: 3px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
   #view-sales .paid-pill.is-paid { border-color: #b9d9c4; background: #edf6f0; color: #3d7a55; }
   /* px column widths + max(sum, 100%) like Bottling/Infusion: fills a
@@ -7542,7 +7546,7 @@ function renderSales() {
         + '<td class="mono">' + esc(fmtNum(parseFloat(s.qty) || 0)) + '</td>'
         + '<td class="mono">' + saleMoney(parseFloat(s.unitPrice) || 0) + '</td>'
         + '<td class="mono"><strong>' + saleMoney(saleTotal(s)) + '</strong></td>'
-        + '<td><button type="button" class="paid-pill' + (s.paid ? ' is-paid' : '') + '" onclick="toggleSalePaid(\'' + esc(s.id) + '\')" title="Click to switch">' + (s.paid ? 'Paid' : 'Unpaid') + '</button></td>'
+        + '<td><label class="sale-paid-cell"><input type="checkbox" class="sale-paid-cb"' + (s.paid ? ' checked' : '') + ' onchange="setSalePaid(\'' + esc(s.id) + '\', this.checked)" /> <span class="' + (s.paid ? 'is-paid' : 'is-unpaid') + '">' + (s.paid ? 'Paid' : 'Unpaid') + '</span></label></td>'
         + '<td class="notes-cell">' + esc(s.notes || '') + '</td>'
         + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openSaleDrawer(\'' + esc(s.id) + '\')">&#9998;</button>'
         + '<button type="button" class="icon-btn" title="Delete" onclick="deleteSale(\'' + esc(s.id) + '\')">&times;</button></td>'
@@ -7628,15 +7632,25 @@ function saveSale() {
     setSyncStatus('live', 'connected · google sheets');
   });
 }
-function toggleSalePaid(id) {
+function setSalePaid(id, paid) {
   var s = findSale(id);
   if (!s) return;
-  s.paid = !s.paid;
+  s.paid = !!paid;
   renderSales();
+  setSyncStatus('saving', 'saving\u2026');
   apiPost({ action: 'updateSale', sale: s }, function (err, res) {
-    if (err || !res || !res.ok) setSyncStatus('error', 'save failed');
+    if (err || !res || !res.ok) {
+      // Put it back so the screen never shows something the sheet doesn't have.
+      s.paid = !paid;
+      renderSales();
+      setSyncStatus('error', 'save failed');
+      alert('Couldn\u2019t save that to the sheet \u2014 the Apps Script backend may need redeploying for Sales.');
+      return;
+    }
+    setSyncStatus('live', 'connected \u00b7 google sheets');
   });
 }
+function toggleSalePaid(id) { var s = findSale(id); if (s) setSalePaid(id, !s.paid); }
 function deleteSale(id) {
   var s = findSale(id);
   if (!s) return;
