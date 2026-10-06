@@ -1456,22 +1456,21 @@
     <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">First fermentation</button>
     <button type="button" class="view-tab" data-view="infusion" onclick="showView('infusion')">Infusion</button>
     <button type="button" class="view-tab" data-view="bottling" onclick="showView('bottling')">Bottling</button>
+    <button type="button" class="view-tab" data-view="readings" onclick="showView('readings')">Labo</button>
     <button type="button" class="view-tab" data-view="faucet" onclick="showView('faucet')">Faucet timer</button>
     <button type="button" class="view-tab" data-view="bottlecalc" onclick="showView('bottlecalc')">Volume converter</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
-    <button type="button" class="view-tab" data-view="readings" onclick="showView('readings')">Labo</button>
-    <button type="button" class="view-tab" data-view="overview" onclick="showView('overview')">Lineage</button>
+    <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
+    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Inventory</button>
+    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle math</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
-    <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production timeline</button>
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
     <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
-    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Inventory</button>
-    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle math</button>
   </div>
 </nav>
 
@@ -1493,6 +1492,10 @@
         <div class="card-head"><span class="name">Bottling</span></div>
         <div class="desc">Second fermentation, bottle by bottle &mdash; source brew, sugar, yeast, spices &amp; fridge date.</div>
       </div>
+      <div class="feature-card clickable" onclick="showView('readings')">
+        <div class="card-head"><span class="name">Labo</span></div>
+        <div class="desc">Brix %, pH &amp; temperature readings for every batch, logged over time.</div>
+      </div>
       <div class="feature-card clickable" onclick="showView('faucet')">
         <div class="card-head"><span class="name">Faucet timer</span></div>
         <div class="desc">Set a flow rate once, then calculate how long to keep the faucet open for any volume.</div>
@@ -1505,15 +1508,19 @@
   </div>
 
   <div class="home-section">
-    <div class="home-section-title">Quality Control</div>
+    <div class="home-section-title">Operations</div>
     <div class="home-section-grid">
-      <div class="feature-card clickable" onclick="showView('readings')">
-        <div class="card-head"><span class="name">Labo</span></div>
-        <div class="desc">Brix %, pH &amp; temperature readings for every batch, logged over time.</div>
+      <div class="feature-card clickable" onclick="showView('today')">
+        <div class="card-head"><span class="name">Daily operations</span></div>
+        <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
       </div>
-      <div class="feature-card clickable" onclick="showView('overview')">
-        <div class="card-head"><span class="name">Lineage</span></div>
-        <div class="desc">Every batch, start to finish &mdash; the full batch &rarr; infusion &rarr; bottle lineage, days per stage &amp; readings.</div>
+      <div class="feature-card clickable" onclick="showView('inventory')">
+        <div class="card-head"><span class="name">Inventory</span></div>
+        <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('bottlemath')">
+        <div class="card-head"><span class="name">Bottle math</span></div>
+        <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
       </div>
     </div>
   </div>
@@ -1521,10 +1528,6 @@
   <div class="home-section">
     <div class="home-section-title">Business</div>
     <div class="home-section-grid">
-      <div class="feature-card clickable" onclick="showView('today')">
-        <div class="card-head"><span class="name">Daily operations</span></div>
-        <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
-      </div>
       <div class="feature-card clickable" onclick="showView('production')">
         <div class="card-head"><span class="name">Production timeline</span></div>
         <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; mapped as best- and worst-case timelines.</div>
@@ -1536,14 +1539,6 @@
       <div class="feature-card clickable" onclick="showView('sales')">
         <div class="card-head"><span class="name">Sales</span></div>
         <div class="desc">Who bought what, at what price &mdash; revenue, bottles sold, the B2B/B2C split and what&rsquo;s still unpaid.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('inventory')">
-        <div class="card-head"><span class="name">Inventory</span></div>
-        <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('bottlemath')">
-        <div class="card-head"><span class="name">Bottle math</span></div>
-        <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
       </div>
     </div>
   </div>
@@ -4401,14 +4396,14 @@ var PAGE_EYEBROWS = {
   'view-bottling': ['Toka \u2014 Brewing process'],
   'view-faucet': ['Toka \u2014 Brewing process'],
   'view-bottlecalc': ['Toka \u2014 Brewing process'],
-  'view-readings': ['Toka \u2014 Quality control'],
+  'view-readings': ['Toka \u2014 Brewing process'],
   'view-overview': ['Toka \u2014 Quality control'],
   'view-analytics': ['Toka \u2014 Quality control'],
-  'view-today': ['Toka \u2014 Business'],
+  'view-today': ['Toka \u2014 Operations'],
   'view-production': ['Toka \u2014 Business'],
   'view-expenses': ['Toka \u2014 Business', 'All figures in USD'],
   'view-sales': ['Toka \u2014 Business', 'All figures in USD'],
-  'view-inventory': ['Toka \u2014 Business'],
+  'view-inventory': ['Toka \u2014 Operations'],
   'view-bottlemath': ['Toka \u2014 Costs and pricing', 'All figures in USD']
 };
 function decoratePageHeads() {
@@ -5224,7 +5219,7 @@ function lineageIconSvg() {
 
 function rowHtml(b) {
   var u = esc(b.uid);
-  var lineageBtn = '<button class="icon-btn" title="View in Lineage" onclick="gotoLineage(\'batch\', \'' + u + '\')">' + lineageIconSvg() + '</button>';
+  var lineageBtn = '';   // Lineage page removed
   var actions = b.archived
     ? lineageBtn + '<button class="edit-btn" title="Edit" onclick="openEdit(\'' + u + '\')">\u270E</button>'
       + '<button class="icon-btn" title="Restore" onclick="setArchived(\'' + u + '\', false)">' + archiveIconSvg(true) + '</button>'
@@ -5567,7 +5562,7 @@ function infusionSpicesText(inf) {
 }
 function infusionRowHtml(inf) {
   var u = esc(inf.uid);
-  var lineageBtn = '<button class="icon-btn" title="View in Lineage" onclick="gotoLineage(\'infusion\', \'' + u + '\')">' + lineageIconSvg() + '</button>';
+  var lineageBtn = '';   // Lineage page removed
   var actions = inf.archived
     ? lineageBtn + '<button class="edit-btn" title="Edit" onclick="openInfusionEdit(\'' + u + '\')">✎</button>'
       + '<button class="icon-btn" title="Restore" onclick="setInfusionArchived(\'' + u + '\', false)">' + archiveIconSvg(true) + '</button>'
@@ -6991,7 +6986,7 @@ function bottleInfusionTipFor(vesselUid) {
 function bottleRowHtml(b, newDate, groupUid, groupOpen) {
   var u = esc(b.uid);
   var qty = parseFloat(b.count); if (isNaN(qty)) qty = 1;
-  var lineageBtn = '<button class="icon-btn" title="View in Lineage" onclick="gotoLineage(\'bottle\', \'' + u + '\')">' + lineageIconSvg() + '</button>';
+  var lineageBtn = '';   // Lineage page removed
   var actions = b.archived
     ? lineageBtn + '<button class="edit-btn" title="Edit" onclick="openBottleEdit(\'' + u + '\')">\u270E</button>'
       + '<button class="icon-btn" title="Restore" onclick="setBottleArchived(\'' + u + '\', false)">' + archiveIconSvg(true) + '</button>'
@@ -7086,7 +7081,7 @@ function bottleGroupRowsHtml(cluster, newDate) {
   var volCell = allSame(list, 'volumeMl') ? fmtQty(head.volumeMl, 'ml') : mixedTag('Bottle volumes');
   var sugarCell = allSame(list, 'sugarG') ? valWithPer(head.sugarG, 'g', head.volumeMl, 1000, 'mg', true) : mixedTag('Sugar amounts');
   var yeastCell = allSame(list, 'yeastMg') ? valWithPer(head.yeastMg, 'mg', head.volumeMl, 1, 'mg', true) : mixedTag('Yeast amounts');
-  var groupLineageBtn = '<button class="icon-btn" title="View in Lineage" onclick="event.stopPropagation(); gotoLineage(\'bottle\', \'' + esc(head.uid) + '\')">' + lineageIconSvg() + '</button>';
+  var groupLineageBtn = '';   // Lineage page removed
   var groupEditBtn = '<button class="edit-btn" title="Edit group" onclick="event.stopPropagation(); openBottleGroupEdit(\'' + esc(gUid) + '\')">✎</button>';
   var groupActions = groupLineageBtn + groupEditBtn + (head.archived
     ? '<button class="icon-btn" title="Restore all" onclick="event.stopPropagation(); setBottleGroupArchived(\'' + esc(gUid) + '\', false)">' + archiveIconSvg(true) + '</button>'
