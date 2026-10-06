@@ -731,6 +731,43 @@
   .pt-today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--terra); }
   .pt-today-tag { position: absolute; top: 2px; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--terra); background: var(--terra-pale); padding: 1px 5px; border-radius: 20px; -webkit-transform: translateX(-50%); transform: translateX(-50%); white-space: nowrap; }
   .pt-field-row { display: -webkit-flex; display: flex; gap: 10px; }
+  /* -- SALES -- */
+  #view-sales .sales-periods { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px; padding: 0 48px; margin-bottom: 18px; }
+  #view-sales .sales-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 6px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; }
+  #view-sales .sales-chip:hover { color: var(--ink); }
+  #view-sales .sales-chip.active { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+  #view-sales .sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; padding: 0 48px; margin-bottom: 18px; }
+  #view-sales .sales-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  #view-sales .sales-stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 8px; }
+  #view-sales .sales-stat-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.35rem; font-weight: 600; color: var(--ink); }
+  #view-sales .sales-stat-val.warn { color: var(--terra); }
+  #view-sales .sales-stat-note { font-size: 0.82rem; color: var(--ink-faint); margin-top: 4px; }
+  #view-sales .sales-mix { padding: 0 48px; margin-bottom: 24px; }
+  #view-sales .sales-mix-labels { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 6px; }
+  #view-sales .sales-mix-bar { height: 6px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
+  #view-sales .sales-mix-b2b { height: 100%; background: var(--terra); }
+  #view-sales .sales-empty { padding: 30px 48px; color: var(--ink-faint); }
+  #view-sales td.mono { font-family: 'IBM Plex Mono', monospace; }
+  #view-sales td.row-actions { white-space: nowrap; text-align: right; }
+  #view-sales .paid-pill { border: 1px solid var(--terra-light, #e7b49f); background: var(--terra-pale); color: var(--terra); border-radius: 99px; padding: 3px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
+  #view-sales .paid-pill.is-paid { border-color: #b9d9c4; background: #edf6f0; color: #3d7a55; }
+  /* px column widths + max(sum, 100%) like Bottling/Infusion: fills a
+     laptop screen, scrolls sideways on a phone instead of squashing. */
+  .sales-table { table-layout: fixed; min-width: 1320px; width: 1320px; width: max(1320px, 100%); }
+  .sales-table th:nth-child(1), .sales-table td:nth-child(1) { width: 120px; }
+  .sales-table th:nth-child(2), .sales-table td:nth-child(2) { width: 200px; white-space: normal; }
+  .sales-table th:nth-child(3), .sales-table td:nth-child(3) { width: 90px; }
+  .sales-table th:nth-child(4), .sales-table td:nth-child(4) { width: 90px; }
+  .sales-table th:nth-child(5), .sales-table td:nth-child(5) { width: 150px; white-space: normal; }
+  .sales-table th:nth-child(6), .sales-table td:nth-child(6) { width: 70px; }
+  .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 110px; }
+  .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 120px; }
+  .sales-table th:nth-child(9), .sales-table td:nth-child(9) { width: 100px; }
+  .sales-table th:nth-child(10), .sales-table td:nth-child(10) { width: 190px; }
+  .sales-table th:nth-child(11), .sales-table td:nth-child(11) { width: 80px; }
+  .sale-total-line { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin: 12px 0 16px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+  .sale-total-line strong { font-size: 1rem; letter-spacing: 0; color: var(--ink); }
+  .sale-paid-label { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; cursor: pointer; }
   .pt-field-row .form-group { -webkit-flex: 1; flex: 1; }
   .pt-linked-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; }
   .pt-linked-row label { margin-bottom: 0; }
@@ -795,6 +832,8 @@
     .page-eyebrow { margin-bottom: 18px; gap: 4px 20px; }
     .page-accent { margin: 20px 0 18px; }
     .table-wrap { padding: 0 20px 28px; }
+    #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix { padding-left: 20px; padding-right: 20px; }
+    #view-sales .sales-empty { padding: 24px 20px; }
     #an-body, #today-body, #biv-body { padding: 0 20px 28px; }
     .daily-checklist { margin-left: 20px; margin-right: 20px; }
     #today-body .an-section, .daily-checklist { padding: 16px 18px; }
@@ -1426,6 +1465,7 @@
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production timeline</button>
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
+    <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
     <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Inventory</button>
     <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle math</button>
   </div>
@@ -1488,6 +1528,10 @@
       <div class="feature-card clickable" onclick="showView('expenses')">
         <div class="card-head"><span class="name">Expenses</span></div>
         <div class="desc">Every cost logged and categorized &mdash; receipts attached, running totals &amp; your cash balance always in view.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('sales')">
+        <div class="card-head"><span class="name">Sales</span></div>
+        <div class="desc">Who bought what, at what price &mdash; revenue, bottles sold, the B2B/B2C split and what&rsquo;s still unpaid.</div>
       </div>
       <div class="feature-card clickable" onclick="showView('inventory')">
         <div class="card-head"><span class="name">Inventory</span></div>
@@ -1596,6 +1640,82 @@
         </table>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ===== SALES VIEW ===== -->
+<div id="view-sales" style="display:none;">
+  <div class="view-bar">
+    <button class="back-link" onclick="goBack()">&larr; back</button>
+    <button class="btn-primary" onclick="openSaleDrawer()">+ add sale</button>
+  </div>
+  <div class="content-head">
+    <div class="content-title">Sales</div>
+    <div class="content-sub" id="sales-sub">&nbsp;</div>
+  </div>
+  <div id="sales-body"></div>
+</div>
+<div class="drawer-overlay" id="sale-overlay" onclick="closeSaleDrawer()"></div>
+<div class="add-drawer" id="sale-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-title" id="sale-title">New sale</div>
+    <button class="drawer-close" onclick="closeSaleDrawer()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="form-section-title">Sale</div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="s-date" />
+    </div>
+    <div class="form-group">
+      <label>Customer</label>
+      <input type="text" id="s-customer" placeholder="e.g. a caf&eacute;, shop or person" data-hist-field="saleCustomer" autocomplete="off" />
+    </div>
+    <div class="pt-field-row">
+      <div class="form-group">
+        <label>Channel</label>
+        <select id="s-channel" onchange="onSaleFieldChange('channel')">
+          <option value="B2C">B2C &mdash; direct</option>
+          <option value="B2B">B2B &mdash; shop / caf&eacute;</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Bottle</label>
+        <select id="s-size" onchange="onSaleFieldChange('size')">
+          <option value="750">750 ml</option>
+          <option value="375">375 ml</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Flavour</label>
+      <input type="text" id="s-flavour" placeholder="e.g. Cardamom" data-hist-field="saleFlavour" autocomplete="off" />
+    </div>
+    <div class="pt-field-row">
+      <div class="form-group">
+        <label>Bottles</label>
+        <input type="number" id="s-qty" min="0" step="1" placeholder="e.g. 6" oninput="updateSaleTotal()" />
+      </div>
+      <div class="form-group">
+        <label>Price per bottle</label>
+        <div class="amt"><span class="unit-suffix">$</span><input type="number" id="s-price" min="0" step="0.01" oninput="salePriceEdited = true; updateSaleTotal();" /></div>
+      </div>
+    </div>
+    <div class="hint" id="s-price-hint"></div>
+    <div class="sale-total-line">Total <strong id="s-total">$ 0.00</strong></div>
+    <div class="form-group">
+      <label class="sale-paid-label"><input type="checkbox" id="s-paid" /> Paid</label>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Notes</div>
+      <div class="form-group">
+        <textarea id="s-notes" placeholder="Invoice number, delivery, anything worth remembering."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" onclick="closeSaleDrawer()">Cancel</button>
+    <button class="btn-primary" id="sale-save-btn" onclick="saveSale()">Save sale</button>
   </div>
 </div>
 
@@ -2630,7 +2750,7 @@
         <input type="text" id="b-id" oninput="onBottleIdInput()" />
         <button type="button" class="regen" onclick="regenBottleId()" title="Rebuild from date &amp; number">&#8635;</button>
       </div>
-      <div class="hint">Auto: BTL-&lt;date&gt;-&lt;number&gt; &middot; editable</div>
+      <div class="hint">Auto: BTL-&lt;date&gt;-&lt;spice initials&gt;-&lt;number&gt; &middot; editable</div>
     </div>
     <div class="form-group">
       <label>From F1 (source vessels)</label>
@@ -4281,6 +4401,7 @@ var PAGE_EYEBROWS = {
   'view-today': ['Toka \u2014 Business'],
   'view-production': ['Toka \u2014 Business'],
   'view-expenses': ['Toka \u2014 Business', 'All figures in USD'],
+  'view-sales': ['Toka \u2014 Business', 'All figures in USD'],
   'view-inventory': ['Toka \u2014 Business'],
   'view-bottlemath': ['Toka \u2014 Costs and pricing', 'All figures in USD']
 };
@@ -4418,7 +4539,7 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings], function (pErr) {
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings, loadSales], function (pErr) {
         if (pErr) markDataLoadFailed(); else markDataFresh();
         if (cb) cb();
       });
@@ -4443,6 +4564,7 @@ function applyAllData(res) {
     plannedInfusions = res.plannedInfusions || [];
     plannedBrews = res.plannedBrews || [];
     bottleInventory = res.bottleInventory || [];
+    if (Array.isArray(res.sales)) sales = res.sales;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
     planInfUnsaved = {}; planInfOriginal = {};
     for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
@@ -4483,7 +4605,7 @@ function loadAllInBackground() {
    default numbers. Expenses, the faucet timer and the bottle calculator
    load their own data separately and aren't affected. */
 var SNAPSHOT_KEY = 'toka_data_snapshot_v1';
-var DATA_VIEW_IDS = ['view-f1', 'view-bottling', 'view-infusion', 'view-readings', 'view-analytics', 'view-today', 'view-overview', 'view-production', 'view-inventory', 'view-bottlemath'];
+var DATA_VIEW_IDS = ['view-f1', 'view-bottling', 'view-infusion', 'view-readings', 'view-analytics', 'view-today', 'view-overview', 'view-production', 'view-inventory', 'view-bottlemath', 'view-sales'];
 var dataFresh = false;       // true once a live load has landed this visit
 var snapshotSavedAt = 0;     // when the copy currently on screen was taken
 
@@ -4492,7 +4614,7 @@ function snapshotFromGlobals() {
     batches: batches, bottles: bottles, infusions: infusions, readings: readings,
     feedback: feedback, productionTasks: productionTasks, dailyChecklist: dailyChecklist,
     plannedInfusions: plannedInfusions, plannedBrews: plannedBrews,
-    bottleInventory: bottleInventory, bottleMathSettings: bottleMathSettingsRaw,
+    bottleInventory: bottleInventory, sales: sales, bottleMathSettings: bottleMathSettingsRaw,
     savedAt: Date.now()
   };
 }
@@ -4697,6 +4819,7 @@ function renderCurrentViewData() {
     else if (v === 'overview') renderOverview();
     else if (v === 'production') renderProduction();
     else if (v === 'inventory') renderBottleInventory();
+    else if (v === 'sales') renderSales();
   } catch (e) {}
 }
 // Editing lock while the saved copy is on screen: swallows focus/clicks on
@@ -4750,6 +4873,7 @@ function showView(v, isBack) {
   var ve = document.getElementById('view-expenses'); if (ve) ve.style.display = (v === 'expenses') ? 'block' : 'none';
   var vf = document.getElementById('view-faucet'); if (vf) vf.style.display = (v === 'faucet') ? 'block' : 'none';
   var vinv = document.getElementById('view-inventory'); if (vinv) vinv.style.display = (v === 'inventory') ? 'block' : 'none';
+  var vsal = document.getElementById('view-sales'); if (vsal) vsal.style.display = (v === 'sales') ? 'block' : 'none';
   var vbc = document.getElementById('view-bottlecalc'); if (vbc) vbc.style.display = (v === 'bottlecalc') ? 'block' : 'none';
   var vbm = document.getElementById('view-bottlemath'); if (vbm) vbm.style.display = (v === 'bottlemath') ? 'block' : 'none';
   if (typeof updateViewTabs === 'function') updateViewTabs(v);
@@ -4781,6 +4905,7 @@ function showView(v, isBack) {
   if (v === 'faucet' && !faucetRateLoaded) { faucetRateLoaded = true; loadFaucetRate(); }
   if (v === 'inventory') renderBottleInventory();
   if (v === 'bottlemath') bmInit();
+  if (v === 'sales') renderSales();
   window.scrollTo(0, 0);
 }
 function goBack() {
@@ -5674,13 +5799,36 @@ function selectedF1() {
 }
 
 /* ---- auto bottle id ---- */
+// Bottle IDs: BTL-<date>-<spice initials>-<number>, e.g. BTL-20260930-CS-05
+// for a cardamom + sumac bottle. The spice part is the first letter of each
+// spice filled in on the form, in order; it's left out when there are none.
+function bottleSpiceCode() {
+  return readFlavors().map(function (f) {
+    var n = String(f.name || '').trim();
+    return n ? n.charAt(0).toUpperCase() : '';
+  }).join('');
+}
+function buildBottleId(dateIso, num) {
+  var code = bottleSpiceCode();
+  return 'BTL-' + dateCode(dateIso) + (code ? '-' + code : '') + (num ? '-' + num : '');
+}
 function maybeAutoBottleId() {
   if (bIdEdited) { return; }
-  var d = dateCode(val('b-bottling'));
-  var num = val('b-number').trim();
-  var id = 'BTL-' + d + (num ? ('-' + num) : '');
-  document.getElementById('b-id').value = id;
+  document.getElementById('b-id').value = buildBottleId(val('b-bottling'), val('b-number').trim());
 }
+// Keep the auto ID in step with the spices — typed in, removed, or filled
+// in automatically from an infusion source.
+function onBottleSpicesChanged() {
+  if (bIdEdited) return;
+  var idInput = document.getElementById('b-id');
+  if (idInput && idInput.disabled) refreshBottleNumberHint(); else maybeAutoBottleId();
+}
+(function () {
+  var c = document.getElementById('b-flavours');
+  if (!c) return;
+  c.addEventListener('input', onBottleSpicesChanged);
+  if (window.MutationObserver) new MutationObserver(onBottleSpicesChanged).observe(c, { childList: true, subtree: true });
+})();
 function onBottleIdInput() { bIdEdited = true; }
 function regenBottleId() { bIdEdited = false; maybeAutoBottleId(); }
 
@@ -5703,7 +5851,7 @@ function refreshBottleNumberHint() {
     multi = nums.length > 1;
     if (multi) {
       if (hintEl) hintEl.innerHTML = 'Will create <b>' + nums.length + '</b> independent bottles (' + esc(nums.join(', ')) + ') — each gets its own ID, fridge date, readings &amp; tasting feedback. Quantity is ignored.';
-      if (idInput) { idInput.value = 'BTL-' + dateCode(val('b-bottling')) + '-… (auto, one per bottle)'; idInput.disabled = true; }
+      if (idInput) { idInput.value = buildBottleId(val('b-bottling'), '') + '-… (auto, one per bottle)'; idInput.disabled = true; }
       if (regenBtn) regenBtn.disabled = true;
     } else {
       if (hintEl) hintEl.textContent = 'A single number, or a list/range (e.g. 32-50 or 48,51) to create independent, individually trackable bottles.';
@@ -6024,9 +6172,11 @@ function openBottleGroupEdit(gUid) {
   document.getElementById('bottle-overlay').classList.add('open');
 }
 function bottleNumberFromId(id) {
-  // best-effort: trailing segment after "BTL-<date>-" (3 dash-separated parts)
+  // best-effort: the bottle number is the last segment — BTL-<date>-<number>
+  // for older IDs, BTL-<date>-<spice initials>-<number> for newer ones.
   if (!id) return '';
   var parts = String(id).split('-');
+  if (parts.length >= 4) return parts[parts.length - 1];
   return parts.length >= 3 ? parts.slice(2).join('-') : '';
 }
 // Parses the free-text "Bottle number(s)" field into a list of individual
@@ -6316,7 +6466,7 @@ function saveBottle() {
       var rec = {};
       for (var kk in shared) rec[kk] = shared[kk];
       rec.uid = uid();
-      rec.bottleId = 'BTL-' + dateCode(bottling) + '-' + n;
+      rec.bottleId = buildBottleId(bottling, n);
       rec.count = '1';
       rec.groupUid = groupUid;
       rec.archived = false;
@@ -7130,7 +7280,13 @@ var HIST_FIELDS = {
     bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { out.push(f.name); }); });
     return out;
   },
-  ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); }
+  ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); },
+  saleCustomer: function () { return sales.map(function (s) { return s.customer; }); },
+  saleFlavour: function () {
+    var out = sales.map(function (s) { return s.flavour; });
+    bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { out.push(f.name); }); });
+    return out;
+  }
 };
 function histValues(field, query) {
   var src = HIST_FIELDS[field];
@@ -7285,6 +7441,213 @@ function loadPlannedBrews(cb) {
     if (cb) cb(null);
   });
 }
+/* ===================== SALES (Business > Sales) =====================
+   One row per sale in the `sales` sheet (see readAllSales_ in the backend):
+   date, customer, channel (B2B shop/café vs B2C direct), bottle size,
+   flavour, number of bottles, price per bottle, paid yes/no, notes.
+   Totals are always qty x price, worked out here. The page shows a period
+   switch (this month / last month / this year / all time), summary cards
+   for that period, the B2B/B2C split of revenue, and the list of sales.
+   The price per bottle is pre-filled from Bottle Math (the average of that
+   channel + size's price range) and can be overwritten per sale. */
+var sales = [];
+var salesPeriod = 'month';
+var editingSaleId = null;
+var salePriceEdited = false;
+var SALES_PERIODS = [
+  { key: 'month', label: 'This month' },
+  { key: 'lastmonth', label: 'Last month' },
+  { key: 'year', label: 'This year' },
+  { key: 'all', label: 'All time' }
+];
+function loadSales(cb) {
+  api({ action: 'getSales' }, function (err, res) {
+    if (err || !res || !res.ok || !Array.isArray(res.sales)) { if (cb) cb(err || new Error('load failed')); return; }
+    sales = res.sales;
+    if (cb) cb(null);
+  });
+}
+function saleTotal(s) { return (parseFloat(s.qty) || 0) * (parseFloat(s.unitPrice) || 0); }
+function saleMoney(n) { return '$ ' + fmtUSD(n || 0); }
+function salesPeriodRange(period) {
+  var d = new Date(), y = d.getFullYear(), m = d.getMonth();
+  function iso(Y, M, D) { var t = new Date(Y, M, D); return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()); }
+  if (period === 'month') return [iso(y, m, 1), iso(y, m + 1, 0)];
+  if (period === 'lastmonth') return [iso(y, m - 1, 1), iso(y, m, 0)];
+  if (period === 'year') return [iso(y, 0, 1), iso(y, 11, 31)];
+  return null;
+}
+function salesForPeriod(period) {
+  var r = salesPeriodRange(period);
+  return sales.filter(function (s) { return !r || (s.date && s.date >= r[0] && s.date <= r[1]); })
+    .sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || String(b.id).localeCompare(String(a.id)); });
+}
+function setSalesPeriod(p) { salesPeriod = p; renderSales(); }
+function suggestedSalePrice(channel, size) {
+  try {
+    var p = bmState.pricing[size === '375' ? 'bottle375' : 'bottle750'][channel === 'B2B' ? 'wholesale' : 'retail'];
+    return Math.round(bmPriceAvg(p) * 100) / 100;
+  } catch (e) { return 0; }
+}
+function renderSales() {
+  var body = document.getElementById('sales-body');
+  if (!body) return;
+  var sub = document.getElementById('sales-sub');
+  if (sub) {
+    var last = sales.reduce(function (a, s) { return (s.date || '') > a ? s.date : a; }, '');
+    sub.textContent = sales.length
+      ? sales.length + ' sale' + (sales.length === 1 ? '' : 's') + ' logged' + (last ? ' · last on ' + fmtDate(last) : '') + '.'
+      : 'No sales logged yet — add the first one with “+ add sale”.';
+  }
+  var list = salesForPeriod(salesPeriod);
+  var revenue = 0, bottles = 0, b750 = 0, b375 = 0, unpaid = 0, unpaidN = 0, b2b = 0, b2c = 0;
+  list.forEach(function (s) {
+    var t = saleTotal(s), q = parseFloat(s.qty) || 0;
+    revenue += t; bottles += q;
+    if (String(s.size) === '375') b375 += q; else b750 += q;
+    if (!s.paid) { unpaid += t; unpaidN++; }
+    if (s.channel === 'B2B') b2b += t; else b2c += t;
+  });
+  var h = '<div class="sales-periods">' + SALES_PERIODS.map(function (p) {
+    return '<button type="button" class="sales-chip' + (p.key === salesPeriod ? ' active' : '') + '" onclick="setSalesPeriod(\'' + p.key + '\')">' + p.label + '</button>';
+  }).join('') + '</div>';
+  h += '<div class="sales-stats">'
+    + '<div class="sales-stat"><div class="sales-stat-label">Revenue</div><div class="sales-stat-val">' + saleMoney(revenue) + '</div>'
+    + '<div class="sales-stat-note">' + list.length + ' sale' + (list.length === 1 ? '' : 's') + '</div></div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Bottles sold</div><div class="sales-stat-val">' + fmtNum(bottles) + '</div>'
+    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml</div></div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Still to be paid</div><div class="sales-stat-val' + (unpaid > 0 ? ' warn' : '') + '">' + saleMoney(unpaid) + '</div>'
+    + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid sale' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Average per bottle</div><div class="sales-stat-val">' + saleMoney(bottles ? revenue / bottles : 0) + '</div>'
+    + '<div class="sales-stat-note">across both sizes</div></div>'
+    + '</div>';
+  if (revenue > 0) {
+    var pb = Math.round(b2b / revenue * 100), pc = 100 - pb;
+    h += '<div class="sales-mix"><div class="sales-mix-labels"><span>B2B · ' + saleMoney(b2b) + ' · ' + pb + '%</span><span>B2C · ' + saleMoney(b2c) + ' · ' + pc + '%</span></div>'
+      + '<div class="sales-mix-bar"><div class="sales-mix-b2b" style="width:' + pb + '%"></div></div></div>';
+  }
+  if (!list.length) {
+    h += '<div class="sales-empty">' + (sales.length ? 'No sales in this period.' : 'No sales yet.') + '</div>';
+  } else {
+    h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table"><thead><tr>'
+      + '<th>Date</th><th>Customer</th><th>Channel</th><th>Bottle</th><th>Flavour</th><th>Qty</th><th>Price</th><th>Total</th><th>Paid</th><th>Notes</th><th></th>'
+      + '</tr></thead><tbody>';
+    list.forEach(function (s) {
+      h += '<tr>'
+        + '<td class="mono">' + esc(fmtDate(s.date)) + '</td>'
+        + '<td>' + esc(s.customer || '—') + '</td>'
+        + '<td class="mono">' + esc(s.channel || '') + '</td>'
+        + '<td class="mono">' + esc(s.size ? s.size + ' ml' : '') + '</td>'
+        + '<td>' + esc(s.flavour || '—') + '</td>'
+        + '<td class="mono">' + esc(fmtNum(parseFloat(s.qty) || 0)) + '</td>'
+        + '<td class="mono">' + saleMoney(parseFloat(s.unitPrice) || 0) + '</td>'
+        + '<td class="mono"><strong>' + saleMoney(saleTotal(s)) + '</strong></td>'
+        + '<td><button type="button" class="paid-pill' + (s.paid ? ' is-paid' : '') + '" onclick="toggleSalePaid(\'' + esc(s.id) + '\')" title="Click to switch">' + (s.paid ? 'Paid' : 'Unpaid') + '</button></td>'
+        + '<td class="notes-cell">' + esc(s.notes || '') + '</td>'
+        + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openSaleDrawer(\'' + esc(s.id) + '\')">&#9998;</button>'
+        + '<button type="button" class="icon-btn" title="Delete" onclick="deleteSale(\'' + esc(s.id) + '\')">&times;</button></td>'
+        + '</tr>';
+    });
+    h += '</tbody></table></div></div>';
+  }
+  body.innerHTML = h;
+}
+function findSale(id) { for (var i = 0; i < sales.length; i++) if (String(sales[i].id) === String(id)) return sales[i]; return null; }
+function openSaleDrawer(id) {
+  var s = id ? findSale(id) : null;
+  editingSaleId = s ? s.id : null;
+  salePriceEdited = !!s;
+  document.getElementById('sale-title').textContent = s ? 'Edit sale' : 'New sale';
+  document.getElementById('sale-save-btn').textContent = s ? 'Update sale' : 'Save sale';
+  document.getElementById('s-date').value = s ? (s.date || todayISO()) : todayISO();
+  document.getElementById('s-customer').value = s ? (s.customer || '') : '';
+  document.getElementById('s-channel').value = s ? (s.channel || 'B2C') : 'B2C';
+  document.getElementById('s-size').value = s ? (String(s.size) || '750') : '750';
+  document.getElementById('s-flavour').value = s ? (s.flavour || '') : '';
+  document.getElementById('s-qty').value = s ? s.qty : '';
+  document.getElementById('s-price').value = s ? s.unitPrice : '';
+  document.getElementById('s-paid').checked = s ? !!s.paid : true;
+  document.getElementById('s-notes').value = s ? (s.notes || '') : '';
+  if (!s) applySuggestedSalePrice();
+  updateSaleTotal();
+  document.getElementById('sale-drawer').classList.add('open');
+  document.getElementById('sale-overlay').classList.add('open');
+}
+function closeSaleDrawer() {
+  document.getElementById('sale-drawer').classList.remove('open');
+  document.getElementById('sale-overlay').classList.remove('open');
+}
+function applySuggestedSalePrice() {
+  var ch = document.getElementById('s-channel').value, sz = document.getElementById('s-size').value;
+  var p = suggestedSalePrice(ch, sz);
+  var hint = document.getElementById('s-price-hint');
+  if (!salePriceEdited) document.getElementById('s-price').value = p ? p.toFixed(2) : '';
+  if (hint) hint.textContent = p ? 'Bottle Math average for ' + ch + ' ' + sz + ' ml: ' + saleMoney(p) : '';
+}
+function onSaleFieldChange(which) {
+  if (which === 'channel' && !editingSaleId) {
+    // Shops/cafés usually pay later on an invoice; direct sales on the spot.
+    document.getElementById('s-paid').checked = document.getElementById('s-channel').value !== 'B2B';
+  }
+  applySuggestedSalePrice();
+  updateSaleTotal();
+}
+function updateSaleTotal() {
+  var q = parseFloat(document.getElementById('s-qty').value) || 0;
+  var p = parseFloat(document.getElementById('s-price').value) || 0;
+  document.getElementById('s-total').textContent = saleMoney(q * p);
+}
+function saveSale() {
+  var date = document.getElementById('s-date').value;
+  var qty = parseFloat(document.getElementById('s-qty').value);
+  if (!date) { alert('Please set a date.'); return; }
+  if (!(qty > 0)) { alert('Please enter how many bottles were sold.'); return; }
+  var sale = {
+    id: editingSaleId || ('sale-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+    date: date,
+    customer: document.getElementById('s-customer').value.trim(),
+    channel: document.getElementById('s-channel').value,
+    size: document.getElementById('s-size').value,
+    flavour: document.getElementById('s-flavour').value.trim(),
+    qty: qty,
+    unitPrice: parseFloat(document.getElementById('s-price').value) || 0,
+    paid: document.getElementById('s-paid').checked,
+    notes: document.getElementById('s-notes').value.trim()
+  };
+  var isEdit = !!editingSaleId;
+  if (isEdit) {
+    for (var i = 0; i < sales.length; i++) if (String(sales[i].id) === String(sale.id)) sales[i] = sale;
+  } else {
+    sales.push(sale);
+  }
+  closeSaleDrawer();
+  renderSales();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: isEdit ? 'updateSale' : 'createSale', sale: sale }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('The sale couldn’t be saved to the sheet. If this is the first sale, the Apps Script backend may need redeploying.'); return; }
+    setSyncStatus('live', 'connected · google sheets');
+  });
+}
+function toggleSalePaid(id) {
+  var s = findSale(id);
+  if (!s) return;
+  s.paid = !s.paid;
+  renderSales();
+  apiPost({ action: 'updateSale', sale: s }, function (err, res) {
+    if (err || !res || !res.ok) setSyncStatus('error', 'save failed');
+  });
+}
+function deleteSale(id) {
+  var s = findSale(id);
+  if (!s) return;
+  if (!confirm('Delete this sale (' + (s.customer || 'no customer') + ', ' + fmtDate(s.date) + ')?')) return;
+  sales = sales.filter(function (x) { return String(x.id) !== String(id); });
+  renderSales();
+  apiPost({ action: 'deleteSale', id: id }, function (err, res) {
+    if (err || !res || !res.ok) setSyncStatus('error', 'delete failed');
+  });
+}
+
 function loadBottleInventory(cb) {
   api({ action: 'getBottleInventory' }, function (err, res) {
     if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }

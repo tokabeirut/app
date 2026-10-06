@@ -947,6 +947,78 @@ function migrateToDailyOperationsSheet_() {
    +qty — so the two pools can't drift out of sync, but afterward each row
    is just a plain, independently editable/deletable ledger entry. */
 
+/* ---------- sales (Business > Sales) ----------
+   One row per sale: who bought what, how many, at what price, and whether
+   it's been paid. Totals are worked out on the page from qty x unit_price,
+   so they're never out of step with the row. */
+var SALES_SHEET = 'sales';
+var SALES_HEADERS = ['sale_pk', 'sale_date', 'customer', 'channel', 'size', 'flavour', 'qty', 'unit_price', 'paid', 'notes'];
+
+function getSalesSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(SALES_SHEET);
+  if (!sh) sh = ss.insertSheet(SALES_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, sh.getMaxRows(), SALES_HEADERS.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, SALES_HEADERS.length).setValues([SALES_HEADERS]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  for (var h = 0; h < SALES_HEADERS.length; h++) {
+    if (hdr.indexOf(SALES_HEADERS[h]) === -1) {
+      var c = sh.getLastColumn() + 1;
+      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
+      sh.getRange(1, c).setValue(SALES_HEADERS[h]);
+      hdr.push(SALES_HEADERS[h]);
+    }
+  }
+  return sh;
+}
+
+function buildSaleRow_(e, ncols, map) {
+  e = e || {};
+  var row = [];
+  for (var i = 0; i < ncols; i++) row.push('');
+  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
+  set('sale_pk', e.id || '');
+  set('sale_date', e.date || '');
+  set('customer', e.customer || '');
+  set('channel', e.channel || '');
+  set('size', e.size || '');
+  set('flavour', e.flavour || '');
+  set('qty', (e.qty == null ? '' : e.qty));
+  set('unit_price', (e.unitPrice == null ? '' : e.unitPrice));
+  set('paid', e.paid ? 'yes' : '');
+  set('notes', e.notes || '');
+  return row;
+}
+
+function readAllSales_() {
+  var sh = getSalesSheet_();
+  var map = headerMap_(sh);
+  var data = sh.getDataRange().getValues();
+  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!g(r, 'sale_pk')) continue;
+    out.push({
+      id: String(g(r, 'sale_pk')),
+      date: ymd_(g(r, 'sale_date')),
+      customer: String(g(r, 'customer') || ''),
+      channel: String(g(r, 'channel') || ''),
+      size: String(g(r, 'size') || ''),
+      flavour: String(g(r, 'flavour') || ''),
+      qty: g(r, 'qty'),
+      unitPrice: g(r, 'unit_price'),
+      paid: truthy_(g(r, 'paid')),
+      notes: String(g(r, 'notes') || '')
+    });
+  }
+  return out;
+}
+
 var BOTTLE_INV_SHEET = 'bottle_inventory';
 
 var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto'];
@@ -1596,6 +1668,9 @@ function doGet(e) {
   if (action === 'getProductionTasks') {
     return json_({ ok: true, productionTasks: readAllProductionTasks_() });
   }
+  if (action === 'getSales') {
+    return json_({ ok: true, sales: readAllSales_() });
+  }
   if (action === 'getBottleInventory') {
     return json_({ ok: true, bottleInventory: readAllBottleInv_() });
   }
@@ -1657,6 +1732,7 @@ function doGet(e) {
       plannedInfusions: readAllPlannedInfusions_(),
       plannedBrews: readAllPlannedBrews_(),
       bottleInventory: readAllBottleInv_(),
+      sales: readAllSales_(),
       bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : ''
     });
   }
@@ -1899,6 +1975,30 @@ function handleAction_(body) {
     var pbdr = findRowByKey_(pbsh, pbmap, 'item_pk', body.id);
     if (pbdr === -1) return json_({ ok: false, error: 'not found' });
     pbsh.deleteRow(pbdr);
+    return json_({ ok: true });
+  }
+
+  // ---- sales actions (Business > Sales) ----
+  if (action === 'createSale' || action === 'updateSale' || action === 'deleteSale') {
+    var ssh = getSalesSheet_();
+    var smap = headerMap_(ssh);
+    var sncols = ssh.getLastColumn();
+    if (action === 'createSale') {
+      var newS = body.sale || {};
+      if (!newS.id) newS.id = Utilities.getUuid();
+      ssh.appendRow(buildSaleRow_(newS, sncols, smap));
+      return json_({ ok: true, id: newS.id });
+    }
+    if (action === 'updateSale') {
+      var us = body.sale || {};
+      var urow = findRowByKey_(ssh, smap, 'sale_pk', us.id);
+      if (urow === -1) return json_({ ok: false, error: 'not found' });
+      ssh.getRange(urow, 1, 1, sncols).setValues([buildSaleRow_(us, sncols, smap)]);
+      return json_({ ok: true });
+    }
+    var sdr = findRowByKey_(ssh, smap, 'sale_pk', body.id);
+    if (sdr === -1) return json_({ ok: false, error: 'not found' });
+    ssh.deleteRow(sdr);
     return json_({ ok: true });
   }
 
