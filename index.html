@@ -731,6 +731,31 @@
   .pt-today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--terra); }
   .pt-today-tag { position: absolute; top: 2px; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--terra); background: var(--terra-pale); padding: 1px 5px; border-radius: 20px; -webkit-transform: translateX(-50%); transform: translateX(-50%); white-space: nowrap; }
   .pt-field-row { display: -webkit-flex; display: flex; gap: 10px; }
+  /* -- SPICE INVENTORY -- */
+  #view-spices .ing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; padding: 0 48px; margin-bottom: 10px; }
+  #view-spices .ing-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  #view-spices .ing-card.is-low { border-color: var(--terra-light, #e7b49f); }
+  #view-spices .ing-head { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  #view-spices .ing-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+  #view-spices .ing-add { background: none; border: none; padding: 0; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--terra); }
+  #view-spices .ing-left { font-family: 'IBM Plex Mono', monospace; font-size: 1.45rem; font-weight: 600; color: var(--ink); }
+  #view-spices .ing-left.neg, #view-spices .ing-card.is-low .ing-left { color: var(--terra); }
+  #view-spices .ing-left.muted { color: var(--ink-faint); }
+  #view-spices .ing-left-lbl { font-size: 0.7rem; font-weight: 400; color: var(--ink-faint); letter-spacing: 0.06em; }
+  #view-spices .ing-bar { height: 5px; border-radius: 99px; background: var(--surface2); overflow: hidden; margin: 10px 0 8px; }
+  #view-spices .ing-bar-fill { height: 100%; background: #6e9b7d; }
+  #view-spices .ing-card.is-low .ing-bar-fill { background: var(--terra); }
+  #view-spices .ing-note { font-size: 0.82rem; color: var(--ink-faint); line-height: 1.45; }
+  #view-spices .ing-note.faint { font-size: 0.76rem; margin-top: 2px; }
+  #view-spices .ing-log-head { padding-top: 26px; }
+  #view-spices td.mono { font-family: 'IBM Plex Mono', monospace; }
+  #view-spices td.row-actions { white-space: nowrap; text-align: right; }
+  .ing-table { table-layout: fixed; min-width: 760px; width: 760px; width: max(760px, 100%); }
+  .ing-table th:nth-child(1), .ing-table td:nth-child(1) { width: 130px; }
+  .ing-table th:nth-child(2), .ing-table td:nth-child(2) { width: 180px; white-space: normal; }
+  .ing-table th:nth-child(3), .ing-table td:nth-child(3) { width: 130px; }
+  .ing-table th:nth-child(4), .ing-table td:nth-child(4) { width: 240px; }
+  .ing-table th:nth-child(5), .ing-table td:nth-child(5) { width: 80px; }
   /* -- SALES -- */
   #view-sales .sales-periods { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px; padding: 0 48px; margin-bottom: 18px; }
   #view-sales .sales-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 6px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; }
@@ -771,7 +796,10 @@
   .sales-table th:nth-child(11), .sales-table td:nth-child(11) { width: 80px; }
   .sale-total-line { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin: 12px 0 16px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
   .sale-total-line strong { font-size: 1rem; letter-spacing: 0; color: var(--ink); }
-  .sale-paid-label { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; cursor: pointer; }
+  .sale-paid-label { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 10px; cursor: pointer; text-transform: none; letter-spacing: normal; font-family: 'Newsreader', Georgia, serif; font-size: 0.96rem; color: var(--ink); margin: 0; }
+  /* The generic form-input rule makes every <input> full-width with padding;
+     the Paid box needs to be a plain 18px checkbox instead. */
+  .sale-paid-label #s-paid.task-check { width: 18px; height: 18px; padding: 0; margin: 0; }
   .pt-field-row .form-group { -webkit-flex: 1; flex: 1; }
   .pt-linked-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; }
   .pt-linked-row label { margin-bottom: 0; }
@@ -838,6 +866,7 @@
     .table-wrap { padding: 0 20px 28px; }
     #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix { padding-left: 20px; padding-right: 20px; }
     #view-sales .sales-empty { padding: 24px 20px; }
+    #view-spices .ing-grid { padding-left: 20px; padding-right: 20px; }
     #an-body, #today-body, #biv-body { padding: 0 20px 28px; }
     .daily-checklist { margin-left: 20px; margin-right: 20px; }
     #today-body .an-section, .daily-checklist { padding: 16px 18px; }
@@ -1463,7 +1492,8 @@
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
-    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Inventory</button>
+    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle inventory</button>
+    <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice inventory</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
@@ -1515,8 +1545,12 @@
         <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
       </div>
       <div class="feature-card clickable" onclick="showView('inventory')">
-        <div class="card-head"><span class="name">Inventory</span></div>
+        <div class="card-head"><span class="name">Bottle inventory</span></div>
         <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('spices')">
+        <div class="card-head"><span class="name">Spice inventory</span></div>
+        <div class="desc">Tea, sugar, spices &amp; yeast &mdash; what you bought, what the brews have used since, and what&rsquo;s left.</div>
       </div>
     </div>
   </div>
@@ -1703,7 +1737,7 @@
     <div class="hint" id="s-price-hint"></div>
     <div class="sale-total-line">Total <strong id="s-total">$ 0.00</strong></div>
     <div class="form-group">
-      <label class="sale-paid-label"><input type="checkbox" id="s-paid" /> Paid</label>
+      <label class="sale-paid-label"><input type="checkbox" id="s-paid" class="task-check" /> <span>Paid</span></label>
     </div>
     <div class="form-section">
       <div class="form-section-title">Notes</div>
@@ -1718,13 +1752,68 @@
   </div>
 </div>
 
+<!-- ===== SPICE INVENTORY VIEW ===== -->
+<div id="view-spices" style="display:none;">
+  <div class="view-bar">
+    <button class="back-link" onclick="goBack()">&larr; back</button>
+    <button class="btn-primary" onclick="openPurchaseDrawer()">+ add purchase</button>
+  </div>
+  <div class="content-head">
+    <div class="content-title">Spice inventory</div>
+    <div class="content-sub" id="spices-sub">&nbsp;</div>
+  </div>
+  <div id="spices-body"></div>
+</div>
+<div class="drawer-overlay" id="purchase-overlay" onclick="closePurchaseDrawer()"></div>
+<div class="add-drawer" id="purchase-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-title" id="purchase-title">New purchase</div>
+    <button class="drawer-close" onclick="closePurchaseDrawer()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="form-section-title">Purchase</div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="ip-date" />
+    </div>
+    <div class="form-group">
+      <label>Ingredient</label>
+      <input type="text" id="ip-ingredient" placeholder="e.g. Sugar, Cardamom, Ginger" data-hist-field="ingredientName" autocomplete="off" />
+      <div class="hint">Tea, sugar and yeast are tracked from First fermentation and Bottling; any other ingredient from the spices used in Infusion.</div>
+    </div>
+    <div class="pt-field-row">
+      <div class="form-group">
+        <label>Amount bought</label>
+        <input type="number" id="ip-amount" min="0" step="any" placeholder="e.g. 25" />
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <select id="ip-unit">
+          <option value="kg">kg</option>
+          <option value="g">g</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Notes</div>
+      <div class="form-group">
+        <textarea id="ip-notes" placeholder="Supplier, price, anything worth remembering."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" onclick="closePurchaseDrawer()">Cancel</button>
+    <button class="btn-primary" id="purchase-save-btn" onclick="savePurchase()">Save purchase</button>
+  </div>
+</div>
+
 <!-- ===== INVENTORY VIEW ===== -->
 <div id="view-inventory" style="display:none;">
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
   </div>
   <div class="content-head">
-    <div class="content-title">Inventory</div>
+    <div class="content-title">Bottle inventory</div>
     <div class="content-sub">Bottle count</div>
   </div>
   <div id="biv-body"></div>
@@ -4404,6 +4493,7 @@ var PAGE_EYEBROWS = {
   'view-expenses': ['Toka \u2014 Business', 'All figures in USD'],
   'view-sales': ['Toka \u2014 Business', 'All figures in USD'],
   'view-inventory': ['Toka \u2014 Operations'],
+  'view-spices': ['Toka \u2014 Operations'],
   'view-bottlemath': ['Toka \u2014 Costs and pricing', 'All figures in USD']
 };
 function decoratePageHeads() {
@@ -4540,7 +4630,7 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings, loadSales], function (pErr) {
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings, loadSales, loadIngredientPurchases], function (pErr) {
         if (pErr) markDataLoadFailed(); else markDataFresh();
         if (cb) cb();
       });
@@ -4566,6 +4656,7 @@ function applyAllData(res) {
     plannedBrews = res.plannedBrews || [];
     bottleInventory = res.bottleInventory || [];
     if (Array.isArray(res.sales)) sales = res.sales;
+    if (Array.isArray(res.ingredientPurchases)) ingredientPurchases = res.ingredientPurchases;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
     planInfUnsaved = {}; planInfOriginal = {};
     for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
@@ -4606,7 +4697,7 @@ function loadAllInBackground() {
    default numbers. Expenses, the faucet timer and the bottle calculator
    load their own data separately and aren't affected. */
 var SNAPSHOT_KEY = 'toka_data_snapshot_v1';
-var DATA_VIEW_IDS = ['view-f1', 'view-bottling', 'view-infusion', 'view-readings', 'view-analytics', 'view-today', 'view-overview', 'view-production', 'view-inventory', 'view-bottlemath', 'view-sales'];
+var DATA_VIEW_IDS = ['view-f1', 'view-bottling', 'view-infusion', 'view-readings', 'view-analytics', 'view-today', 'view-overview', 'view-production', 'view-inventory', 'view-bottlemath', 'view-sales', 'view-spices'];
 var dataFresh = false;       // true once a live load has landed this visit
 var snapshotSavedAt = 0;     // when the copy currently on screen was taken
 
@@ -4615,7 +4706,7 @@ function snapshotFromGlobals() {
     batches: batches, bottles: bottles, infusions: infusions, readings: readings,
     feedback: feedback, productionTasks: productionTasks, dailyChecklist: dailyChecklist,
     plannedInfusions: plannedInfusions, plannedBrews: plannedBrews,
-    bottleInventory: bottleInventory, sales: sales, bottleMathSettings: bottleMathSettingsRaw,
+    bottleInventory: bottleInventory, sales: sales, ingredientPurchases: ingredientPurchases, bottleMathSettings: bottleMathSettingsRaw,
     savedAt: Date.now()
   };
 }
@@ -4821,6 +4912,7 @@ function renderCurrentViewData() {
     else if (v === 'production') renderProduction();
     else if (v === 'inventory') renderBottleInventory();
     else if (v === 'sales') renderSales();
+    else if (v === 'spices') renderSpiceInventory();
   } catch (e) {}
 }
 // Editing lock while the saved copy is on screen: swallows focus/clicks on
@@ -4875,6 +4967,7 @@ function showView(v, isBack) {
   var vf = document.getElementById('view-faucet'); if (vf) vf.style.display = (v === 'faucet') ? 'block' : 'none';
   var vinv = document.getElementById('view-inventory'); if (vinv) vinv.style.display = (v === 'inventory') ? 'block' : 'none';
   var vsal = document.getElementById('view-sales'); if (vsal) vsal.style.display = (v === 'sales') ? 'block' : 'none';
+  var vsp = document.getElementById('view-spices'); if (vsp) vsp.style.display = (v === 'spices') ? 'block' : 'none';
   var vbc = document.getElementById('view-bottlecalc'); if (vbc) vbc.style.display = (v === 'bottlecalc') ? 'block' : 'none';
   var vbm = document.getElementById('view-bottlemath'); if (vbm) vbm.style.display = (v === 'bottlemath') ? 'block' : 'none';
   if (typeof updateViewTabs === 'function') updateViewTabs(v);
@@ -4907,6 +5000,7 @@ function showView(v, isBack) {
   if (v === 'inventory') renderBottleInventory();
   if (v === 'bottlemath') bmInit();
   if (v === 'sales') renderSales();
+  if (v === 'spices') renderSpiceInventory();
   window.scrollTo(0, 0);
 }
 function goBack() {
@@ -7288,6 +7382,7 @@ var HIST_FIELDS = {
   },
   ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); },
   saleCustomer: function () { return sales.map(function (s) { return s.customer; }); },
+  ingredientName: function () { return ingredientNames(); },
   saleFlavour: function () {
     var out = sales.map(function (s) { return s.flavour; });
     bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { out.push(f.name); }); });
@@ -7447,6 +7542,189 @@ function loadPlannedBrews(cb) {
     if (cb) cb(null);
   });
 }
+/* ===================== SPICE INVENTORY (Operations) =====================
+   What's in stock of every ingredient, worked out automatically:
+     left = everything bought  −  everything used since the first purchase.
+   Purchases are logged here (ingredient_purchases sheet). Usage is never
+   typed in twice — it's read from the pages that already record it:
+     • Tea    — First fermentation, tea per batch (g)
+     • Sugar  — First fermentation, sugar per batch (kg)
+              + Bottling, sugar per bottle (g) × number of bottles
+     • Yeast  — Bottling, yeast per bottle (mg) × number of bottles
+     • any other ingredient (cardamom, sumac, …) — the spices used in
+       Infusion, matched by name (so "Cardamom" also catches "cardamom pods").
+   Usage only counts from the date of the first logged purchase of that
+   ingredient, so brews from before stock was tracked don't push it negative. */
+var ingredientPurchases = [];
+var INGREDIENT_DEFAULTS = ['Tea', 'Sugar', 'Cardamom', 'Sumac', 'Yeast'];
+var editingPurchaseId = null;
+function loadIngredientPurchases(cb) {
+  api({ action: 'getIngredientPurchases' }, function (err, res) {
+    if (err || !res || !res.ok || !Array.isArray(res.ingredientPurchases)) { if (cb) cb(err || new Error('load failed')); return; }
+    ingredientPurchases = res.ingredientPurchases;
+    if (cb) cb(null);
+  });
+}
+function ingNum(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function ingKey(name) { return String(name || '').trim().toLowerCase(); }
+function purchaseGrams(p) { var a = ingNum(p.amount); return String(p.unit).toLowerCase() === 'g' ? a : a * 1000; }
+function fmtWeight(g) {
+  var neg = g < 0, a = Math.abs(g);
+  var txt = a >= 1000 ? (Math.round(a / 10) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg'
+                      : (Math.round(a * 10) / 10).toLocaleString('en-US') + ' g';
+  return (neg ? '−' : '') + txt;
+}
+// Which kind of usage an ingredient name maps to.
+function ingredientKind(name) {
+  var k = ingKey(name);
+  if (/\btea\b/.test(k)) return 'tea';
+  if (/\bsugar\b/.test(k)) return 'sugar';
+  if (/\byeast\b/.test(k)) return 'yeast';
+  return 'spice';
+}
+// Every usage event for one ingredient: [{date, g, where}]
+function ingredientUsage(name) {
+  var kind = ingredientKind(name), k = ingKey(name), out = [];
+  if (kind === 'tea') {
+    batches.forEach(function (b) { var g = ingNum(b.tea); if (g) out.push({ date: b.date, g: g, where: 'First fermentation' }); });
+  } else if (kind === 'sugar') {
+    batches.forEach(function (b) { var g = ingNum(b.sugar) * 1000; if (g) out.push({ date: b.date, g: g, where: 'First fermentation' }); });
+    bottles.forEach(function (b) { var g = ingNum(b.sugarG) * (ingNum(b.count) || 1); if (g) out.push({ date: b.bottlingDate, g: g, where: 'Bottling' }); });
+  } else if (kind === 'yeast') {
+    bottles.forEach(function (b) { var g = ingNum(b.yeastMg) / 1000 * (ingNum(b.count) || 1); if (g) out.push({ date: b.bottlingDate, g: g, where: 'Bottling' }); });
+  } else {
+    infusions.forEach(function (inf) {
+      (inf.flavours || []).forEach(function (f) {
+        var fk = ingKey(f.name);
+        if (!fk || !(fk === k || fk.indexOf(k) !== -1 || k.indexOf(fk) !== -1)) return;
+        var g = ingNum(f.g);
+        if (g) out.push({ date: inf.startDate, g: g, where: 'Infusion' });
+      });
+    });
+  }
+  return out;
+}
+function ingredientNames() {
+  var seen = {}, out = [];
+  INGREDIENT_DEFAULTS.concat(ingredientPurchases.map(function (p) { return p.ingredient; })).forEach(function (n) {
+    var k = ingKey(n); if (!k || seen[k]) return; seen[k] = true; out.push(String(n).trim());
+  });
+  return out;
+}
+function ingredientStock(name) {
+  var k = ingKey(name);
+  var buys = ingredientPurchases.filter(function (p) { return ingKey(p.ingredient) === k; });
+  var bought = buys.reduce(function (a, p) { return a + purchaseGrams(p); }, 0);
+  var since = buys.reduce(function (a, p) { return (!a || (p.date && p.date < a)) ? p.date : a; }, '');
+  var usage = ingredientUsage(name).filter(function (u) { return !since || (u.date && u.date >= since); });
+  var used = usage.reduce(function (a, u) { return a + u.g; }, 0);
+  var byWhere = {};
+  usage.forEach(function (u) { byWhere[u.where] = (byWhere[u.where] || 0) + u.g; });
+  return { name: name, bought: bought, used: used, left: bought - used, since: since, nBuys: buys.length, byWhere: byWhere };
+}
+function renderSpiceInventory() {
+  var body = document.getElementById('spices-body');
+  if (!body) return;
+  var stocks = ingredientNames().map(ingredientStock);
+  var sub = document.getElementById('spices-sub');
+  if (sub) sub.textContent = 'What’s left of every ingredient — purchases minus what First fermentation, Infusion and Bottling have used since.';
+  var h = '<div class="ing-grid">';
+  stocks.forEach(function (s) {
+    var pct = s.bought > 0 ? Math.max(0, Math.min(100, s.left / s.bought * 100)) : 0;
+    var low = s.nBuys && s.left < s.bought * 0.15;
+    var where = Object.keys(s.byWhere).map(function (w) { return w + ' ' + fmtWeight(s.byWhere[w]); }).join(' · ');
+    h += '<div class="ing-card' + (low ? ' is-low' : '') + '">'
+      + '<div class="ing-head"><span class="ing-name">' + esc(s.name) + '</span>'
+      + '<button type="button" class="ing-add" title="Log a purchase of ' + esc(s.name) + '" onclick="openPurchaseDrawer(null, \'' + esc(s.name).replace(/'/g, '&#39;') + '\')">+ bought</button></div>';
+    if (!s.nBuys) {
+      h += '<div class="ing-left muted">—</div><div class="ing-note">No purchase logged yet.</div>';
+    } else {
+      h += '<div class="ing-left' + (s.left < 0 ? ' neg' : '') + '">' + fmtWeight(s.left) + '<span class="ing-left-lbl"> left</span></div>'
+        + '<div class="ing-bar"><div class="ing-bar-fill" style="width:' + pct.toFixed(1) + '%"></div></div>'
+        + '<div class="ing-note">Bought ' + fmtWeight(s.bought) + ' · used ' + fmtWeight(s.used) + ' since ' + esc(fmtDate(s.since)) + '</div>'
+        + (where ? '<div class="ing-note faint">' + esc(where) + '</div>' : '');
+    }
+    h += '</div>';
+  });
+  h += '</div>';
+  var list = ingredientPurchases.slice().sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || String(b.id).localeCompare(String(a.id)); });
+  h += '<div class="content-head ing-log-head"><div class="content-title">Purchases</div><div class="content-sub">' + (list.length ? list.length + ' logged, newest first.' : 'Nothing logged yet — add a purchase with “+ add purchase”.') + '</div></div>';
+  if (list.length) {
+    h += '<div class="table-wrap"><div class="table-scroll"><table class="ing-table"><thead><tr><th>Date</th><th>Ingredient</th><th>Amount</th><th>Notes</th><th></th></tr></thead><tbody>';
+    list.forEach(function (p) {
+      h += '<tr><td class="mono">' + esc(fmtDate(p.date)) + '</td><td>' + esc(p.ingredient) + '</td>'
+        + '<td class="mono">' + esc(fmtNum(ingNum(p.amount))) + ' ' + esc(p.unit || 'kg') + '</td>'
+        + '<td class="notes-cell">' + esc(p.notes || '') + '</td>'
+        + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openPurchaseDrawer(\'' + esc(p.id) + '\')">&#9998;</button>'
+        + '<button type="button" class="icon-btn" title="Delete" onclick="deletePurchase(\'' + esc(p.id) + '\')">&times;</button></td></tr>';
+    });
+    h += '</tbody></table></div></div>';
+  }
+  body.innerHTML = h;
+}
+function findPurchase(id) { for (var i = 0; i < ingredientPurchases.length; i++) if (String(ingredientPurchases[i].id) === String(id)) return ingredientPurchases[i]; return null; }
+function openPurchaseDrawer(id, presetName) {
+  var p = id ? findPurchase(id) : null;
+  editingPurchaseId = p ? p.id : null;
+  document.getElementById('purchase-title').textContent = p ? 'Edit purchase' : 'New purchase';
+  document.getElementById('purchase-save-btn').textContent = p ? 'Update purchase' : 'Save purchase';
+  document.getElementById('ip-date').value = p ? (p.date || todayISO()) : todayISO();
+  document.getElementById('ip-ingredient').value = p ? p.ingredient : (presetName || '');
+  document.getElementById('ip-amount').value = p ? p.amount : '';
+  document.getElementById('ip-unit').value = p ? (p.unit || 'kg') : 'kg';
+  document.getElementById('ip-notes').value = p ? (p.notes || '') : '';
+  document.getElementById('purchase-drawer').classList.add('open');
+  document.getElementById('purchase-overlay').classList.add('open');
+}
+function closePurchaseDrawer() {
+  document.getElementById('purchase-drawer').classList.remove('open');
+  document.getElementById('purchase-overlay').classList.remove('open');
+}
+function savePurchase() {
+  var date = document.getElementById('ip-date').value;
+  var name = document.getElementById('ip-ingredient').value.trim();
+  var amount = parseFloat(document.getElementById('ip-amount').value);
+  if (!date) { alert('Please set a date.'); return; }
+  if (!name) { alert('Please enter the ingredient.'); return; }
+  if (!(amount > 0)) { alert('Please enter the amount bought.'); return; }
+  // Reuse the spelling of an ingredient that already exists ("sugar" -> "Sugar").
+  var known = ingredientNames().filter(function (n) { return ingKey(n) === ingKey(name); })[0];
+  var p = {
+    id: editingPurchaseId || ('ip-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+    date: date, ingredient: known || name, amount: amount,
+    unit: document.getElementById('ip-unit').value,
+    notes: document.getElementById('ip-notes').value.trim()
+  };
+  var isEdit = !!editingPurchaseId;
+  var prev = isEdit ? findPurchase(p.id) : null;
+  if (isEdit) ingredientPurchases = ingredientPurchases.map(function (x) { return String(x.id) === String(p.id) ? p : x; });
+  else ingredientPurchases.push(p);
+  closePurchaseDrawer();
+  renderSpiceInventory();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: isEdit ? 'updateIngredientPurchase' : 'createIngredientPurchase', purchase: p }, function (err, res) {
+    if (err || !res || !res.ok) {
+      if (isEdit) ingredientPurchases = ingredientPurchases.map(function (x) { return String(x.id) === String(p.id) ? prev : x; });
+      else ingredientPurchases = ingredientPurchases.filter(function (x) { return String(x.id) !== String(p.id); });
+      renderSpiceInventory();
+      setSyncStatus('error', 'save failed');
+      alert('Couldn’t save that to the sheet — the Apps Script backend may need redeploying for Spice inventory.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+  });
+}
+function deletePurchase(id) {
+  var p = findPurchase(id);
+  if (!p) return;
+  if (!confirm('Delete this purchase (' + p.ingredient + ', ' + fmtDate(p.date) + ')?')) return;
+  ingredientPurchases = ingredientPurchases.filter(function (x) { return String(x.id) !== String(id); });
+  renderSpiceInventory();
+  apiPost({ action: 'deleteIngredientPurchase', id: id }, function (err, res) {
+    if (err || !res || !res.ok) { ingredientPurchases.push(p); renderSpiceInventory(); setSyncStatus('error', 'delete failed'); }
+  });
+}
+
 /* ===================== SALES (Business > Sales) =====================
    One row per sale in the `sales` sheet (see readAllSales_ in the backend):
    date, customer, channel (B2B shop/café vs B2C direct), bottle size,

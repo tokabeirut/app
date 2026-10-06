@@ -955,6 +955,71 @@ function migrateToDailyOperationsSheet_() {
    +qty — so the two pools can't drift out of sync, but afterward each row
    is just a plain, independently editable/deletable ledger entry. */
 
+/* ---------- ingredient purchases (Operations > Spice inventory) ----------
+   One row per purchase of an ingredient (tea, sugar, a spice, yeast, ...):
+   date, ingredient name, amount + unit as bought, notes. What's LEFT is
+   never stored — the page works it out from these purchases minus what the
+   batches / infusions / bottles have used since. */
+var INGREDIENT_SHEET = 'ingredient_purchases';
+var INGREDIENT_HEADERS = ['purchase_pk', 'purchase_date', 'ingredient', 'amount', 'unit', 'notes'];
+
+function getIngredientSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(INGREDIENT_SHEET);
+  if (!sh) sh = ss.insertSheet(INGREDIENT_SHEET);
+  if (sh.getLastRow() === 0) {
+    sh.getRange(1, 1, sh.getMaxRows(), INGREDIENT_HEADERS.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, INGREDIENT_HEADERS.length).setValues([INGREDIENT_HEADERS]);
+    sh.setFrozenRows(1);
+    return sh;
+  }
+  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  for (var h = 0; h < INGREDIENT_HEADERS.length; h++) {
+    if (hdr.indexOf(INGREDIENT_HEADERS[h]) === -1) {
+      var c = sh.getLastColumn() + 1;
+      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
+      sh.getRange(1, c).setValue(INGREDIENT_HEADERS[h]);
+      hdr.push(INGREDIENT_HEADERS[h]);
+    }
+  }
+  return sh;
+}
+
+function buildIngredientRow_(e, ncols, map) {
+  e = e || {};
+  var row = [];
+  for (var i = 0; i < ncols; i++) row.push('');
+  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
+  set('purchase_pk', e.id || '');
+  set('purchase_date', e.date || '');
+  set('ingredient', e.ingredient || '');
+  set('amount', (e.amount == null ? '' : e.amount));
+  set('unit', e.unit || '');
+  set('notes', e.notes || '');
+  return row;
+}
+
+function readAllIngredientPurchases_() {
+  var sh = getIngredientSheet_();
+  var map = headerMap_(sh);
+  var data = sh.getDataRange().getValues();
+  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
+  var out = [];
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!g(r, 'purchase_pk')) continue;
+    out.push({
+      id: String(g(r, 'purchase_pk')),
+      date: ymd_(g(r, 'purchase_date')),
+      ingredient: String(g(r, 'ingredient') || ''),
+      amount: g(r, 'amount'),
+      unit: String(g(r, 'unit') || ''),
+      notes: String(g(r, 'notes') || '')
+    });
+  }
+  return out;
+}
+
 /* ---------- sales (Business > Sales) ----------
    One row per sale: who bought what, how many, at what price, and whether
    it's been paid. Totals are worked out on the page from qty x unit_price,
@@ -1676,6 +1741,9 @@ function doGet(e) {
   if (action === 'getProductionTasks') {
     return json_({ ok: true, productionTasks: readAllProductionTasks_() });
   }
+  if (action === 'getIngredientPurchases') {
+    return json_({ ok: true, ingredientPurchases: readAllIngredientPurchases_() });
+  }
   if (action === 'getSales') {
     return json_({ ok: true, sales: readAllSales_() });
   }
@@ -1741,6 +1809,7 @@ function doGet(e) {
       plannedBrews: readAllPlannedBrews_(),
       bottleInventory: readAllBottleInv_(),
       sales: readAllSales_(),
+      ingredientPurchases: readAllIngredientPurchases_(),
       bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : ''
     });
   }
@@ -1983,6 +2052,30 @@ function handleAction_(body) {
     var pbdr = findRowByKey_(pbsh, pbmap, 'item_pk', body.id);
     if (pbdr === -1) return json_({ ok: false, error: 'not found' });
     pbsh.deleteRow(pbdr);
+    return json_({ ok: true });
+  }
+
+  // ---- ingredient purchase actions (Operations > Spice inventory) ----
+  if (action === 'createIngredientPurchase' || action === 'updateIngredientPurchase' || action === 'deleteIngredientPurchase') {
+    var ish = getIngredientSheet_();
+    var imap = headerMap_(ish);
+    var incols = ish.getLastColumn();
+    if (action === 'createIngredientPurchase') {
+      var newP = body.purchase || {};
+      if (!newP.id) newP.id = Utilities.getUuid();
+      ish.appendRow(buildIngredientRow_(newP, incols, imap));
+      return json_({ ok: true, id: newP.id });
+    }
+    if (action === 'updateIngredientPurchase') {
+      var up = body.purchase || {};
+      var iurow = findRowByKey_(ish, imap, 'purchase_pk', up.id);
+      if (iurow === -1) return json_({ ok: false, error: 'not found' });
+      ish.getRange(iurow, 1, 1, incols).setValues([buildIngredientRow_(up, incols, imap)]);
+      return json_({ ok: true });
+    }
+    var idr = findRowByKey_(ish, imap, 'purchase_pk', body.id);
+    if (idr === -1) return json_({ ok: false, error: 'not found' });
+    ish.deleteRow(idr);
     return json_({ ok: true });
   }
 
