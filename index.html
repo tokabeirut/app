@@ -6176,12 +6176,14 @@ function openBottleGroupEdit(gUid) {
   document.getElementById('bottle-overlay').classList.add('open');
 }
 function bottleNumberFromId(id) {
-  // best-effort: the bottle number is the last segment — BTL-<date>-<number>
-  // for older IDs, BTL-<date>-<spice initials>-<number> for newer ones.
+  // Older IDs: BTL-<date>-<number>. Newer ones: BTL-<date>-<spice initials>-
+  // <number>, where the initials are capital letters only (e.g. "CS") and the
+  // number may be missing. The initials are never part of the number — so
+  // editing BTL-20260930-CS (no number) leaves "Bottle number(s)" empty.
   if (!id) return '';
-  var parts = String(id).split('-');
-  if (parts.length >= 4) return parts[parts.length - 1];
-  return parts.length >= 3 ? parts.slice(2).join('-') : '';
+  var rest = String(id).split('-').slice(2);
+  if (rest.length && /^[A-Z]+$/.test(rest[0])) rest = rest.slice(1);
+  return rest.join('-');
 }
 // Parses the free-text "Bottle number(s)" field into a list of individual
 // tokens: comma-separated items, with numeric "lo-hi" ranges expanded.

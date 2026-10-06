@@ -31,7 +31,11 @@
 var SHEET_NAME = 'batches';
 var BOTTLES_SHEET = 'bottles';
 var INFUSIONS_SHEET = 'infusions';
-var READINGS_SHEET = 'readings';
+// Renamed from 'readings' to match the Labo page. getReadingsSheet_() below
+// renames an existing 'readings' tab in place the first time it runs, so
+// all the data stays put.
+var READINGS_SHEET = 'labo';
+var READINGS_SHEET_OLD = 'readings';
 var FEEDBACK_SHEET = 'feedback';
 var PRODUCTION_SHEET = 'production_tasks';
 // The checklist/planned-brews/planned-infusions data all lives together in
@@ -588,6 +592,10 @@ var READING_RENAME_MIGRATIONS = [
 function getReadingsSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName(READINGS_SHEET);
+  if (!sh) {
+    var old = ss.getSheetByName(READINGS_SHEET_OLD);
+    if (old) { old.setName(READINGS_SHEET); sh = old; }
+  }
   if (!sh) sh = ss.insertSheet(READINGS_SHEET);
 
   if (sh.getLastRow() === 0) {
