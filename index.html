@@ -1464,13 +1464,13 @@
   <div class="view-tab-group">
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
     <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Inventory</button>
-    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle math</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production timeline</button>
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
     <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
+    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle math</button>
   </div>
 </nav>
 
@@ -1518,10 +1518,6 @@
         <div class="card-head"><span class="name">Inventory</span></div>
         <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
       </div>
-      <div class="feature-card clickable" onclick="showView('bottlemath')">
-        <div class="card-head"><span class="name">Bottle math</span></div>
-        <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
-      </div>
     </div>
   </div>
 
@@ -1539,6 +1535,10 @@
       <div class="feature-card clickable" onclick="showView('sales')">
         <div class="card-head"><span class="name">Sales</span></div>
         <div class="desc">Who bought what, at what price &mdash; revenue, bottles sold, the B2B/B2C split and what&rsquo;s still unpaid.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('bottlemath')">
+        <div class="card-head"><span class="name">Bottle math</span></div>
+        <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
       </div>
     </div>
   </div>
