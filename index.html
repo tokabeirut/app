@@ -7546,7 +7546,7 @@ function renderSales() {
         + '<td class="mono">' + esc(fmtNum(parseFloat(s.qty) || 0)) + '</td>'
         + '<td class="mono">' + saleMoney(parseFloat(s.unitPrice) || 0) + '</td>'
         + '<td class="mono"><strong>' + saleMoney(saleTotal(s)) + '</strong></td>'
-        + '<td><label class="sale-paid-cell"><input type="checkbox" class="sale-paid-cb"' + (s.paid ? ' checked' : '') + ' onchange="setSalePaid(\'' + esc(s.id) + '\', this.checked)" /> <span class="' + (s.paid ? 'is-paid' : 'is-unpaid') + '">' + (s.paid ? 'Paid' : 'Unpaid') + '</span></label></td>'
+        + '<td><button type="button" class="paid-pill' + (s.paid ? ' is-paid' : '') + '" onclick="toggleSalePaid(\'' + esc(s.id) + '\')" title="Click to switch between paid and unpaid">' + (s.paid ? 'Paid' : 'Unpaid') + '</button></td>'
         + '<td class="notes-cell">' + esc(s.notes || '') + '</td>'
         + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openSaleDrawer(\'' + esc(s.id) + '\')">&#9998;</button>'
         + '<button type="button" class="icon-btn" title="Delete" onclick="deleteSale(\'' + esc(s.id) + '\')">&times;</button></td>'
