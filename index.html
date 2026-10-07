@@ -758,9 +758,10 @@
   .ing-table { table-layout: fixed; min-width: 760px; width: 760px; width: max(760px, 100%); }
   .ing-table th:nth-child(1), .ing-table td:nth-child(1) { width: 130px; }
   .ing-table th:nth-child(2), .ing-table td:nth-child(2) { width: 180px; white-space: normal; }
-  .ing-table th:nth-child(3), .ing-table td:nth-child(3) { width: 130px; }
-  .ing-table th:nth-child(4), .ing-table td:nth-child(4) { width: 240px; }
-  .ing-table th:nth-child(5), .ing-table td:nth-child(5) { width: 80px; }
+  .ing-table th:nth-child(3), .ing-table td:nth-child(3) { width: 110px; }
+  .ing-table th:nth-child(4), .ing-table td:nth-child(4) { width: 80px; }
+  .ing-table th:nth-child(5), .ing-table td:nth-child(5) { width: 240px; }
+  .ing-table th:nth-child(6), .ing-table td:nth-child(6) { width: 80px; }
   /* -- SALES -- */
   #view-sales .sales-periods { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px; padding: 0 48px; margin-bottom: 18px; }
   #view-sales .sales-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 6px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; }
@@ -6757,9 +6758,9 @@ function cellEd(inner, opts) {
 // inline editor can look either up without each type needing its own
 // lookup/commit function.
 function recKeyOf(rec) { return rec.uid != null ? rec.uid : rec.id; }
-function recArray(type) { return type === 'sale' ? sales : (type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings))))); }
-function rerenderType(type) { if (type === 'sale') renderSales(); else if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
-function reloadType(type) { if (type === 'sale') loadSales(function () { renderSales(); }); else if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
+function recArray(type) { return type === 'purchase' ? ingredientPurchases : type === 'sale' ? sales : (type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings))))); }
+function rerenderType(type) { if (type === 'purchase') renderSpiceInventory(); else if (type === 'sale') renderSales(); else if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
+function reloadType(type) { if (type === 'purchase') loadIngredientPurchases(function () { renderSpiceInventory(); }); else if (type === 'sale') loadSales(function () { renderSales(); }); else if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
 function commitInline(type, uidv, field, value) {
   var arr = recArray(type), rec = null;
   for (var i = 0; i < arr.length; i++) { if (String(recKeyOf(arr[i])) === String(uidv)) { rec = arr[i]; break; } }
@@ -6791,8 +6792,8 @@ function commitInline(type, uidv, field, value) {
     rec.dateWorst = value;
   }
   rerenderType(type);
-  var action = type === 'sale' ? 'updateSale' : type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
-  var key = type === 'sale' ? 'sale' : type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
+  var action = type === 'purchase' ? 'updateIngredientPurchase' : type === 'sale' ? 'updateSale' : type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
+  var key = type === 'purchase' ? 'purchase' : type === 'sale' ? 'sale' : type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
   var body = { action: action }; body[key] = JSON.parse(JSON.stringify(rec));
   setSyncStatus('saving', 'saving\u2026');
   apiPost(body, function (err, res) {
@@ -7418,7 +7419,7 @@ document.addEventListener('scroll', hideCellTip, true);
 /* ---- "used values" history dropdown for free-text fields ---- */
 var HIST_FIELDS = {
   sugarSource: function () { return batches.map(function (b) { return b.sugarSource; }); },
-  teaType: function () { return batches.map(function (b) { return b.teaType; }); },
+  teaType: function () { return ingredientNames().filter(function (n) { return ingredientKind(n) === 'tea'; }).concat(batches.map(function (b) { return b.teaType; })); },
   waterSource: function () { return batches.map(function (b) { return b.waterSource; }); },
   vessel: function () { return infusions.map(function (i) { return i.vessel; }); },
   spiceName: function () {
@@ -7603,7 +7604,7 @@ function loadPlannedBrews(cb) {
    Usage only counts from the date of the first logged purchase of that
    ingredient, so brews from before stock was tracked don't push it negative. */
 var ingredientPurchases = [];
-var INGREDIENT_DEFAULTS = ['Tea', 'Sugar', 'Cardamom', 'Sumac', 'Yeast'];
+var INGREDIENT_DEFAULTS = ['Sugar', 'Cardamom', 'Sumac', 'Yeast'];
 var editingPurchaseId = null;
 function loadIngredientPurchases(cb) {
   api({ action: 'getIngredientPurchases' }, function (err, res) {
@@ -7629,11 +7630,23 @@ function ingredientKind(name) {
   if (/\byeast\b/.test(k)) return 'yeast';
   return 'spice';
 }
+function teaCore(v) { return ingKey(v).replace(/\btea\b/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim(); }
+function teaTypeMatches(ingName, teaType) {
+  var a = teaCore(ingName), b = teaCore(teaType);
+  if (!a) return true;          // a plain "Tea" purchase counts every batch
+  return !!b && a === b;
+}
 // Every usage event for one ingredient: [{date, g, where}]
 function ingredientUsage(name) {
   var kind = ingredientKind(name), k = ingKey(name), out = [];
   if (kind === 'tea') {
-    batches.forEach(function (b) { var g = ingNum(b.tea); if (g) out.push({ date: b.date, g: g, where: 'First fermentation' }); });
+    // Only batches brewed with THIS tea count: the batch's "Tea type" must
+    // match the ingredient name ("Tea CTC Assamica" ↔ tea type "Tea CTC
+    // Assamica"; the word "tea" is optional on either side).
+    batches.forEach(function (b) {
+      if (!teaTypeMatches(name, b.teaType)) return;
+      var g = ingNum(b.tea); if (g) out.push({ date: b.date, g: g, where: 'First fermentation' });
+    });
   } else if (kind === 'sugar') {
     batches.forEach(function (b) { var g = ingNum(b.sugar) * 1000; if (g) out.push({ date: b.date, g: g, where: 'First fermentation' }); });
     bottles.forEach(function (b) { var g = ingNum(b.sugarG) * (ingNum(b.count) || 1); if (g) out.push({ date: b.bottlingDate, g: g, where: 'Bottling' }); });
@@ -7697,11 +7710,13 @@ function renderSpiceInventory() {
   var list = ingredientPurchases.slice().sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || String(b.id).localeCompare(String(a.id)); });
   h += '<div class="content-head ing-log-head"><div class="content-title">Purchases</div><div class="content-sub">' + (list.length ? list.length + ' logged, newest first.' : 'Nothing logged yet — add a purchase with “+ add purchase”.') + '</div></div>';
   if (list.length) {
-    h += '<div class="table-wrap"><div class="table-scroll"><table class="ing-table"><thead><tr><th>Date</th><th>Ingredient</th><th>Amount</th><th>Notes</th><th></th></tr></thead><tbody>';
+    h += '<div class="table-wrap"><div class="table-scroll"><table class="ing-table"><thead><tr><th>Date</th><th>Ingredient</th><th>Amount</th><th>Unit</th><th>Notes</th><th></th></tr></thead><tbody>';
     list.forEach(function (p) {
-      h += '<tr><td class="mono">' + esc(fmtDate(p.date)) + '</td><td>' + esc(p.ingredient) + '</td>'
-        + '<td class="mono">' + esc(fmtNum(ingNum(p.amount))) + ' ' + esc(p.unit || 'kg') + '</td>'
-        + '<td class="notes-cell">' + esc(p.notes || '') + '</td>'
+      h += '<tr>' + cellEd(esc(fmtDate(p.date)), { type: 'purchase', uid: p.id, field: 'date', input: 'date', cls: 'mono' })
+        + cellEd(esc(p.ingredient || '—'), { type: 'purchase', uid: p.id, field: 'ingredient', hist: 'ingredientName' })
+        + cellEd(esc(fmtNum(ingNum(p.amount))), { type: 'purchase', uid: p.id, field: 'amount', input: 'number', cls: 'mono' })
+        + cellEd(esc(p.unit || 'kg'), { type: 'purchase', uid: p.id, field: 'unit', input: 'select', options: 'kg:kg,g:g', cls: 'mono' })
+        + cellEd(esc(p.notes || ''), { type: 'purchase', uid: p.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
         + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openPurchaseDrawer(\'' + esc(p.id) + '\')">&#9998;</button>'
         + '<button type="button" class="icon-btn" title="Delete" onclick="deletePurchase(\'' + esc(p.id) + '\')">&times;</button></td></tr>';
     });
