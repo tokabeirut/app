@@ -6637,7 +6637,7 @@ function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n === 37
 function logBottlingInInventory(shared, qty, ids, cb) {
   qty = parseFloat(qty) || 0;
   if (qty <= 0 || !bottleIsSellSize(shared.volumeMl)) { if (cb) cb(true); return; }
-  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Sumac';
+  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Unknown';
   var fill = {
     size: bottleInvSizeLabel(shared.volumeMl || 375),
     flavour: flavour,
@@ -6679,7 +6679,7 @@ function bivLinkBottlings() {
   var list = bivUnlinkedBottlings(from);
   if (!list.length) { alert('Nothing to add — every bottling since ' + fmtDate(from) + ' is already in the inventory.'); return; }
   var lines = list.map(function (g) {
-    var fl = (g.shared.flavours || []).map(function (f) { return f.name; }).filter(Boolean).join(' ') || 'Sumac';
+    var fl = (g.shared.flavours || []).map(function (f) { return f.name; }).filter(Boolean).join(' ') || 'Unknown';
     return '• ' + fmtDate(g.shared.bottlingDate) + ' — ' + g.qty + ' × ' + bottleInvSizeLabel(g.shared.volumeMl || 375) + ' — ' + fl;
   });
   if (!confirm('This adds ' + list.length + ' automatic line(s) to Filled bottles at atelier:\n\n' + lines.join('\n') + '\n\nGo ahead?')) return;
