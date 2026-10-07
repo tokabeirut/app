@@ -6630,9 +6630,12 @@ function bottleInvSizeLabel(vol) {
   if (n === 750) return 'Big (750ml)';
   return n ? (n + ' ml') : '';
 }
-function logBottlingInInventory(shared, qty, ids) {
+// Only the sizes we sell (375 / 750 ml) go into Bottle inventory — 1000 ml
+// and any other size are left out. An empty volume means the 375 default.
+function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n === 375 || n === 750; }
+function logBottlingInInventory(shared, qty, ids, cb) {
   qty = parseFloat(qty) || 0;
-  if (qty <= 0) return;
+  if (qty <= 0 || !bottleIsSellSize(shared.volumeMl)) { if (cb) cb(true); return; }
   var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Base brew';
   var fill = {
     size: bottleInvSizeLabel(shared.volumeMl || 375),
@@ -6643,9 +6646,51 @@ function logBottlingInInventory(shared, qty, ids) {
     auto: true
   };
   apiPost({ action: 'fillBottles', fill: fill }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'inventory not updated'); return; }
-    loadBottleInventory();
+    if (err || !res || !res.ok) { setSyncStatus('error', 'inventory not updated'); if (cb) cb(false); return; }
+    if (cb) cb(true); else loadBottleInventory();
   });
+}
+// One-off catch-up: every bottling (375/750 ml) since a chosen date that
+// doesn't have its automatic inventory line yet gets one now. A bottling is
+// "already linked" when one of its bottle IDs appears in an auto line's notes,
+// so running this twice never double-counts.
+function bivUnlinkedBottlings(fromIso) {
+  var linkedText = bottleInventory.filter(function (e) { return e.stage === 'filled'; })
+    .map(function (e) { return String(e.notes || ''); }).join(' | ');
+  var groups = {}, order = [];
+  bottles.forEach(function (b) {
+    if (!b.bottlingDate || b.bottlingDate < fromIso) return;
+    if (!bottleIsSellSize(b.volumeMl)) return;
+    if (b.bottleId && linkedText.indexOf(b.bottleId) !== -1) return;
+    var k = b.groupUid || b.uid;
+    if (!groups[k]) { groups[k] = { shared: b, qty: 0, ids: [] }; order.push(k); }
+    groups[k].qty += parseFloat(b.count) || 1;
+    groups[k].ids.push(b.bottleId);
+  });
+  return order.map(function (k) { return groups[k]; })
+    .sort(function (a, b) { return String(a.shared.bottlingDate).localeCompare(String(b.shared.bottlingDate)); });
+}
+function bivLinkBottlings() {
+  var from = prompt('Add every bottling (375 / 750 ml) from this date onwards that isn’t in the inventory yet (YYYY-MM-DD):', '2026-08-20');
+  if (!from) return;
+  from = from.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) { alert('Please use the format YYYY-MM-DD.'); return; }
+  var list = bivUnlinkedBottlings(from);
+  if (!list.length) { alert('Nothing to add — every bottling since ' + fmtDate(from) + ' is already in the inventory.'); return; }
+  var lines = list.map(function (g) {
+    var fl = (g.shared.flavours || []).map(function (f) { return f.name; }).filter(Boolean).join(' ') || 'Base brew';
+    return '• ' + fmtDate(g.shared.bottlingDate) + ' — ' + g.qty + ' × ' + bottleInvSizeLabel(g.shared.volumeMl || 375) + ' — ' + fl;
+  });
+  if (!confirm('This adds ' + list.length + ' automatic line(s) to Filled bottles at atelier:\n\n' + lines.join('\n') + '\n\nGo ahead?')) return;
+  setSyncStatus('saving', 'saving…');
+  (function next(i) {
+    if (i >= list.length) { setSyncStatus('live', 'connected · google sheets'); loadBottleInventory(); return; }
+    var g = list[i];
+    logBottlingInInventory(g.shared, g.qty, g.ids, function (ok) {
+      if (!ok) { alert('Stopped: could not save line ' + (i + 1) + '. Run it again — lines already added won’t be duplicated.'); loadBottleInventory(); return; }
+      next(i + 1);
+    });
+  })(0);
 }
 function createBottlesSequentially(list, i, cb) {
   if (i >= list.length) { cb(true); return; }
@@ -8204,6 +8249,7 @@ function bivAddFormsHtml() {
     + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-fill-qty" placeholder="e.g. 93" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-fill-notes" placeholder="optional" /></div></div>'
     + '<button type="button" class="btn-primary" onclick="bivFill()">+ Add</button>'
+    + '<button type="button" class="btn-ghost" style="margin-left:8px" onclick="bivLinkBottlings()" title="Add bottlings from the Bottling page that aren’t counted here yet">Link bottlings…</button>'
     + '</div>';
   h += '<div class="biv-form"><div class="biv-form-title">Consumed bottles</div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-use-date" value="' + today + '" /></div></div>'
