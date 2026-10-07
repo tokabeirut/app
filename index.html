@@ -706,37 +706,35 @@
   .pt-filter-menu-foot { -webkit-flex-shrink: 0; flex-shrink: 0; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: space-between; justify-content: space-between; border-top: 1px solid var(--border); margin-top: 6px; padding-top: 6px; }
   .pt-filter-clear-link { border: none; background: none; color: var(--terra); font-size: 0.72rem; cursor: pointer; padding: 0; text-decoration: underline; }
   .pt-filter-apply-btn { padding: 6px 14px !important; font-size: 0.66rem !important; }
-  .pt-gantt-section { padding: 26px 48px 6px; }
-  .pt-gantt-section .content-title { font-size: 1.2rem; }
-  .pt-gantt-legend { display: -webkit-flex; display: flex; align-items: center; gap: 18px; margin: 2px 0 12px; }
-  .pt-legend-item { display: -webkit-flex; display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); }
-  .pt-legend-swatch { width: 16px; height: 10px; border-radius: 20px; box-sizing: border-box; }
-  .pt-legend-swatch.best { background: var(--ink-faint); }
-  .pt-legend-swatch.worst { background: repeating-linear-gradient(135deg, var(--ink-faint) 0 3px, transparent 3px 6px); opacity: 0.6; }
-  .pt-gantt { display: -webkit-flex; display: flex; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); background: var(--surface); overflow: hidden; }
-  /* Labels column widened +70% (200px -> 340px) and wrapped instead of
-     ellipsis-truncated, since task text can run long. Capped at 2 lines so
-     a very long name still clips cleanly rather than desyncing the row
-     grid from the bar track beside it. */
-  .pt-gantt-labels { -webkit-flex-shrink: 0; flex-shrink: 0; width: 340px; border-right: 1px solid var(--border); }
-  .pt-gantt-labels-head { height: 34px; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .pt-gantt-label-row { height: 52px; display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; padding: 10px 12px; font-size: 0.78rem; color: var(--ink); border-bottom: 1px solid var(--border); cursor: pointer; box-sizing: border-box; }
-  .pt-gantt-label-row .pt-cat-dot { margin-top: 3px; }
-  .pt-gantt-label-text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.35; word-break: break-word; }
-  .pt-gantt-label-row:last-child { border-bottom: none; }
-  .pt-gantt-label-row:hover { background: #fcfaf7; }
-  .pt-gantt-scroll { overflow-x: auto; -webkit-flex: 1; flex: 1; }
-  .pt-gantt-header { height: 34px; position: relative; border-bottom: 1px solid var(--border); background: var(--surface2); }
-  .pt-week-label { position: absolute; top: 0; height: 34px; line-height: 34px; padding-left: 6px; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); border-left: 1px solid var(--border); box-sizing: border-box; }
-  .pt-gantt-rows { position: relative; }
-  .pt-gantt-row-bg { height: 52px; border-bottom: 1px solid var(--border); box-sizing: border-box; }
-  .pt-gantt-row-bg:last-child { border-bottom: none; }
-  .pt-bar { position: absolute; height: 20px; line-height: 20px; color: #fff; font-size: 0.68rem; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-sizing: border-box; box-shadow: 0 1px 2px rgba(30,27,24,0.15); }
-  .pt-bar-best { border-radius: 20px; }
-  .pt-bar-best.has-tail { border-radius: 20px 0 0 20px; }
-  .pt-bar-tail { border-radius: 0 20px 20px 0; box-shadow: none; opacity: 0.55; background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.6) 0 5px, transparent 5px 10px); }
-  .pt-today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--terra); }
-  .pt-today-tag { position: absolute; top: 2px; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--terra); background: var(--terra-pale); padding: 1px 5px; border-radius: 20px; -webkit-transform: translateX(-50%); transform: translateX(-50%); white-space: nowrap; }
+  /* -- PRODUCTION TIMELINE: Now / Next / Later board -- */
+  .pt-board-section { padding: 6px 48px 30px; }
+  .pt-board-section .content-head { padding: 0; margin-bottom: 12px; }
+  .pt-board { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .pt-col { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 10px 10px; min-width: 0; }
+  .pt-col-head { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; -webkit-justify-content: space-between; justify-content: space-between; padding: 0 4px 10px; }
+  .pt-col-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
+  .pt-col-sub { font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .pt-col-count { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); }
+  .pt-col-now .pt-col-title { color: var(--terra); }
+  .pt-col-empty { padding: 14px 6px; font-size: 0.8rem; color: var(--ink-faint); font-style: italic; }
+  .pt-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--pt-c, var(--ink-faint)); border-radius: var(--radius-sm); padding: 9px 10px 9px 11px; margin-bottom: 8px; cursor: pointer; -webkit-transition: border-color .12s, -webkit-transform .12s; transition: border-color .12s, transform .12s; }
+  .pt-card:last-child { margin-bottom: 0; }
+  .pt-card:hover { -webkit-transform: translateY(-1px); transform: translateY(-1px); border-top-color: var(--terra-light); border-right-color: var(--terra-light); border-bottom-color: var(--terra-light); }
+  .pt-card-top { display: -webkit-flex; display: flex; gap: 8px; -webkit-align-items: flex-start; align-items: flex-start; }
+  .pt-card-top .task-check { margin-top: 2px; -webkit-flex-shrink: 0; flex-shrink: 0; }
+  .pt-card-text { font-size: 0.88rem; line-height: 1.35; color: var(--ink); word-break: break-word; }
+  .pt-card-meta { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; letter-spacing: 0.03em; color: var(--ink-faint); }
+  .pt-card-cat { color: var(--pt-c, var(--ink-faint)); text-transform: uppercase; letter-spacing: 0.08em; }
+  .pt-card-late { color: var(--red); font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; }
+  .pt-card-dep { margin-top: 5px; font-size: 0.74rem; color: var(--ink-faint); font-style: italic; }
+  .pt-card.is-done { opacity: 0.55; }
+  .pt-card.is-done .pt-card-text { text-decoration: line-through; }
+  .pt-col-more { display: block; width: 100%; margin-top: 6px; background: none; border: none; font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; padding: 6px 0; }
+  .pt-col-more:hover { color: var(--terra); }
+  @media (max-width: 700px) {
+    .pt-board-section { padding: 6px 20px 24px; }
+    .pt-board { grid-template-columns: repeat(4, 78vw); }
+  }
   .pt-field-row { display: -webkit-flex; display: flex; gap: 10px; }
   /* -- SPICE INVENTORY -- */
   #view-spices .ing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; padding: 0 48px; margin-bottom: 10px; }
@@ -1505,10 +1503,10 @@
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
     <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
     <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
+    <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
-    <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
     <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
     <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle<br>math</button>
@@ -1563,16 +1561,16 @@
         <div class="card-head"><span class="name">Spice inventory</span></div>
         <div class="desc">Tea, sugar, spices &amp; yeast &mdash; what you bought, what the brews have used since, and what&rsquo;s left.</div>
       </div>
+      <div class="feature-card clickable" onclick="showView('production')">
+        <div class="card-head"><span class="name">Production timeline</span></div>
+        <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; sorted into now, next &amp; later.</div>
+      </div>
     </div>
   </div>
 
   <div class="home-section">
     <div class="home-section-title">Business</div>
     <div class="home-section-grid">
-      <div class="feature-card clickable" onclick="showView('production')">
-        <div class="card-head"><span class="name">Production timeline</span></div>
-        <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; mapped as best- and worst-case timelines.</div>
-      </div>
       <div class="feature-card clickable" onclick="showView('expenses')">
         <div class="card-head"><span class="name">Expenses</span></div>
         <div class="desc">Every cost logged and categorized &mdash; receipts attached, running totals &amp; your cash balance always in view.</div>
@@ -4500,7 +4498,7 @@ var PAGE_EYEBROWS = {
   'view-overview': ['Toka \u2014 Quality control'],
   'view-analytics': ['Toka \u2014 Quality control'],
   'view-today': ['Toka \u2014 Operations'],
-  'view-production': ['Toka \u2014 Business'],
+  'view-production': ['Toka \u2014 Operations'],
   'view-expenses': ['Toka \u2014 Business', 'All figures in USD'],
   'view-sales': ['Toka \u2014 Business', 'All figures in USD'],
   'view-inventory': ['Toka \u2014 Operations'],
@@ -10656,97 +10654,68 @@ function ptTaskListHtml(tasks) {
   return h + '</tbody></table></div></div>';
 }
 
-/* ---- render: one combined Gantt-style timeline showing both scenarios ----
-   Each task gets two thin bars sharing a row: a filled bar for the best
-   case, and a dashed outline bar for the worst case. The outline is
-   skipped entirely when the two scenarios land on the same dates, so a
-   task with no schedule risk just shows a single solid bar. ---- */
-function ptGanttCombinedHtml(schedule) {
-  var h = '<div class="pt-gantt-section"><div class="content-head"><div class="content-title">Timeline</div></div>'
-    + '<div class="pt-gantt-legend">'
-    + '<span class="pt-legend-item"><span class="pt-legend-swatch best"></span>Best case</span>'
-    + '<span class="pt-legend-item"><span class="pt-legend-swatch worst"></span>Worst case</span>'
-    + '</div>';
-  if (!schedule.length) return h + '<div class="an-empty">Nothing to plot yet.</div></div>';
-  var minD = null, maxD = null;
-  for (var i = 0; i < schedule.length; i++) {
-    var sb = schedule[i].best, sw = schedule[i].worst;
-    if (minD == null || String(sb.start) < String(minD)) minD = sb.start;
-    if (String(sw.start) < String(minD)) minD = sw.start;
-    if (maxD == null || String(sb.end) > String(maxD)) maxD = sb.end;
-    if (String(sw.end) > String(maxD)) maxD = sw.end;
-  }
-  minD = addDaysIso(minD, -1);   // pad a day either side so edge bars aren't flush against the border
-  maxD = addDaysIso(maxD, 1);
-  var totalDays = Math.max(1, daysBetween(minD, maxD) || 1);
-  var totalPx = totalDays * PT_DAY_W;
-  function xOf(iso) { return (daysBetween(minD, iso) || 0) * PT_DAY_W; }
-  // week labels, aligned to actual Mondays within the visible range
-  var weekLabels = '';
-  var cursor = new Date(minD + 'T00:00:00');
-  var dow = cursor.getDay();                    // 0=Sun..6=Sat
-  cursor.setDate(cursor.getDate() + ((dow === 0) ? 1 : (8 - dow)));
-  while (true) {
-    var iso = cursor.getFullYear() + '-' + pad(cursor.getMonth() + 1) + '-' + pad(cursor.getDate());
-    if (String(iso) > String(maxD)) break;
-    weekLabels += '<div class="pt-week-label" style="left:' + xOf(iso) + 'px;">' + ptShortDate(iso) + '</div>';
-    cursor.setDate(cursor.getDate() + 7);
-  }
+/* ---- render: Now / Next / Later board ----
+   Every open task lands in one column by its (dependency-resolved) best-case
+   date: Now = overdue or due within 7 days, Next = the 4 weeks after that,
+   Later = beyond. Done tasks sit in their own column (most recent few shown,
+   the rest behind "show all"). Columns move on their own as dates pass —
+   nothing to drag. A card opens the task; the checkbox marks it done. */
+var PT_NOW_DAYS = 7, PT_NEXT_DAYS = 35, PT_DONE_SHOWN = 5;
+var ptShowAllDone = false;
+function ptToggleAllDone() { ptShowAllDone = !ptShowAllDone; renderProduction(); }
+function ptBoardHtml(schedule) {
   var today = todayISO();
-  var todayHtml = '';
-  if (String(today) >= String(minD) && String(today) <= String(maxD)) {
-    var tx = xOf(today);
-    todayHtml = '<div class="pt-today-line" style="left:' + tx + 'px;"></div><div class="pt-today-tag" style="left:' + tx + 'px;">Today</div>';
+  var nowEnd = addDaysIso(today, PT_NOW_DAYS), nextEnd = addDaysIso(today, PT_NEXT_DAYS);
+  var byId = {};
+  for (var bi = 0; bi < productionTasks.length; bi++) byId[productionTasks[bi].id] = productionTasks[bi];
+  var cols = { now: [], next: [], later: [], done: [] };
+  // Each card uses the task's own best/worst dates (the ones shown in the
+  // list below); a dependency is shown on the card as "after …" instead.
+  schedule = schedule.map(function (r) { return { task: r.task, best: { start: r.task.dateBest }, worst: { start: r.task.dateWorst } }; });
+  schedule.forEach(function (r) {
+    var best = String(r.best.start || '');
+    if (r.task.done) cols.done.push(r);
+    else if (!best || best <= nowEnd) cols.now.push(r);
+    else if (best <= nextEnd) cols.next.push(r);
+    else cols.later.push(r);
+  });
+  function byBest(a, b) { return String(a.best.start).localeCompare(String(b.best.start)); }
+  cols.now.sort(byBest); cols.next.sort(byBest); cols.later.sort(byBest);
+  cols.done.sort(function (a, b) { return byBest(b, a); });
+
+  function cardHtml(r) {
+    var t = r.task, color = ptCategoryColor(t.category);
+    var b = r.best.start, w = r.worst.start;
+    var when = b ? (w && String(w) !== String(b) ? ptShortDate(b) + ' – ' + ptShortDate(w) : ptShortDate(b)) : 'no date';
+    var late = !t.done && b && String(w || b) < today;
+    var dep = t.dependsOn && byId[t.dependsOn];
+    var depHtml = (dep && !dep.done) ? '<div class="pt-card-dep">after ' + esc(dep.text || 'another task') + '</div>' : '';
+    return '<div class="pt-card' + (t.done ? ' is-done' : '') + '" style="--pt-c:' + color + '" onclick="openPtDrawer(\'' + esc(t.id) + '\')">'
+      + '<div class="pt-card-top"><input type="checkbox" class="task-check"' + (t.done ? ' checked' : '') + ' onclick="event.stopPropagation()" onchange="togglePtDone(\'' + esc(t.id) + '\', this)" title="Mark done" />'
+      + '<div class="pt-card-text">' + esc(t.text || '(untitled task)') + '</div></div>'
+      + '<div class="pt-card-meta">'
+      + (late ? '<span class="pt-card-late">overdue</span>' : '')
+      + '<span>' + esc(when) + '</span>'
+      + (t.category ? '<span class="pt-card-cat">' + esc(t.category) + '</span>' : '')
+      + (t.leads && t.leads.length ? '<span>' + esc(t.leads.join(', ')) + '</span>' : '')
+      + '</div>' + depHtml + '</div>';
   }
-  // Tasks that follow on from each other (linked via "Depends on", or
-  // grouped by hand) share one row \u2014 see ptGroupSchedule.
-  var groupedRows = ptGroupSchedule(schedule);
-  var labelsHtml = '<div class="pt-gantt-labels-head"></div>';
-  var barsHtml = '', rowBgHtml = '';
-  for (var j = 0; j < groupedRows.length; j++) {
-    var groupRows = groupedRows[j];
-    var firstTask = groupRows[0].task;
-    var labelText = groupRows.map(function (r) { return r.task.text || '(untitled task)'; }).join(' \u2192 ');
-    var titleText = groupRows.map(function (r) {
-      var lead = (r.task.leads && r.task.leads.length) ? (' \u00b7 Lead: ' + r.task.leads.join(', ')) : '';
-      return (r.task.text || '(untitled task)') + lead;
-    }).join(' \u2192 ');
-    var cats = {};
-    for (var ci = 0; ci < groupRows.length; ci++) cats[groupRows[ci].task.category || ''] = true;
-    var catKeys = Object.keys(cats);
-    var dotColor = (catKeys.length === 1) ? ptCategoryColor(catKeys[0]) : '#9a9088';
-    labelsHtml += '<div class="pt-gantt-label-row" onclick="openPtDrawer(\'' + esc(firstTask.id) + '\')" title="' + esc(titleText) + '"><span class="pt-cat-dot" style="background:' + dotColor + '"></span><span class="pt-gantt-label-text">' + esc(labelText) + '</span></div>';
-    rowBgHtml += '<div class="pt-gantt-row-bg"></div>';
-
-    for (var k = 0; k < groupRows.length; k++) {
-      var row = groupRows[k], t = row.task, best = row.best, worst = row.worst;
-      var color = ptCategoryColor(t.category);
-      var leadSuffix = (t.leads && t.leads.length) ? (' \u00b7 Lead: ' + t.leads.join(', ')) : '';
-
-      // Option A: one continuous bar \u2014 solid for the best-case span, with a
-      // hashed/faded tail appended for the extra worst-case buffer when the
-      // two scenarios don't land on the same dates.
-      var barTop = j * PT_ROW_H + (PT_ROW_H - 20) / 2;
-      var leftB = xOf(best.start);
-      var wB = Math.max(PT_DAY_W * 0.8, xOf(best.end) - leftB);
-      var differs = (String(worst.start) !== String(best.start)) || (String(worst.end) !== String(best.end));
-      barsHtml += '<div class="pt-bar pt-bar-best' + (differs ? ' has-tail' : '') + '" style="left:' + leftB + 'px; width:' + wB + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 best case \u00b7 ' + esc(fmtDate(best.start)) + ' \u2192 ' + esc(fmtDate(best.end)) + '">' + esc(t.text) + '</div>';
-
-      if (differs) {
-        var leftT = leftB + wB;   // start exactly where the best-case bar visually ends, even if it hit the min-width clamp
-        var wT = Math.max(PT_DAY_W * 0.5, xOf(worst.end) - leftT);
-        barsHtml += '<div class="pt-bar pt-bar-tail" style="left:' + leftT + 'px; width:' + wT + 'px; top:' + barTop + 'px; background-color:' + color + ';" onclick="openPtDrawer(\'' + esc(t.id) + '\')" title="' + esc(t.text + leadSuffix) + ' \u00b7 worst case \u00b7 ' + esc(fmtDate(worst.start)) + ' \u2192 ' + esc(fmtDate(worst.end)) + '"></div>';
-      }
+  function colHtml(key, title, sub, list, emptyMsg) {
+    var shown = list, more = '';
+    if (key === 'done' && list.length > PT_DONE_SHOWN) {
+      if (!ptShowAllDone) shown = list.slice(0, PT_DONE_SHOWN);
+      more = '<button type="button" class="pt-col-more" onclick="ptToggleAllDone()">' + (ptShowAllDone ? 'show fewer' : 'show all ' + list.length) + '</button>';
     }
+    return '<div class="pt-col pt-col-' + key + '"><div class="pt-col-head"><div><div class="pt-col-title">' + title + '</div><div class="pt-col-sub">' + sub + '</div></div>'
+      + '<span class="pt-col-count">' + list.length + '</span></div>'
+      + (shown.length ? shown.map(cardHtml).join('') : '<div class="pt-col-empty">' + emptyMsg + '</div>') + more + '</div>';
   }
-  h += '<div class="pt-gantt">'
-    + '<div class="pt-gantt-labels">' + labelsHtml + '</div>'
-    + '<div class="pt-gantt-scroll"><div class="pt-gantt-track" style="width:' + totalPx + 'px;">'
-    + '<div class="pt-gantt-header" style="width:' + totalPx + 'px;">' + weekLabels + '</div>'
-    + '<div class="pt-gantt-rows" style="width:' + totalPx + 'px; height:' + (groupedRows.length * PT_ROW_H) + 'px;">' + rowBgHtml + todayHtml + barsHtml + '</div>'
-    + '</div></div>'
+  return '<div class="pt-board-section"><div class="pt-board">'
+    + colHtml('now', 'Now', 'overdue & next 7 days', cols.now, 'Nothing due this week.')
+    + colHtml('next', 'Next', 'until ' + ptShortDate(nextEnd), cols.next, 'Nothing in the coming weeks.')
+    + colHtml('later', 'Later', 'after ' + ptShortDate(nextEnd), cols.later, 'Nothing planned further out.')
+    + colHtml('done', 'Done', 'most recent first', cols.done, 'Nothing ticked off yet.')
     + '</div></div>';
-  return h;
 }
 
 function renderProduction() {
@@ -10762,8 +10731,8 @@ function renderProduction() {
   var filteredIds = {};
   for (var fi = 0; fi < filtered.length; fi++) filteredIds[filtered[fi].id] = true;
   var filteredSchedule = schedule.filter(function (r) { return filteredIds[r.task.id]; });
-  var h = '<div class="pt-list-wrap">' + ptTaskListHtml(filtered) + '</div>';
-  h += ptGanttCombinedHtml(filteredSchedule);
+  var h = ptBoardHtml(filteredSchedule);
+  h += '<div class="pt-list-wrap">' + ptTaskListHtml(filtered) + '</div>';
   body.innerHTML = h;
   var sub = document.getElementById('production-sub');
   if (sub) {
