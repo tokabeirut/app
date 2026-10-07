@@ -8282,7 +8282,7 @@ function bivRowHtml(e) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
-  var autoTag = e.auto ? '<span class="biv-auto-tag" title="Automatically written alongside another entry">auto</span>' : '';
+  var autoTag = '';
   return '<tr' + (e.auto ? ' class="biv-auto-row"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
