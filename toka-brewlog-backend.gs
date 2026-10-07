@@ -53,7 +53,6 @@ var LEGACY_SHEET_NAMES_ = [
   ['ingredient_purchases', 'Spice inventory'],
   ['production_tasks', 'Production timeline'],
   ['expenses', 'Expenses'],
-  ['deposits', 'Expenses deposits'],
   ['sales', 'Sales'],
   ['bottle_math', 'Bottle math']
 ];
@@ -1326,7 +1325,7 @@ function readAllProductionTasks_() {
    existing batch actions ('create'/'update'/'delete') below. */
 var EXPENSES_SHEET = 'Expenses';
 var EXPENSES_SETTINGS_SHEET = 'settings';
-var EXPENSES_DEPOSITS_SHEET = 'Expenses deposits';
+var EXPENSES_DEPOSITS_SHEET_OLD = ['Expenses deposits', 'deposits'];
 var EXPENSES_DRIVE_FOLDER = 'toka-receipts';
 
 function getExpensesSheet_() {
@@ -1388,50 +1387,119 @@ function readAllExpenses_() {
   return out;
 }
 
-function getExpenseDepositsSheet_() {
+/* ---------- settings sheet (one tab for small settings + deposits) ----------
+   Columns A:B are labelled settings, one per row:
+     A1 Exchange rate (LBP per USD) | B1 value
+     A2 Faucet rate                 | B2 value
+     A3 Expense notes               | B3 text
+   Columns D:G hold the Expenses deposits table (header row 1, one deposit per
+   row below). The two blocks sit side by side so adding/removing a deposit
+   never shifts a setting. */
+var SETTINGS_ROWS_ = { rate: 1, faucet: 2, notes: 3 };
+var SETTINGS_LABELS_ = ['Exchange rate (LBP per USD)', 'Faucet rate', 'Expense notes'];
+var DEPOSIT_HEADERS_ = ['uid', 'date', 'amountUSD', 'note'];
+var DEPOSIT_COL_ = 4;   // column D
+
+function getSettingsSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(EXPENSES_DEPOSITS_SHEET);
-  if (!sh) {
-    sh = ss.insertSheet(EXPENSES_DEPOSITS_SHEET);
-    sh.appendRow(['uid', 'date', 'amountUSD', 'note']);
-    sh.setFrozenRows(1);
-    sh.getRange(1, 1, 1, 4).setFontWeight('bold');
-  }
+  var sh = ss.getSheetByName(EXPENSES_SETTINGS_SHEET) || ss.insertSheet(EXPENSES_SETTINGS_SHEET);
+  migrateSettingsSheet_(sh);
   return sh;
+}
+function getSetting_(key) {
+  return getSettingsSheet_().getRange(SETTINGS_ROWS_[key], 2).getValue();
+}
+function setSetting_(key, value, asText) {
+  var r = getSettingsSheet_().getRange(SETTINGS_ROWS_[key], 2);
+  if (asText) r.setNumberFormat('@');
+  r.setValue(value);
+}
+
+// Old layout: A1 rate, B1 faucet, C1 (old Bottle Math JSON), D1 notes, and
+// deposits in their own tab. Converts it in place, once (A1 then holds the
+// label), and moves the deposits over before deleting the old deposits tab.
+function migrateSettingsSheet_(sh) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var oldDep = null;
+  EXPENSES_DEPOSITS_SHEET_OLD.forEach(function (n) { if (!oldDep) oldDep = ss.getSheetByName(n); });
+  if (String(sh.getRange('A1').getValue()) === SETTINGS_LABELS_[0] && !oldDep) return;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    oldDep = null;
+    EXPENSES_DEPOSITS_SHEET_OLD.forEach(function (n) { if (!oldDep) oldDep = ss.getSheetByName(n); });
+    if (String(sh.getRange('A1').getValue()) !== SETTINGS_LABELS_[0]) {
+      var old = sh.getRange(1, 1, 1, 4).getValues()[0];
+      try { readOrMigrateBottleMathSettings_(); } catch (e) {}   // last chance for the old C1 JSON
+      sh.clear();
+      sh.getRange(1, 1, 3, 1).setValues(SETTINGS_LABELS_.map(function (l) { return [l]; })).setFontWeight('bold');
+      sh.getRange(3, 2).setNumberFormat('@');
+      sh.getRange(1, 2, 3, 1).setValues([[old[0]], [old[1]], [String(old[3] || '')]]);
+      sh.getRange(1, DEPOSIT_COL_, 1, DEPOSIT_HEADERS_.length).setValues([DEPOSIT_HEADERS_]).setFontWeight('bold');
+      sh.setFrozenRows(1);
+    }
+    if (oldDep) {
+      var data = oldDep.getDataRange().getValues();
+      if (data.length > 1) {
+        var hdr = data[0].map(String);
+        var rows = data.slice(1).filter(function (r) { return r.join('') !== ''; }).map(function (r) {
+          return DEPOSIT_HEADERS_.map(function (h) { var i = hdr.indexOf(h); return i === -1 ? '' : r[i]; });
+        });
+        if (rows.length) {
+          var start = depositsLastRow_(sh) + 1;
+          sh.getRange(start, DEPOSIT_COL_, rows.length, DEPOSIT_HEADERS_.length).setValues(rows);
+        }
+      }
+      ss.deleteSheet(oldDep);
+    }
+  } finally {
+    lock.releaseLock();
+  }
+}
+// Last row used in the deposits block (1 = header only).
+function depositsLastRow_(sh) {
+  var last = sh.getLastRow();
+  if (last < 2) return 1;
+  var col = sh.getRange(1, DEPOSIT_COL_, last, 1).getValues();
+  for (var i = col.length - 1; i >= 1; i--) if (String(col[i][0]) !== '') return i + 1;
+  return 1;
 }
 
 function getExpenseDeposits_() {
-  var sh = getExpenseDepositsSheet_();
-  var data = sh.getDataRange().getValues();
-  if (data.length < 2) return json_({ ok: true, deposits: [] });
-  var headers = data[0];
+  var sh = getSettingsSheet_();
+  var last = depositsLastRow_(sh);
+  if (last < 2) return json_({ ok: true, deposits: [] });
+  var data = sh.getRange(2, DEPOSIT_COL_, last - 1, DEPOSIT_HEADERS_.length).getValues();
   var deposits = [];
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
+  data.forEach(function (row) {
+    if (String(row[0]) === '') return;
     var obj = {};
-    for (var j = 0; j < headers.length; j++) obj[headers[j]] = row[j];
+    for (var j = 0; j < DEPOSIT_HEADERS_.length; j++) obj[DEPOSIT_HEADERS_[j]] = row[j];
     if (obj.date instanceof Date) obj.date = ymd_(obj.date);
     deposits.push(obj);
-  }
+  });
   return json_({ ok: true, deposits: deposits });
 }
 
 function addExpenseDeposit_(data) {
-  var sh = getExpenseDepositsSheet_();
+  var sh = getSettingsSheet_();
   var uid = Utilities.getUuid();
-  sh.appendRow([uid, data.date, data.amountUSD, data.note || '']);
+  var row = depositsLastRow_(sh) + 1;
+  sh.getRange(row, DEPOSIT_COL_, 1, DEPOSIT_HEADERS_.length).setValues([[uid, data.date, data.amountUSD, data.note || '']]);
   return json_({ ok: true, uid: uid });
 }
 
 function deleteExpenseDeposit_(data) {
-  var sh = getExpenseDepositsSheet_();
-  var values = sh.getDataRange().getValues();
-  var headers = values[0];
-  var uidCol = headers.indexOf('uid');
-  for (var i = 1; i < values.length; i++) {
-    if (String(values[i][uidCol]) === String(data.uid)) {
-      sh.deleteRow(i + 1);
-      return json_({ ok: true });
+  var sh = getSettingsSheet_();
+  var last = depositsLastRow_(sh);
+  if (last >= 2) {
+    var uids = sh.getRange(2, DEPOSIT_COL_, last - 1, 1).getValues();
+    for (var i = 0; i < uids.length; i++) {
+      if (String(uids[i][0]) === String(data.uid)) {
+        // Only the deposit's own cells move up — the settings in A:B stay put.
+        sh.getRange(i + 2, DEPOSIT_COL_, 1, DEPOSIT_HEADERS_.length).deleteCells(SpreadsheetApp.Dimension.ROWS);
+        return json_({ ok: true });
+      }
     }
   }
   return json_({ ok: false, error: 'deposit not found' });
@@ -1625,9 +1693,7 @@ function doGet(e) {
     return json_({ ok: true, expenses: readAllExpenses_() });
   }
   if (action === 'getExpenseRate') {
-    var erSs = SpreadsheetApp.getActiveSpreadsheet();
-    var erSheet = erSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || erSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    var erVal = erSheet.getRange('A1').getValue();
+    var erVal = getSetting_('rate');
     return json_({ ok: true, rate: erVal || 89550 });
   }
   // Faucet timer's flow rate lives in the same "settings" sheet as the
@@ -1636,14 +1702,10 @@ function doGet(e) {
   // Expenses page notes (free text under the stats) — cell D1 of the same
   // shared settings sheet.
   if (action === 'getExpenseNotes') {
-    var enSs = SpreadsheetApp.getActiveSpreadsheet();
-    var enSheet = enSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || enSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    return json_({ ok: true, notes: String(enSheet.getRange('D1').getValue() || '') });
+    return json_({ ok: true, notes: String(getSetting_('notes') || '') });
   }
   if (action === 'getFaucetRate') {
-    var frSs = SpreadsheetApp.getActiveSpreadsheet();
-    var frSheet = frSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || frSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    var frVal = frSheet.getRange('B1').getValue();
+    var frVal = getSetting_('faucet');
     return json_({ ok: true, rate: frVal || 13.32 });
   }
   // Bottle Math (Business > Volume to bottle converter's cost/pricing
@@ -1718,24 +1780,18 @@ function handleAction_(body) {
   if (action === 'deleteExpenseDeposit') return deleteExpenseDeposit_(body);
 
   if (action === 'setExpenseRate') {
-    var srSs = SpreadsheetApp.getActiveSpreadsheet();
-    var srSheet = srSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || srSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    srSheet.getRange('A1').setValue(body.rate);
+    setSetting_('rate', body.rate);
     return json_({ ok: true });
   }
 
   if (action === 'setExpenseNotes') {
-    var snSs = SpreadsheetApp.getActiveSpreadsheet();
-    var snSheet = snSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || snSs.insertSheet(EXPENSES_SETTINGS_SHEET);
     // Stored as plain text so a note starting with "=" isn't read as a formula.
-    snSheet.getRange('D1').setNumberFormat('@').setValue(String(body.notes || ''));
+    setSetting_('notes', String(body.notes || ''), true);
     return json_({ ok: true });
   }
 
   if (action === 'setFaucetRate') {
-    var fsSs = SpreadsheetApp.getActiveSpreadsheet();
-    var fsSheet = fsSs.getSheetByName(EXPENSES_SETTINGS_SHEET) || fsSs.insertSheet(EXPENSES_SETTINGS_SHEET);
-    fsSheet.getRange('B1').setValue(body.rate);
+    setSetting_('faucet', body.rate);
     return json_({ ok: true });
   }
 
