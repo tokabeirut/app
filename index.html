@@ -8239,11 +8239,28 @@ function renameBaseBrewRows() {
   baseBrewRenameDone = true;
   var re = /base brew/i;
   var todo = bottleInventory.filter(function (e) { return re.test(String(e.flavour || '')) || re.test(String(e.notes || '')); });
-  if (!todo.length) return;
   todo.forEach(function (e) {
     e.flavour = String(e.flavour || '').replace(/base brew/gi, 'Sumac');
     e.notes = String(e.notes || '').replace(/base brew/gi, 'Sumac');
   });
+  // The empty-bottle "Atelier" row written with each automatic bottling gets
+  // the same "Auto: bottled BTL-…" note as its "Filled" partner (same date,
+  // size and quantity) instead of "Filled: <flavour>".
+  var used = {};
+  bottleInventory.forEach(function (f) {
+    if (f.stage !== 'filled' || !/^Auto: bottled /.test(String(f.notes || ''))) return;
+    var q = parseFloat(f.qty) || 0;
+    for (var i = 0; i < bottleInventory.length; i++) {
+      var a = bottleInventory[i];
+      if (used[a.id] || a.stage !== 'atelier' || !/^Filled: /.test(String(a.notes || ''))) continue;
+      if (a.date !== f.date || a.size !== f.size || (parseFloat(a.qty) || 0) !== -q) continue;
+      used[a.id] = true;
+      a.notes = f.notes;
+      if (todo.indexOf(a) === -1) todo.push(a);
+      break;
+    }
+  });
+  if (!todo.length) return;
   if (typeof renderBottleInventory === 'function') renderBottleInventory();
   (function next(i) {
     if (i >= todo.length) return;

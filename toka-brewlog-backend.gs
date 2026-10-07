@@ -2172,7 +2172,7 @@ function handleAction_(body) {
     var fqty = parseFloat(f.qty) || 0;
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'atelier', date: fdate, size: f.size || '',
-      qty: -fqty, notes: 'Filled: ' + (f.flavour || ''), auto: true
+      qty: -fqty, notes: (truthy_(f.auto) && f.notes) ? f.notes : ('Filled: ' + (f.flavour || '')), auto: true
     }, fncols, fmap));
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'filled', size: f.size || '', date: fdate, flavour: f.flavour || '',
