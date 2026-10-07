@@ -4636,7 +4636,7 @@ function loadAll(cb) {
   setSyncStatus('saving', 'loading\u2026');
   api({ action: 'getAll' }, function (err, res) {
     if (err || !res || !res.ok || !res.batches) {
-      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadFeedback, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings, loadSales, loadIngredientPurchases], function (pErr) {
+      loadParallel([loadData, loadBottles, loadInfusions, loadReadings, loadProductionTasks, loadChecklist, loadPlannedInfusions, loadPlannedBrews, loadBottleInventory, loadBottleMathSettings, loadSales, loadIngredientPurchases], function (pErr) {
         if (pErr) markDataLoadFailed(); else markDataFresh();
         if (cb) cb();
       });
