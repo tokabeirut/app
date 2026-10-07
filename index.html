@@ -4784,6 +4784,7 @@ function markDataFresh() {
   dataFresh = true;
   refreshPending = false;
   lastLiveLoadAt = Date.now();
+  renameBaseBrewRows();
   setDataState('fresh');
   saveSnapshot();
   // First live load of this visit, or a catch-up refresh after coming back
@@ -6636,7 +6637,7 @@ function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n === 37
 function logBottlingInInventory(shared, qty, ids, cb) {
   qty = parseFloat(qty) || 0;
   if (qty <= 0 || !bottleIsSellSize(shared.volumeMl)) { if (cb) cb(true); return; }
-  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Base brew';
+  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Sumac';
   var fill = {
     size: bottleInvSizeLabel(shared.volumeMl || 375),
     flavour: flavour,
@@ -6678,7 +6679,7 @@ function bivLinkBottlings() {
   var list = bivUnlinkedBottlings(from);
   if (!list.length) { alert('Nothing to add — every bottling since ' + fmtDate(from) + ' is already in the inventory.'); return; }
   var lines = list.map(function (g) {
-    var fl = (g.shared.flavours || []).map(function (f) { return f.name; }).filter(Boolean).join(' ') || 'Base brew';
+    var fl = (g.shared.flavours || []).map(function (f) { return f.name; }).filter(Boolean).join(' ') || 'Sumac';
     return '• ' + fmtDate(g.shared.bottlingDate) + ' — ' + g.qty + ' × ' + bottleInvSizeLabel(g.shared.volumeMl || 375) + ' — ' + fl;
   });
   if (!confirm('This adds ' + list.length + ' automatic line(s) to Filled bottles at atelier:\n\n' + lines.join('\n') + '\n\nGo ahead?')) return;
@@ -8213,7 +8214,7 @@ function bivKpisHtml() {
 // used both for the quick-add forms' <select>s and as the `options` string
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
 var BIV_SIZE_OPTS = 'Small (375ml),Big (750ml)';
-var BIV_FLAVOUR_OPTS = 'Base brew,Cardamom Sumac';
+var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
 var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,consumed:Consumed,other:Other';
 function bivOptionsHtml(optStr) {
   var parts = optStr.split(','), h = '';
@@ -8271,6 +8272,27 @@ function bivStageLabel(stage) {
 }
 // Rank helpers purely for sort order (see bivSortedLog) — not tied to the
 // field names anymore now that size/flavour are separate columns.
+// "Base brew" is now called "Sumac": any inventory row still saying Base
+// brew (flavour, or the "Filled: Base brew" note) is renamed in the sheet
+// once live data is in. Rows already renamed are skipped, so this only
+// does work while old rows exist.
+var baseBrewRenameDone = false;
+function renameBaseBrewRows() {
+  if (baseBrewRenameDone) return;
+  baseBrewRenameDone = true;
+  var re = /base brew/i;
+  var todo = bottleInventory.filter(function (e) { return re.test(String(e.flavour || '')) || re.test(String(e.notes || '')); });
+  if (!todo.length) return;
+  todo.forEach(function (e) {
+    e.flavour = String(e.flavour || '').replace(/base brew/gi, 'Sumac');
+    e.notes = String(e.notes || '').replace(/base brew/gi, 'Sumac');
+  });
+  if (typeof renderBottleInventory === 'function') renderBottleInventory();
+  (function next(i) {
+    if (i >= todo.length) return;
+    apiPost({ action: 'updateBottleInvEntry', entry: JSON.parse(JSON.stringify(todo[i])) }, function () { next(i + 1); });
+  })(0);
+}
 function bivSizeRank(size) {
   if (size === 'Small (375ml)') return 0;
   if (size === 'Big (750ml)') return 1;
@@ -8278,7 +8300,7 @@ function bivSizeRank(size) {
 }
 function bivFlavourRank(flavour) {
   if (flavour === 'Cardamom Sumac') return 0;
-  if (flavour === 'Base brew') return 1;
+  if (flavour === 'Sumac') return 1;
   return 2;
 }
 // Lifecycle-stage rank for sorting: displayed with the most "finished"
@@ -8316,7 +8338,7 @@ function bivRowHtml(e) {
 }
 // Sort: latest date first, then (within date) small above big, then by
 // stage (Consumed above Filled above Atelier above Depot, with Other at
-// the very bottom), then (within filled) Cardamom Sumac above Base brew,
+// the very bottom), then (within filled) Cardamom Sumac above Sumac,
 // then alphabetically by notes.
 function bivSortedLog() {
   var list = bottleInventory.slice();

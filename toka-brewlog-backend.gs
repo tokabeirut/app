@@ -947,7 +947,7 @@ function migrateToDailyOperationsSheet_() {
 /* ---------- bottle inventory (Inventory > Bottle count) ----------
    Two linked pools tracked as one signed ledger: empty bottles by size
    (category = 'Big (750ml)' / 'Small (375ml)') and filled bottles by
-   flavour (category = free text, e.g. 'Base brew', 'Cardamom Sumac').
+   flavour (category = free text, e.g. 'Sumac', 'Cardamom Sumac').
    `kind` tells the two apart; `qty` is signed (+ received/filled,
    - used/broken/opened), so the running stock for any category is just
    the sum of its rows. "Fill bottles" in the UI (see the fillBottles
@@ -1257,18 +1257,18 @@ function seedBottleInventoryHistory_() {
     { stage: 'depot', date: '2026-08-19', size: BIG, qty: -12, notes: 'Brought back by Claude, Elie and Claire' },
     { stage: 'atelier', date: '2026-08-19', size: BIG, qty: 12, notes: 'Brought back by Claude, Elie and Claire' },
     // -- filling (consumes atelier empty small stock, creates filled stock) --
-    { stage: 'atelier', date: today, size: SMALL, qty: -93, notes: 'Filled: Base brew' },
+    { stage: 'atelier', date: today, size: SMALL, qty: -93, notes: 'Filled: Sumac' },
     { stage: 'atelier', date: today, size: SMALL, qty: -103, notes: 'Filled: Cardamom Sumac' },
-    { stage: 'filled', size: SMALL, date: today, flavour: 'Base brew', qty: 93, notes: 'Filled, ready in the fridge' },
+    { stage: 'filled', size: SMALL, date: today, flavour: 'Sumac', qty: 93, notes: 'Filled, ready in the fridge' },
     { stage: 'filled', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
     // -- opened / given away / used (consumed — leaves the "filled at atelier" pool for good) --
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Opened to try' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -1, notes: 'Opened to try' },
     { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Gave to Kevin' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -1, notes: 'Gave to Kevin' },
     { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -4, notes: 'Brought to Mykonos' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -4, notes: 'Brought to Mykonos' },
     { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Base brew', qty: -1, notes: 'Left at the house' },
+    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -1, notes: 'Left at the house' },
     { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
   ];
   for (var i = 0; i < rows.length; i++) {
