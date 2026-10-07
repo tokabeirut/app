@@ -61,10 +61,12 @@
   .header-page-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; font-weight: 400; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-faint); }
 
   /* -- CROSS-PAGE TABS -- */
-  #view-tabs { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0 40px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .view-tab-group { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .view-tab-divider { width: 1px; height: 18px; background: var(--border); margin: 0 6px; -webkit-flex-shrink: 0; flex-shrink: 0; }
+  #view-tabs { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0 40px; display: -webkit-flex; display: flex; -webkit-align-items: stretch; align-items: stretch; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .view-tab-group { display: -webkit-flex; display: flex; -webkit-align-items: stretch; align-items: stretch; -webkit-flex-shrink: 0; flex-shrink: 0; }
+  .view-tab-divider { -webkit-align-self: center; align-self: center; width: 1px; height: 28px; background: var(--border); margin: 0 6px; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .view-tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; padding: 12px 12px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-transition: color .15s, border-color .15s; transition: color .15s, border-color .15s; }
+  /* Two-word names stack onto two lines; one-word names sit centred in the same height. */
+  .view-tab { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; text-align: center; line-height: 1.35; }
   .view-tab:hover { color: var(--ink); }
   .view-tab.active { color: var(--terra); border-bottom-color: var(--terra); }
   .view-tab-icon { margin-right: 5px; }
@@ -1488,25 +1490,25 @@
      without going back to Home first. Grouped to match the Home sections. ===== -->
 <nav id="view-tabs" style="display:none">
   <div class="view-tab-group">
-    <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">First fermentation</button>
+    <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">First<br>fermentation</button>
     <button type="button" class="view-tab" data-view="infusion" onclick="showView('infusion')">Infusion</button>
     <button type="button" class="view-tab" data-view="bottling" onclick="showView('bottling')">Bottling</button>
     <button type="button" class="view-tab" data-view="readings" onclick="showView('readings')">Labo</button>
-    <button type="button" class="view-tab" data-view="faucet" onclick="showView('faucet')">Faucet timer</button>
-    <button type="button" class="view-tab" data-view="bottlecalc" onclick="showView('bottlecalc')">Volume converter</button>
+    <button type="button" class="view-tab" data-view="faucet" onclick="showView('faucet')">Faucet<br>timer</button>
+    <button type="button" class="view-tab" data-view="bottlecalc" onclick="showView('bottlecalc')">Volume<br>converter</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
-    <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily operations</button>
-    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle inventory</button>
-    <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice inventory</button>
+    <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
+    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
+    <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group">
-    <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production timeline</button>
+    <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
     <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
-    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle math</button>
+    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle<br>math</button>
   </div>
 </nav>
 
