@@ -709,7 +709,7 @@
   /* -- PRODUCTION TIMELINE: Now / Next / Later board -- */
   .pt-board-section { padding: 6px 48px 30px; }
   .pt-board-section .content-head { padding: 0; margin-bottom: 12px; }
-  .pt-board { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .pt-board { display: grid; grid-template-columns: repeat(3, minmax(220px, 1fr)); gap: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
   .pt-col { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 10px 10px; min-width: 0; }
   .pt-col-head { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; -webkit-justify-content: space-between; justify-content: space-between; padding: 0 4px 10px; }
   .pt-col-title { font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); }
@@ -733,7 +733,7 @@
   .pt-col-more:hover { color: var(--terra); }
   @media (max-width: 700px) {
     .pt-board-section { padding: 6px 20px 24px; }
-    .pt-board { grid-template-columns: repeat(4, 78vw); }
+    .pt-board { grid-template-columns: repeat(3, 78vw); }
   }
   .pt-field-row { display: -webkit-flex; display: flex; gap: 10px; }
   /* -- SPICE INVENTORY -- */
@@ -10657,31 +10657,27 @@ function ptTaskListHtml(tasks) {
 /* ---- render: Now / Next / Later board ----
    Every open task lands in one column by its (dependency-resolved) best-case
    date: Now = overdue or due within 7 days, Next = the 4 weeks after that,
-   Later = beyond. Done tasks sit in their own column (most recent few shown,
-   the rest behind "show all"). Columns move on their own as dates pass —
+   Later = beyond. Done tasks are left off the board. Columns move on their own as dates pass —
    nothing to drag. A card opens the task; the checkbox marks it done. */
-var PT_NOW_DAYS = 7, PT_NEXT_DAYS = 35, PT_DONE_SHOWN = 5;
-var ptShowAllDone = false;
-function ptToggleAllDone() { ptShowAllDone = !ptShowAllDone; renderProduction(); }
+var PT_NOW_DAYS = 7, PT_NEXT_DAYS = 35;
 function ptBoardHtml(schedule) {
   var today = todayISO();
   var nowEnd = addDaysIso(today, PT_NOW_DAYS), nextEnd = addDaysIso(today, PT_NEXT_DAYS);
   var byId = {};
   for (var bi = 0; bi < productionTasks.length; bi++) byId[productionTasks[bi].id] = productionTasks[bi];
-  var cols = { now: [], next: [], later: [], done: [] };
+  var cols = { now: [], next: [], later: [] };
   // Each card uses the task's own best/worst dates (the ones shown in the
   // list below); a dependency is shown on the card as "after …" instead.
   schedule = schedule.map(function (r) { return { task: r.task, best: { start: r.task.dateBest }, worst: { start: r.task.dateWorst } }; });
   schedule.forEach(function (r) {
     var best = String(r.best.start || '');
-    if (r.task.done) cols.done.push(r);
-    else if (!best || best <= nowEnd) cols.now.push(r);
+    if (r.task.done) return;   // done tasks are left off the board
+    if (!best || best <= nowEnd) cols.now.push(r);
     else if (best <= nextEnd) cols.next.push(r);
     else cols.later.push(r);
   });
   function byBest(a, b) { return String(a.best.start).localeCompare(String(b.best.start)); }
   cols.now.sort(byBest); cols.next.sort(byBest); cols.later.sort(byBest);
-  cols.done.sort(function (a, b) { return byBest(b, a); });
 
   function cardHtml(r) {
     var t = r.task, color = ptCategoryColor(t.category);
@@ -10702,10 +10698,6 @@ function ptBoardHtml(schedule) {
   }
   function colHtml(key, title, sub, list, emptyMsg) {
     var shown = list, more = '';
-    if (key === 'done' && list.length > PT_DONE_SHOWN) {
-      if (!ptShowAllDone) shown = list.slice(0, PT_DONE_SHOWN);
-      more = '<button type="button" class="pt-col-more" onclick="ptToggleAllDone()">' + (ptShowAllDone ? 'show fewer' : 'show all ' + list.length) + '</button>';
-    }
     return '<div class="pt-col pt-col-' + key + '"><div class="pt-col-head"><div><div class="pt-col-title">' + title + '</div><div class="pt-col-sub">' + sub + '</div></div>'
       + '<span class="pt-col-count">' + list.length + '</span></div>'
       + (shown.length ? shown.map(cardHtml).join('') : '<div class="pt-col-empty">' + emptyMsg + '</div>') + more + '</div>';
@@ -10714,7 +10706,6 @@ function ptBoardHtml(schedule) {
     + colHtml('now', 'Now', 'overdue & next 7 days', cols.now, 'Nothing due this week.')
     + colHtml('next', 'Next', 'until ' + ptShortDate(nextEnd), cols.next, 'Nothing in the coming weeks.')
     + colHtml('later', 'Later', 'after ' + ptShortDate(nextEnd), cols.later, 'Nothing planned further out.')
-    + colHtml('done', 'Done', 'most recent first', cols.done, 'Nothing ticked off yet.')
     + '</div></div>';
 }
 
