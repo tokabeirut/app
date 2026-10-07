@@ -2176,7 +2176,7 @@ function handleAction_(body) {
     }, fncols, fmap));
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'filled', size: f.size || '', date: fdate, flavour: f.flavour || '',
-      qty: fqty, notes: f.notes || ''
+      qty: fqty, notes: f.notes || '', auto: truthy_(f.auto)
     }, fncols, fmap));
     return json_({ ok: true });
   }

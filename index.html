@@ -6587,6 +6587,7 @@ function saveBottle() {
         loadBottles();
         return;
       }
+      logBottlingInInventory(shared, list.length, list.map(function (r) { return r.bottleId; }));
       editingBottleUid = null;
       closeBottleDrawer();
       loadBottles();
@@ -6612,10 +6613,37 @@ function saveBottle() {
       alert('Could not save. If this keeps happening, your backend may be an older version \u2014 redeploy the latest toka-brewlog-backend.gs as a new version.');
       return;
     }
+    if (!isEdit) logBottlingInInventory(shared, b.count, [b.bottleId]);
     editingBottleUid = null;
     closeBottleDrawer();
     loadBottles();
     setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
+}
+// New bottles from the Bottling page are also logged in Bottle inventory as
+// an automatic "filled" line (+ the matching empty-at-atelier decrement), so
+// "Filled bottles at atelier" counts them without a manual Fill.
+function bottleInvSizeLabel(vol) {
+  var n = parseFloat(vol);
+  if (n === 375) return 'Small (375ml)';
+  if (n === 750) return 'Big (750ml)';
+  return n ? (n + ' ml') : '';
+}
+function logBottlingInInventory(shared, qty, ids) {
+  qty = parseFloat(qty) || 0;
+  if (qty <= 0) return;
+  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Base brew';
+  var fill = {
+    size: bottleInvSizeLabel(shared.volumeMl || 375),
+    flavour: flavour,
+    qty: qty,
+    date: shared.bottlingDate || todayISO(),
+    notes: 'Auto: bottled ' + ids.filter(Boolean).join(', '),
+    auto: true
+  };
+  apiPost({ action: 'fillBottles', fill: fill }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'inventory not updated'); return; }
+    loadBottleInventory();
   });
 }
 function createBottlesSequentially(list, i, cb) {
