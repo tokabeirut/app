@@ -77,7 +77,7 @@ function renameLegacySheets_() {
   });
 }
 
-var VERSION = '37 (bottle inventory: flag auto-generated counterpart rows)';
+var VERSION = '38 (sheet tabs named after pages; deposits merged into settings)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',

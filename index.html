@@ -372,7 +372,7 @@
   .biv-table tr.biv-auto-row td { font-size: 0.86em; font-style: italic; color: var(--ink-faint); }
   .biv-auto-tag { display: inline-block; font-style: normal; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
-  .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
+  .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; max-width: 520px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
   .biv-form .plan-field-row { margin-bottom: 10px; }
   .biv-form .plan-field-label { -webkit-flex-basis: 90px; flex-basis: 90px; }
   .biv-form-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.8rem; color: var(--ink); margin-bottom: 12px; }
@@ -8080,6 +8080,11 @@ function bivBalances() {
       consumedByFlavourSize[fcat][scat] = (consumedByFlavourSize[fcat][scat] || 0) + Math.abs(q);
     } else if (stage === 'atelier') {
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
+    } else if (stage === 'recycled') {
+      // Bottles we got back and reuse: straight into the empty stock at the
+      // atelier, and counted as stock "received" for the progress bar.
+      atelierEmpty[scat] = (atelierEmpty[scat] || 0) + Math.abs(q);
+      received[scat] = (received[scat] || 0) + Math.abs(q);
     } else if (stage === 'other') {
       // untracked in the headline totals
     } else {
@@ -8180,7 +8185,7 @@ function bivKpisHtml() {
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
 var BIV_SIZE_OPTS = 'Small (375ml),Big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
-var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,consumed:Consumed,other:Other';
+var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,consumed:Consumed,recycled:Recycled,other:Other';
 function bivOptionsHtml(optStr) {
   var parts = optStr.split(','), h = '';
   for (var i = 0; i < parts.length; i++) {
@@ -8191,46 +8196,66 @@ function bivOptionsHtml(optStr) {
 }
 function bivSizeOptionsHtml() { return bivOptionsHtml(BIV_SIZE_OPTS); }
 function bivFlavourOptionsHtml() { return bivOptionsHtml(BIV_FLAVOUR_OPTS); }
+// One form for every kind of movement: the Movement picker decides what the
+// entry does (and whether a flavour is needed), so there's a single place to
+// log anything instead of a separate box per stage.
+var BIV_MOVES = [
+  ['depot', 'Empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
+  ['atelier', 'Empty bottles at atelier (from depot)', 'e.g. brought back by Claire from the depot'],
+  ['filled', 'Filled bottles at atelier', 'optional'],
+  ['consumed', 'Consumed bottles', 'e.g. gave to Kevin'],
+  ['recycled', 'Recycled bottles (back to empty at atelier)', 'e.g. returned by a customer']
+];
 function bivAddFormsHtml() {
   var today = todayISO();
-  var h = '<div class="an-section"><div class="sec-title">Log a bottle movement</div><div class="biv-forms">';
-  h += '<div class="biv-form"><div class="biv-form-title">Empty bottles at depot</div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-recv-date" value="' + today + '" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-recv-size">' + bivSizeOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-recv-qty" placeholder="e.g. 24" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-recv-notes" placeholder="e.g. brought back by Patrick" /></div></div>'
-    + '<button type="button" class="btn-primary" onclick="bivReceiveEmpty()">+ Add</button>'
-    + '</div>';
-  h += '<div class="biv-form"><div class="biv-form-title">Empty bottles at atelier</div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-depot-date" value="' + today + '" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-depot-size">' + bivSizeOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-depot-qty" placeholder="e.g. 196" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-depot-notes" placeholder="e.g. brought back by Claire from Karl’s depot" /></div></div>'
-    + '<button type="button" class="btn-primary" onclick="bivBringFromDepot()">+ Add</button>'
-    + '</div>';
-  h += '<div class="biv-form"><div class="biv-form-title">Filled bottles at atelier</div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-fill-date" value="' + today + '" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-fill-size">' + bivSizeOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-fill-flavour">' + bivFlavourOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-fill-qty" placeholder="e.g. 93" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-fill-notes" placeholder="optional" /></div></div>'
-    + '<button type="button" class="btn-primary" onclick="bivFill()">+ Add</button>'
-    + '</div>';
-  h += '<div class="biv-form"><div class="biv-form-title">Consumed bottles</div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-use-date" value="' + today + '" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-use-size">' + bivSizeOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-use-flavour">' + bivFlavourOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-use-qty" placeholder="e.g. 1" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-use-notes" placeholder="e.g. gave to Kevin" /></div></div>'
-    + '<button type="button" class="btn-primary" onclick="bivUse()">+ Add</button>'
-    + '</div>';
-  h += '</div></div>';
-  return h;
+  var moveOpts = BIV_MOVES.map(function (m) { return '<option value="' + m[0] + '">' + esc(m[1]) + '</option>'; }).join('');
+  return '<div class="an-section"><div class="sec-title">Log a bottle movement</div><div class="biv-forms">'
+    + '<div class="biv-form biv-form-single">'
+    + '<div class="plan-field-row"><label class="plan-field-label">Movement</label><div class="plan-field-input"><select id="biv-move" onchange="bivMoveChanged()">' + moveOpts + '</select></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-mv-date" value="' + today + '" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-mv-size">' + bivSizeOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row" id="biv-mv-flavour-row" style="display:none"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-mv-flavour">' + bivFlavourOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-mv-qty" placeholder="e.g. 24" /></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-mv-notes" placeholder="' + esc(BIV_MOVES[0][2]) + '" /></div></div>'
+    + '<button type="button" class="btn-primary" onclick="bivAddMovement()">+ Add</button>'
+    + '</div></div></div>';
+}
+function bivMoveChanged() {
+  var mv = val('biv-move');
+  var needsFlavour = (mv === 'filled' || mv === 'consumed');
+  document.getElementById('biv-mv-flavour-row').style.display = needsFlavour ? '' : 'none';
+  var m = BIV_MOVES.filter(function (x) { return x[0] === mv; })[0];
+  if (m) document.getElementById('biv-mv-notes').placeholder = m[2];
+}
+function bivAddMovement() {
+  var mv = val('biv-move');
+  var size = val('biv-mv-size');
+  var flavour = val('biv-mv-flavour').trim();
+  var qty = parseFloat(val('biv-mv-qty'));
+  var date = val('biv-mv-date') || todayISO();
+  var notes = val('biv-mv-notes').trim();
+  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
+  var body;
+  if (mv === 'depot') body = { action: 'createBottleInvEntry', entry: { stage: 'depot', date: date, size: size, qty: qty, notes: notes } };
+  // A transfer, not new stock: moves bottles out of the depot pool into the
+  // atelier pool (both rows written together by bringFromDepot).
+  else if (mv === 'atelier') body = { action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes || 'Brought from depot' } };
+  else if (mv === 'filled') body = { action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } };
+  else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } };
+  else body = { action: 'createBottleInvEntry', entry: { stage: 'recycled', size: size, date: date, qty: qty, notes: notes } };
+  setSyncStatus('saving', 'saving…');
+  apiPost(body, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
+    document.getElementById('biv-mv-qty').value = ''; document.getElementById('biv-mv-notes').value = '';
+    setSyncStatus('live', 'connected · google sheets');
+    loadBottleInventory();
+  });
 }
 function bivStageLabel(stage) {
   if (stage === 'atelier') return 'Atelier';
   if (stage === 'filled') return 'Filled';
   if (stage === 'consumed') return 'Consumed';
+  if (stage === 'recycled') return 'Recycled';
   if (stage === 'other') return 'Other';
   return 'Depot';
 }
@@ -8291,6 +8316,7 @@ function bivStageRank(stage) {
   if (stage === 'consumed') return 0;
   if (stage === 'filled') return 1;
   if (stage === 'atelier') return 2;
+  if (stage === 'recycled') return 2;
   if (stage === 'other') return 4;
   return 3; // depot (also the default/legacy fallback)
 }
@@ -8496,72 +8522,6 @@ function renderBottleInventory() {
   var body = document.getElementById('biv-body');
   if (!body) return;
   body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml();
-}
-function bivReceiveEmpty() {
-  var size = val('biv-recv-size');
-  var qty = parseFloat(val('biv-recv-qty'));
-  var date = val('biv-recv-date') || todayISO();
-  var notes = val('biv-recv-notes').trim();
-  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
-  setSyncStatus('saving', 'saving…');
-  // Always logged at the depot — this is the lifetime "total received"
-  // figure, which only grows over time (see bivBalances).
-  apiPost({ action: 'createBottleInvEntry', entry: { stage: 'depot', date: date, size: size, qty: qty, notes: notes } }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
-    document.getElementById('biv-recv-qty').value = ''; document.getElementById('biv-recv-notes').value = '';
-    setSyncStatus('live', 'connected · google sheets');
-    loadBottleInventory();
-  });
-}
-// A transfer, not new stock: moves bottles already counted in "Receive
-// empty bottles" out of the depot pool and into the atelier pool. Uses the
-// atomic bringFromDepot action so the depot-side and atelier-side rows are
-// always written together.
-function bivBringFromDepot() {
-  var size = val('biv-depot-size');
-  var qty = parseFloat(val('biv-depot-qty'));
-  var date = val('biv-depot-date') || todayISO();
-  var notes = val('biv-depot-notes').trim() || 'Brought from depot';
-  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes } }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
-    document.getElementById('biv-depot-qty').value = ''; document.getElementById('biv-depot-notes').value = '';
-    setSyncStatus('live', 'connected · google sheets');
-    loadBottleInventory();
-  });
-}
-function bivFill() {
-  var size = val('biv-fill-size');
-  var flavour = val('biv-fill-flavour').trim();
-  var qty = parseFloat(val('biv-fill-qty'));
-  var date = val('biv-fill-date') || todayISO();
-  var notes = val('biv-fill-notes').trim();
-  if (!flavour) { alert('Enter a flavour.'); return; }
-  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
-    document.getElementById('biv-fill-qty').value = ''; document.getElementById('biv-fill-notes').value = '';
-    setSyncStatus('live', 'connected · google sheets');
-    loadBottleInventory();
-  });
-}
-function bivUse() {
-  var size = val('biv-use-size');
-  var flavour = val('biv-use-flavour').trim();
-  var qty = parseFloat(val('biv-use-qty'));
-  var date = val('biv-use-date') || todayISO();
-  var notes = val('biv-use-notes').trim();
-  if (!flavour) { alert('Enter a flavour.'); return; }
-  if (isNaN(qty) || qty <= 0) { alert('Enter a quantity greater than 0.'); return; }
-  setSyncStatus('saving', 'saving…');
-  apiPost({ action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
-    document.getElementById('biv-use-qty').value = ''; document.getElementById('biv-use-notes').value = '';
-    setSyncStatus('live', 'connected · google sheets');
-    loadBottleInventory();
-  });
 }
 function deleteBottleInvEntry(id) {
   if (!confirm('Delete this entry?')) return;
