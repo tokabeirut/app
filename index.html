@@ -371,6 +371,7 @@
      on the row itself rather than in its border/spacing. */
   .biv-table tr.biv-auto-row td { font-size: 0.86em; font-style: italic; color: var(--ink-faint); }
   .biv-auto-tag { display: inline-block; font-style: normal; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; }
+  .biv-has-tip { cursor: help; text-decoration: underline dotted rgba(30,27,24,0.25); text-underline-offset: 3px; }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
   .biv-form { -webkit-flex: 1 1 260px; flex: 1 1 260px; max-width: 520px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; }
   .biv-form .plan-field-row { margin-bottom: 10px; }
@@ -8052,6 +8053,9 @@ function bivBalances() {
   //   consumed     = lifetime total ever consumed (stage:'consumed').
   //   "Filled bottles at atelier" (current, on-hand) = filledEvents - consumed.
   var received = {}, depot = {}, atelierEmpty = {}, filledEvents = {}, consumed = {};
+  // Parts behind each total, only used for the hover tooltips.
+  var depotIn = {}, depotOut = {}, atelierIn = {}, atelierOut = {}, recycled = {};
+  function add(m, k, v) { m[k] = (m[k] || 0) + v; }
   var filledEventsByFlavour = {}, consumedByFlavour = {};
   // Same two tallies, but keyed by flavour THEN size, so the flavour
   // breakdown can be shown split into the same Small/Big columns as every
@@ -8080,7 +8084,9 @@ function bivBalances() {
       consumedByFlavourSize[fcat][scat] = (consumedByFlavourSize[fcat][scat] || 0) + Math.abs(q);
     } else if (stage === 'atelier') {
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
+      if (q >= 0) add(atelierIn, scat, q); else add(atelierOut, scat, -q);
     } else if (stage === 'recycled') {
+      add(recycled, scat, Math.abs(q));
       // Bottles we got back and reuse: straight into the empty stock at the
       // atelier, and counted as stock "received" for the progress bar.
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + Math.abs(q);
@@ -8090,9 +8096,10 @@ function bivBalances() {
     } else {
       depot[scat] = (depot[scat] || 0) + q;
       if (q > 0) received[scat] = (received[scat] || 0) + q;
+      if (q >= 0) add(depotIn, scat, q); else add(depotOut, scat, -q);
     }
   }
-  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize };
+  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize, depotIn: depotIn, depotOut: depotOut, atelierIn: atelierIn, atelierOut: atelierOut, recycled: recycled };
 }
 function bivSizeList(b) {
   // Known sizes always show first (even at zero), then any extra category
@@ -8115,20 +8122,33 @@ function bivProgressRowHtml(sizes, b) {
     var recv = b.received[s] || 0;
     var filled = b.filledEvents[s] || 0;
     var pct = recv > 0 ? Math.max(0, Math.min(100, Math.round((filled / recv) * 100))) : 0;
+    var ptip = bivTip('Filled so far / all bottles we’ve had', [
+      ['Filled bottles (all time)', filled],
+      ['Received at depot', b.depotIn[s] || 0],
+      ['+ Recycled', b.recycled[s] || 0],
+      ['= All bottles we’ve had', recv]
+    ]);
     h += '<div class="biv-progress-col">'
-      + '<div class="biv-progress-label"><span>' + esc(s) + '</span><span class="biv-progress-pct">' + fmtNum(filled) + '/' + fmtNum(recv) + '</span></div>'
+      + '<div class="biv-progress-label"><span>' + esc(s) + '</span><span class="biv-progress-pct biv-has-tip" data-tiphtml="' + esc(ptip) + '">' + fmtNum(filled) + '/' + fmtNum(recv) + '</span></div>'
       + '<div class="biv-progress-track"><div class="biv-progress-fill" style="width:' + pct + '%"></div></div>'
       + '</div>';
   }
   h += '</div>';
   return h;
 }
-function bivStatRowHtml(label, sizes, map, isHead) {
+// Tooltip HTML: a title line, then "label … number" lines.
+function bivTip(title, lines) {
+  return '<b>' + esc(title) + '</b>' + lines.map(function (l) {
+    return '<div style="display:flex;justify-content:space-between;gap:16px"><span>' + esc(l[0]) + '</span><span>' + fmtNum(l[1]) + '</span></div>';
+  }).join('');
+}
+function bivStatRowHtml(label, sizes, map, isHead, tipFn) {
   var h = '<div class="biv-summary-grid biv-stat-row' + (isHead ? ' biv-stat-head' : '') + '"><div class="biv-stat-label">' + esc(label) + '</div>';
   for (var i = 0; i < sizes.length; i++) {
+    var tip = (!isHead && tipFn) ? tipFn(sizes[i]) : '';
     h += isHead
       ? '<div class="biv-stat-val biv-stat-colhead">' + esc(sizes[i]) + '</div>'
-      : '<div class="biv-stat-val">' + fmtNum((map[sizes[i]] || 0)) + '</div>';
+      : '<div class="biv-stat-val' + (tip ? ' biv-has-tip' : '') + '"' + (tip ? ' data-tiphtml="' + esc(tip) + '"' : '') + '>' + fmtNum((map[sizes[i]] || 0)) + '</div>';
   }
   h += '</div>';
   return h;
@@ -8137,10 +8157,11 @@ function bivStatRowHtml(label, sizes, map, isHead) {
 // land in the same Small/Big columns as every other row), but rendered as
 // an indented, smaller, italic, muted sub-row — used for the flavour
 // breakdown nested under "Filled bottles at atelier".
-function bivStatSubRowHtml(label, sizes, map) {
+function bivStatSubRowHtml(label, sizes, map, tipFn) {
   var h = '<div class="biv-summary-grid biv-stat-subrow"><div class="biv-stat-sublabel">' + esc(label) + '</div>';
   for (var i = 0; i < sizes.length; i++) {
-    h += '<div class="biv-stat-subval">' + fmtNum((map[sizes[i]] || 0)) + '</div>';
+    var tip = tipFn ? tipFn(sizes[i]) : '';
+    h += '<div class="biv-stat-subval' + (tip ? ' biv-has-tip' : '') + '"' + (tip ? ' data-tiphtml="' + esc(tip) + '"' : '') + '>' + fmtNum((map[sizes[i]] || 0)) + '</div>';
   }
   h += '</div>';
   return h;
@@ -8157,9 +8178,18 @@ function bivKpisHtml() {
   h += bivProgressRowHtml(sizes, b);
   h += '<div class="biv-stat-table">';
   h += bivStatRowHtml('', sizes, {}, true);
-  h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot);
-  h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
-  h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet);
+  h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot, false, function (s) {
+    return bivTip('Received at depot − taken to atelier', [
+      ['Received at depot', b.depotIn[s] || 0], ['− Taken to atelier', b.depotOut[s] || 0], ['= Empty at depot', b.depot[s] || 0]]);
+  });
+  h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty, false, function (s) {
+    return bivTip('Brought from depot + recycled − filled', [
+      ['Brought from depot', b.atelierIn[s] || 0], ['+ Recycled', b.recycled[s] || 0], ['− Filled', b.atelierOut[s] || 0], ['= Empty at atelier', b.atelierEmpty[s] || 0]]);
+  });
+  h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet, false, function (s) {
+    return bivTip('Filled − consumed', [
+      ['Filled', b.filledEvents[s] || 0], ['− Consumed', b.consumed[s] || 0], ['= Filled at atelier', filledAtelierNet[s] || 0]]);
+  });
   // Remaining filled stock by flavour (fills minus consumption), split into
   // the same Small/Big columns as every other row so it lines up under
   // "Filled bottles at atelier" — the row it's a breakdown of.
@@ -8173,9 +8203,13 @@ function bivKpisHtml() {
       var sz = sizes[k];
       netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0);
     }
-    h += bivStatSubRowHtml(fl, sizes, netBySize);
+    h += bivStatSubRowHtml(fl, sizes, netBySize, (function (fl, fb, cb, nb) {
+      return function (s) { return bivTip(fl + ': filled − consumed', [['Filled', fb[s] || 0], ['− Consumed', cb[s] || 0], ['= Left', nb[s] || 0]]); };
+    })(fl, filledBySize, consumedBySize, netBySize));
   }
-  h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
+  h += bivStatRowHtml('Consumed bottles', sizes, b.consumed, false, function (s) {
+    return bivTip('All bottles logged as consumed', [['Consumed (all time)', b.consumed[s] || 0]]);
+  });
   h += '</div>';
   h += '</div>';
   return h;
@@ -8201,10 +8235,10 @@ function bivFlavourOptionsHtml() { return bivOptionsHtml(BIV_FLAVOUR_OPTS); }
 // log anything instead of a separate box per stage.
 var BIV_MOVES = [
   ['depot', 'Empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
-  ['atelier', 'Empty bottles at atelier (from depot)', 'e.g. brought back by Claire from the depot'],
+  ['atelier', 'Empty bottles at atelier', 'e.g. brought back by Claire from the depot'],
   ['filled', 'Filled bottles at atelier', 'optional'],
   ['consumed', 'Consumed bottles', 'e.g. gave to Kevin'],
-  ['recycled', 'Recycled bottles (back to empty at atelier)', 'e.g. returned by a customer']
+  ['recycled', 'Recycled bottles', 'e.g. returned by a customer']
 ];
 function bivAddFormsHtml() {
   var today = todayISO();
