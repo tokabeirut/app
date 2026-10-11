@@ -189,6 +189,9 @@
   .rgroup-count { color: var(--ink-faint); font-size: 0.72rem; margin-left: 9px; }
   .num { font-family: 'IBM Plex Mono', monospace; }
   .id-cell { font-family: 'IBM Plex Mono', monospace; color: var(--terra); font-size: 0.8rem; }
+  .f1-branch-note { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-faint); margin-top: 3px; white-space: normal; line-height: 1.3; }
+  .r-inherited td { opacity: 0.55; font-style: italic; }
+  .r-inherited-head td { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); padding: 6px 12px; background: transparent; }
   .muted { color: var(--ink-faint); }
   .notes-cell { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
   /* Bottling table: fixed column widths so unfolding a bottle group (whose
@@ -1774,6 +1777,43 @@
   </div>
   <div id="spices-body"></div>
 </div>
+<div class="drawer-overlay" id="split-overlay" onclick="closeSplitDrawer()"></div>
+<div class="add-drawer" id="split-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-title">Split off a batch</div>
+    <button class="drawer-close" onclick="closeSplitDrawer()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="hint" id="split-from" style="margin-bottom:14px;"></div>
+    <div class="form-group">
+      <label>Split date</label>
+      <input type="date" id="sp-date" onchange="updateSplitPreview()" />
+    </div>
+    <div class="pt-field-row">
+      <div class="form-group">
+        <label>Amount taken (L)</label>
+        <input type="number" id="sp-litres" min="0" step="any" placeholder="e.g. 4" oninput="updateSplitPreview()" />
+      </div>
+      <div class="form-group">
+        <label>New vessel</label>
+        <select id="sp-vessel" onchange="updateSplitPreview()"></select>
+      </div>
+    </div>
+    <div class="hint" id="split-preview"></div>
+    <div class="form-section">
+      <div class="form-section-title">Notes</div>
+      <div class="form-group">
+        <textarea id="sp-notes" placeholder="Why you split it, what you plan to do with it."></textarea>
+      </div>
+    </div>
+    <div class="hint">The new batch keeps the original creation date in its ID, gets the recipe scaled to the litres taken, and shows the original batch&rsquo;s Labo readings up to today.</div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" onclick="closeSplitDrawer()">Cancel</button>
+    <button class="btn-primary" id="split-save-btn" onclick="saveSplit()">Split off</button>
+  </div>
+</div>
+
 <div class="drawer-overlay" id="purchase-overlay" onclick="closePurchaseDrawer()"></div>
 <div class="add-drawer" id="purchase-drawer">
   <div class="drawer-head">
@@ -5214,7 +5254,7 @@ function closeDrawer() {
   document.getElementById('add-drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
 }
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeDrawer(); if (typeof closeSplitDrawer === 'function') closeSplitDrawer(); } });
 
 /* ---- save / delete (Google Sheets) ---- */
 function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7); }
@@ -5223,10 +5263,10 @@ function saveBatch() {
   var date = val('f-date');
   if (!date) { alert('Please set a brewing date.'); return; }
   var isEdit = !!editingUid;
-  var origArchived = false;
+  var origArchived = false, orig = null;
   if (isEdit) {
     for (var k = 0; k < batches.length; k++) {
-      if (String(batches[k].uid) === String(editingUid)) { origArchived = !!batches[k].archived; break; }
+      if (String(batches[k].uid) === String(editingUid)) { orig = batches[k]; origArchived = !!batches[k].archived; break; }
     }
   }
   var b = {
@@ -5245,7 +5285,12 @@ function saveBatch() {
     starter: val('f-starter').trim(),
     scoby: val('f-scoby').trim(),
     notes: val('f-notes').trim(),
-    archived: isEdit ? origArchived : false
+    archived: isEdit ? origArchived : false,
+    // Not in the drawer — carried over so editing never drops them.
+    totalVolume: orig ? orig.totalVolume : '',
+    parentUid: orig ? (orig.parentUid || '') : '',
+    splitDate: orig ? (orig.splitDate || '') : '',
+    splitLitres: orig ? orig.splitLitres : ''
   };
   var btn = document.getElementById('save-btn');
   var origLabel = isEdit ? 'Update batch' : 'Save batch';
@@ -5308,7 +5353,12 @@ function vesselRank(v) { var i = VESSEL_ORDER.indexOf(String(v || '').toUpperCas
 function cmpBatches(a, b) {
   var da = String(a.date || ''), db = String(b.date || '');
   if (da !== db) return da < db ? 1 : -1;              // newer date on top
-  return vesselRank(a.vessel) - vesselRank(b.vessel);  // Tank 1 > Tank 2 > Tank 3 > Jar 1 ... > Jar 8
+  // A split-off branch sorts by its parent's vessel, right after the parent.
+  var pa = a.parentUid ? batchByUid(a.parentUid) : null, pb = b.parentUid ? batchByUid(b.parentUid) : null;
+  var va = vesselRank((pa || a).vessel), vb = vesselRank((pb || b).vessel);
+  if (va !== vb) return va - vb;                       // Tank 1 > Tank 2 > Tank 3 > Jar 1 ... > Jar 8
+  if (!!pa !== !!pb) return pa ? 1 : -1;               // parent before its branches
+  return vesselRank(a.vessel) - vesselRank(b.vessel);
 }
 
 // Compact archive/restore icon (box with a down/up arrow), à la WhatsApp.
@@ -5330,10 +5380,11 @@ function rowHtml(b) {
       + '<button class="icon-btn" title="Restore" onclick="setArchived(\'' + u + '\', false)">' + archiveIconSvg(true) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>'
     : lineageBtn + '<button class="edit-btn" title="Edit" onclick="openEdit(\'' + u + '\')">\u270E</button>'
+      + '<button class="icon-btn" title="Split off into a new vessel" onclick="openSplitDrawer(\'' + u + '\')">' + splitIconSvg() + '</button>'
       + '<button class="icon-btn" title="Archive" onclick="setArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>';
   return '<tr data-uid="' + esc(b.uid) + '">'
-    + cellEd(esc(b.id), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
+    + cellEd(esc(b.id) + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(esc(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
     + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
@@ -5349,6 +5400,117 @@ function rowHtml(b) {
     + cellEd('<div class="clip-inner muted">' + (b.notes ? esc(b.notes) : '\u2014') + '</div>', { type: 'batch', uid: b.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
+}
+
+/* ---- split-off branches ----
+   Part of a batch poured into another vessel before infusing becomes its
+   own First fermentation row (a "branch"), linked to its parent:
+   - its ID keeps the parent's creation date (F1-<parent date>-<new vessel>),
+     the split date is stored separately;
+   - recipe amounts are the parent's, scaled to the litres taken (spice
+     inventory skips branches, so the tea/sugar is never counted twice);
+   - the parent's remaining volume = its volume − everything split off;
+   - in Labo, the branch also shows the parent's readings up to the split. */
+function batchByUid(u) { for (var i = 0; i < batches.length; i++) if (String(batches[i].uid) === String(u)) return batches[i]; return null; }
+function batchTotalL(b) {
+  var t = parseFloat(b.totalVolume);
+  if (!isNaN(t) && t > 0) return t;
+  return (parseFloat(b.hotWater) || 0) + (parseFloat(b.coldWater) || 0) + (parseFloat(b.starter) || 0);
+}
+function batchBranches(b) { return batches.filter(function (x) { return x.parentUid && String(x.parentUid) === String(b.uid); }); }
+function batchRemainingL(b) {
+  return batchTotalL(b) - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0);
+}
+function batchBranchNoteHtml(b) {
+  var lines = [];
+  var p = b.parentUid ? batchByUid(b.parentUid) : null;
+  if (b.parentUid) lines.push('\u21b3 from ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : '') + (b.splitDate ? ' \u00b7 split ' + fmtDate(b.splitDate) : ''));
+  var kids = batchBranches(b);
+  if (kids.length) {
+    lines.push(kids.map(function (k) { return fmtNum(parseFloat(k.splitLitres) || 0) + ' L \u2192 ' + (k.vessel || k.id); }).join(', ')
+      + (batchTotalL(b) > 0 ? ' \u00b7 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L left' : ''));
+  }
+  return lines.map(function (l) { return '<div class="f1-branch-note">' + esc(l) + '</div>'; }).join('');
+}
+function splitIconSvg() {
+  return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="12" r="2"></circle><path d="M6 7v10"></path><path d="M6 9c0 3 4 3 10 3"></path></svg>';
+}
+var splittingUid = null;
+function openSplitDrawer(u) {
+  var b = batchByUid(u);
+  if (!b) return;
+  splittingUid = u;
+  var total = batchTotalL(b), left = batchRemainingL(b);
+  document.getElementById('split-from').textContent = (b.id || b.vessel) + (total > 0 ? ' \u00b7 ' + fmtNum(Math.round(left * 100) / 100) + ' L in the vessel' : '');
+  document.getElementById('sp-date').value = todayISO();
+  document.getElementById('sp-litres').value = '';
+  var sel = document.getElementById('sp-vessel');
+  sel.innerHTML = VESSEL_OPTS.split(',').filter(function (v) { return v !== String(b.vessel || '').toUpperCase(); })
+    .map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('');
+  // Default to the first jar that no active batch is using.
+  var busy = {};
+  batches.forEach(function (x) { if (!x.archived) busy[String(x.vessel || '').toUpperCase()] = true; });
+  var free = [].slice.call(sel.options).map(function (o) { return o.value; }).filter(function (v) { return !busy[v]; });
+  sel.value = free.filter(function (v) { return /^JAR/.test(v); })[0] || free[0] || (sel.options[0] ? sel.options[0].value : '');
+  document.getElementById('sp-notes').value = '';
+  updateSplitPreview();
+  document.getElementById('split-drawer').classList.add('open');
+  document.getElementById('split-overlay').classList.add('open');
+}
+function closeSplitDrawer() {
+  document.getElementById('split-drawer').classList.remove('open');
+  document.getElementById('split-overlay').classList.remove('open');
+}
+function splitChildRecord(p, litres, vessel, splitDate, notes) {
+  var total = batchTotalL(p);
+  var f = total > 0 ? litres / total : 0;
+  function sc(v, dp) { var n = parseFloat(v); if (isNaN(n) || !f) return ''; var m = Math.pow(10, dp); return String(Math.round(n * f * m) / m); }
+  return {
+    uid: uid(),
+    id: 'F1-' + dateCode(p.date) + '-' + vesselCode(vessel),
+    date: p.date, vessel: vessel,
+    sugar: sc(p.sugar, 3), sugarSource: p.sugarSource || '',
+    tea: sc(p.tea, 1), teaType: p.teaType || '', steep: p.steep || '',
+    hotWater: sc(p.hotWater, 2), coldWater: sc(p.coldWater, 2), waterSource: p.waterSource || '',
+    starter: sc(p.starter, 2), scoby: '',
+    notes: notes, archived: false,
+    totalVolume: String(litres),
+    parentUid: p.uid, splitDate: splitDate, splitLitres: String(litres)
+  };
+}
+function updateSplitPreview() {
+  var p = batchByUid(splittingUid), el = document.getElementById('split-preview');
+  if (!p || !el) return;
+  var l = parseFloat(val('sp-litres'));
+  var c = splitChildRecord(p, l > 0 ? l : 0, val('sp-vessel'), val('sp-date'), '');
+  var bits = ['New ID: ' + c.id];
+  if (l > 0 && batchTotalL(p) > 0) {
+    if (c.tea) bits.push('tea ' + c.tea + ' g');
+    if (c.sugar) bits.push('sugar ' + c.sugar + ' kg');
+    bits.push(fmtNum(Math.round((batchRemainingL(p) - l) * 100) / 100) + ' L stays in ' + (p.vessel || p.id));
+  }
+  el.textContent = bits.join(' \u00b7 ');
+}
+function saveSplit() {
+  var p = batchByUid(splittingUid);
+  if (!p) { closeSplitDrawer(); return; }
+  var litres = parseFloat(val('sp-litres'));
+  var vessel = val('sp-vessel');
+  var date = val('sp-date') || todayISO();
+  if (!(litres > 0)) { alert('Enter how many litres you took.'); return; }
+  if (!vessel) { alert('Pick the new vessel.'); return; }
+  var left = batchRemainingL(p);
+  if (batchTotalL(p) > 0 && litres >= left) { alert('That\u2019s more than the ' + fmtNum(Math.round(left * 100) / 100) + ' L left in ' + (p.vessel || p.id) + '.'); return; }
+  var c = splitChildRecord(p, litres, vessel, date, val('sp-notes').trim());
+  var btn = document.getElementById('split-save-btn');
+  btn.disabled = true; btn.textContent = 'saving\u2026';
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: 'create', batch: c }, function (err, res) {
+    btn.disabled = false; btn.textContent = 'Split off';
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. If this keeps happening, redeploy the latest toka-brewlog-backend.gs as a new version.'); return; }
+    closeSplitDrawer();
+    loadData();
+  });
 }
 
 function renderTable() {
@@ -7656,11 +7818,12 @@ function ingredientUsage(name) {
     // match the ingredient name ("Tea CTC Assamica" ↔ tea type "Tea CTC
     // Assamica"; the word "tea" is optional on either side).
     batches.forEach(function (b) {
+      if (b.parentUid) return;   // split-off branch: its tea is already counted on the parent
       if (!teaTypeMatches(name, b.teaType)) return;
       var g = ingNum(b.tea); if (g) out.push({ date: b.date, g: g, where: 'First fermentation' });
     });
   } else if (kind === 'sugar') {
-    batches.forEach(function (b) { var g = ingNum(b.sugar) * 1000; if (g) out.push({ date: b.date, g: g, where: 'First fermentation' }); });
+    batches.forEach(function (b) { if (b.parentUid) return; var g = ingNum(b.sugar) * 1000; if (g) out.push({ date: b.date, g: g, where: 'First fermentation' }); });
     bottles.forEach(function (b) { var g = ingNum(b.sugarG) * (ingNum(b.count) || 1); if (g) out.push({ date: b.bottlingDate, g: g, where: 'Bottling' }); });
   } else if (kind === 'yeast') {
     bottles.forEach(function (b) { var g = ingNum(b.yeastMg) / 1000 * (ingNum(b.count) || 1); if (g) out.push({ date: b.bottlingDate, g: g, where: 'Bottling' }); });
@@ -8766,12 +8929,13 @@ function groupReadings(list) {
   });
   return groups;
 }
-function readingGroupsHtml(list) {
+function readingGroupsHtml(list, vesselMode) {
   // Each table (Vessels / Infusions / Bottles) already only contains its own
   // type, so no need for a redundant vessel/bottle/infusion pill here —
   // except for orphaned readings, which get an "unlinked" badge since their
   // source record is gone and they don't belong to any table by rights.
   var groups = groupReadings(list), out = '';
+  if (vesselMode) groups = addInheritedToGroups(groups, vesselMode === 'archived');
   for (var gi = 0; gi < groups.length; gi++) {
     var s = groups[gi].subject, rs = groups[gi].readings;
     var canGo = !!s.uid && s.type !== 'unknown' && !s.orphaned;
@@ -8785,11 +8949,45 @@ function readingGroupsHtml(list) {
         + (canGo ? ' onclick="' + goFn + '(\'' + esc(s.uid) + '\')"' : '')
       + '>' + esc(s.id || '(unknown)') + '</span>'
       + (s.orphaned ? '<span class="rgroup-tag rgroup-unlinked">unlinked</span>' : '')
-      + '<span class="rgroup-count">' + rs.length + (rs.length === 1 ? ' reading' : ' readings') + '</span>'
+      + '<span class="rgroup-count">' + rs.length + (rs.length === 1 ? ' reading' : ' readings') + (groups[gi].inherited && groups[gi].inherited.length ? ' + ' + groups[gi].inherited.length + ' before the split' : '') + '</span>'
       + '</td></tr>';
     for (var i = 0; i < rs.length; i++) out += readingRowHtml(rs[i]);
+    var inh = groups[gi].inherited || [];
+    if (inh.length) {
+      out += '<tr class="r-inherited-head"><td colspan="6">Before the split \u00b7 from ' + esc(inh[0].inheritedFrom || 'parent batch') + '</td></tr>';
+      for (var ii = 0; ii < inh.length; ii++) out += inheritedReadingRowHtml(inh[ii]);
+    }
   }
   return out;
+}
+// Read-only row for a reading that belongs to the parent batch (edit it there).
+function inheritedReadingRowHtml(r) {
+  function m(v, unit) { return (v === '' || v == null) ? '\u2014' : esc(fmtQty(v, unit)); }
+  return '<tr class="r-inherited" title="Reading on ' + esc(r.inheritedFrom || 'the parent batch') + ', before the split">'
+    + '<td>' + esc(fmtDate(r.date)) + '</td>'
+    + '<td class="num">' + m(r.brix, '%') + '</td>'
+    + '<td class="num">' + m(r.ph, '') + '</td>'
+    + '<td class="num">' + m(r.temp, '\u00b0C') + '</td>'
+    + '<td class="notes-cell"><div class="clip-inner muted">' + (r.notes ? esc(r.notes) : '\u2014') + '</div></td>'
+    + '<td></td></tr>';
+}
+// Adds each branch's inherited readings to its group, and creates a group for
+// a branch that has no readings of its own yet (so its history still shows).
+function addInheritedToGroups(groups, wantArchived) {
+  var have = {};
+  groups.forEach(function (g) {
+    if (g.subject.type !== 'vessel') return;
+    have[String(g.subject.uid)] = true;
+    var b = batchByUid(g.subject.uid);
+    if (b && b.parentUid) g.inherited = inheritedReadingsFor(b).sort(function (x, y) { return String(y.date).localeCompare(String(x.date)); });
+  });
+  batches.forEach(function (b) {
+    if (!b.parentUid || have[String(b.uid)] || !!b.archived !== !!wantArchived) return;
+    var inh = inheritedReadingsFor(b).sort(function (x, y) { return String(y.date).localeCompare(String(x.date)); });
+    if (!inh.length) return;
+    groups.push({ subject: { uid: b.uid, id: b.id, type: 'vessel', archived: !!b.archived, vessel: b.vessel }, readings: [], inherited: inh });
+  });
+  return groups;
 }
 // Archived-readings sections are folded closed by default; state persists
 // per-device across visits (same lsGet/lsSet pattern used for bottle groups).
@@ -8831,11 +9029,12 @@ function renderReadings() {
   }
 
   var vc = document.getElementById('r-vessel-count');
-  if (!vAct.length) {
+  var vHtml = readingGroupsHtml(vAct, 'active');
+  if (!vHtml) {
     if (vtb) vtb.innerHTML = '<tr><td colspan="6" class="empty">No readings on active vessels. Click \u201c+ add reading\u201d to log one.</td></tr>';
     if (vc) vc.textContent = 'No vessel readings.';
   } else {
-    if (vtb) vtb.innerHTML = readingGroupsHtml(vAct);
+    if (vtb) vtb.innerHTML = vHtml;
     if (vc) vc.textContent = vAct.length + (vAct.length === 1 ? ' reading' : ' readings') + ', grouped by vessel & date.';
   }
 
@@ -8866,8 +9065,9 @@ function renderReadings() {
   var vsec = document.getElementById('r-vessel-archived-section');
   var vatb = document.getElementById('r-vessel-archived-tbody');
   var vacountEl = document.getElementById('r-vessel-archived-count');
-  if (vArchived.length) {
-    if (vatb) vatb.innerHTML = readingGroupsHtml(vArchived);
+  var vaHtml = readingGroupsHtml(vArchived, 'archived');
+  if (vaHtml) {
+    if (vatb) vatb.innerHTML = vaHtml;
     if (vacountEl) vacountEl.textContent = vArchived.length + (vArchived.length === 1 ? ' reading' : ' readings') + ' on archived vessels.';
     if (vsec) vsec.style.display = '';
   } else {
@@ -8933,12 +9133,32 @@ function anBatchForReading(r) {
   }
   return null;
 }
-function anReadingsForBatch(b) {
+function anOwnReadingsFor(b) {
   var out = [];
   for (var i = 0; i < readings.length; i++) {
     var r = readings[i];
     if (String(r.batchUid) === String(b.uid) || (r.batchId && String(r.batchId) === String(b.id))) out.push(r);
   }
+  return out;
+}
+// A split-off branch carries on from its parent: the parent's readings up to
+// the split date (and, for a branch of a branch, its parent's too) count as
+// the branch's history. Returned as copies tagged with inheritedFrom.
+function inheritedReadingsFor(b, seen) {
+  if (!b || !b.parentUid) return [];
+  seen = seen || {};
+  if (seen[b.uid]) return [];
+  seen[b.uid] = true;
+  var p = batchByUid(b.parentUid);
+  if (!p) return [];
+  var cut = b.splitDate || '';
+  return anOwnReadingsFor(p).concat(inheritedReadingsFor(p, seen))
+    .filter(function (r) { return !cut || !r.date || String(r.date) <= String(cut); })
+    .map(function (r) { var c = {}; for (var k in r) c[k] = r[k]; if (!c.inheritedFrom) c.inheritedFrom = p.vessel || p.id; return c; });
+}
+function anReadingsForBatch(b) {
+  var out = anOwnReadingsFor(b);
+  if (b && b.parentUid) out = out.concat(inheritedReadingsFor(b));
   out.sort(anDateAsc); return out;
 }
 

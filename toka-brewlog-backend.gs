@@ -77,7 +77,7 @@ function renameLegacySheets_() {
   });
 }
 
-var VERSION = '38 (sheet tabs named after pages; deposits merged into settings)';
+var VERSION = '39 (First fermentation split-off branches)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -85,7 +85,10 @@ var HEADERS = [
   'tea_g', 'tea_type', 'steep',
   'hot_l', 'cold_l', 'water_source',
   'starter_l', 'scoby_g',
-  'notes', 'archived'
+  'notes', 'archived',
+  // Split-off branches: the batch this one was taken from, when, and how
+  // many litres. Empty for normal batches.
+  'parent_f1_pk', 'split_date', 'split_l'
 ];
 
 // Columns that may exist on older sheets and are no longer used.
@@ -304,6 +307,9 @@ function buildRow_(b, ncols, map) {
   set('scoby_g', plain_(b.scoby));             // g
   set('notes', b.notes || '');
   set('archived', b.archived ? 'yes' : '');
+  set('parent_f1_pk', b.parentUid || '');
+  set('split_date', b.splitDate || '');
+  set('split_l', plain_(b.splitLitres));
   return row;
 }
 
@@ -344,7 +350,10 @@ function readAll_() {
       starter: g(r, 'starter_l'),
       scoby: g(r, 'scoby_g'),
       notes: g(r, 'notes'),
-      archived: truthy_(g(r, 'archived'))
+      archived: truthy_(g(r, 'archived')),
+      parentUid: String(g(r, 'parent_f1_pk') || ''),
+      splitDate: ymd_(g(r, 'split_date')),
+      splitLitres: g(r, 'split_l')
     });
   }
   out.sort(sortBatches_);
