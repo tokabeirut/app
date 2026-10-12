@@ -928,12 +928,6 @@
   .spices-inline .flavor-row { margin-bottom: 6px; }
   .spices-inline-actions { display: -webkit-flex; display: flex; gap: 6px; margin-top: 4px; }
   .spices-inline-actions button { font-size: 0.72rem; padding: 5px 10px; }
-  #b-contents-section .unit-suffix { width: 42px; -webkit-justify-content: center; justify-content: center; padding: 0; }
-  /* Volume/Sugar/Yeast's amount box is narrowed by the same width the
-     flavour row reserves for its remove button (20px + 6px gap), so all
-     four unit-suffix boxes (ml / g / mg / g) line up in one column and the
-     rows share the same right-hand stopping point. */
-  #b-contents-section .amt { margin-right: 26px; }
   .source-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; margin-bottom: 8px; }
   .source-row .src-sel { -webkit-flex: 1; flex: 1; min-width: 0; }
   .source-row .src-amt { width: 62px; -webkit-flex-shrink: 0; flex-shrink: 0; }
@@ -1748,8 +1742,8 @@
         <input type="number" id="s-qty" min="0" step="1" placeholder="e.g. 6" oninput="updateSaleTotal()" />
       </div>
       <div class="form-group">
-        <label>Price per bottle</label>
-        <div class="amt"><span class="unit-suffix">$</span><input type="number" id="s-price" min="0" step="0.01" oninput="salePriceEdited = true; updateSaleTotal();" /></div>
+        <label>Price per bottle ($)</label>
+        <input type="number" id="s-price" min="0" step="0.01" oninput="salePriceEdited = true; updateSaleTotal();" />
       </div>
     </div>
     <div class="hint" id="s-price-hint"></div>
@@ -2792,11 +2786,8 @@
     <div class="form-section">
       <div class="form-section-title">Sugar</div>
       <div class="form-group">
-        <label>Sugar</label>
-        <div class="amt">
-          <input type="number" id="f-sugar" min="0" step="0.001" placeholder="e.g. 1.4" />
-          <span class="unit-suffix">kg</span>
-        </div>
+        <label>Sugar (kg)</label>
+        <input type="number" id="f-sugar" min="0" step="0.001" placeholder="e.g. 1.4" />
       </div>
       <div class="form-group">
         <label>Sugar source</label>
@@ -2815,29 +2806,20 @@
         <input type="text" id="f-tea-type" value="Black, CTC Malawi (Satemwa)" data-hist-field="teaType" autocomplete="off" />
       </div>
       <div class="form-group">
-        <label>Steep time</label>
-        <div class="amt">
-          <input type="number" id="f-steep" min="0" step="1" value="5" />
-          <span class="unit-suffix">min</span>
-        </div>
+        <label>Steep time (min)</label>
+        <input type="number" id="f-steep" min="0" step="1" value="5" />
       </div>
     </div>
 
     <div class="form-section">
       <div class="form-section-title">Water</div>
       <div class="form-group">
-        <label>Hot water</label>
-        <div class="amt">
-          <input type="number" id="f-hot" min="0" step="0.001" placeholder="e.g. 20" />
-          <span class="unit-suffix">L</span>
-        </div>
+        <label>Hot water (L)</label>
+        <input type="number" id="f-hot" min="0" step="0.001" placeholder="e.g. 20" />
       </div>
       <div class="form-group">
-        <label>Cold water</label>
-        <div class="amt">
-          <input type="number" id="f-cold" min="0" step="0.001" placeholder="e.g. 60" />
-          <span class="unit-suffix">L</span>
-        </div>
+        <label>Cold water (L)</label>
+        <input type="number" id="f-cold" min="0" step="0.001" placeholder="e.g. 60" />
       </div>
       <div class="form-group">
         <label>Water source</label>
@@ -2848,18 +2830,12 @@
     <div class="form-section">
       <div class="form-section-title">SCOBY</div>
       <div class="form-group">
-        <label>Starter liquid</label>
-        <div class="amt">
-          <input type="number" id="f-starter" min="0" step="0.001" placeholder="e.g. 20" />
-          <span class="unit-suffix">L</span>
-        </div>
+        <label>Starter liquid (L)</label>
+        <input type="number" id="f-starter" min="0" step="0.001" placeholder="e.g. 20" />
       </div>
       <div class="form-group">
-        <label>SCOBY weight</label>
-        <div class="amt">
-          <input type="number" id="f-scoby" min="0" step="1" placeholder="e.g. 500" />
-          <span class="unit-suffix">g</span>
-        </div>
+        <label>SCOBY weight (g)</label>
+        <input type="number" id="f-scoby" min="0" step="1" placeholder="e.g. 500" />
       </div>
     </div>
 
@@ -2896,7 +2872,7 @@
       <div class="hint">Auto: BTL-&lt;date&gt;-&lt;spice initials&gt;-&lt;number&gt; &middot; editable</div>
     </div>
     <div class="form-group">
-      <label>From F1 (source vessels)</label>
+      <label>From F1 (source vessels, L)</label>
       <div id="b-sources"></div>
       <button type="button" class="btn-ghost btn-add-flavour" onclick="addSourceRow()">+ add vessel</button>
       <div class="hint">One or more first-fermentation vessels these bottles came from.</div>
@@ -2907,11 +2883,8 @@
       <div class="hint" id="b-number-hint">A single number, or a list/range (e.g. 32-50 or 48,51) to create independent, individually trackable bottles.</div>
     </div>
     <div class="form-group" id="b-qty-group">
-      <label>Quantity</label>
-      <div class="amt">
-        <input type="number" id="b-qty" min="1" step="1" value="1" />
-        <span class="unit-suffix">bottles</span>
-      </div>
+      <label>Quantity (bottles)</label>
+      <input type="number" id="b-qty" min="1" step="1" value="1" />
       <div class="hint">How many identical bottles in this run. All values below are per single bottle.</div>
     </div>
 
@@ -2934,31 +2907,22 @@
     <div class="form-section" id="b-contents-section">
       <div class="form-section-title">Contents (per bottle)</div>
       <div class="form-group">
-        <label>Bottle volume</label>
-        <div class="amt">
-          <input type="number" id="b-volume" min="0" max="1000" step="1" placeholder="e.g. 375" oninput="onBottleContentInput(); applyInfusedFlavours();" />
-          <span class="unit-suffix">ml</span>
-        </div>
+        <label>Bottle volume (ml)</label>
+        <input type="number" id="b-volume" min="0" max="1000" step="1" placeholder="e.g. 375" oninput="onBottleContentInput(); applyInfusedFlavours();" />
         <div class="hint subval">&nbsp;</div>
       </div>
       <div class="form-group">
-        <label>Sugar</label>
-        <div class="amt">
-          <input type="number" id="b-sugar" min="0" step="any" placeholder="e.g. 5" oninput="onBottleContentInput()" />
-          <span class="unit-suffix">g</span>
-        </div>
+        <label>Sugar (g)</label>
+        <input type="number" id="b-sugar" min="0" step="any" placeholder="e.g. 5" oninput="onBottleContentInput()" />
         <div class="hint subval" id="b-sugar-per">&nbsp;</div>
       </div>
       <div class="form-group">
-        <label>Yeast</label>
-        <div class="amt">
-          <input type="number" id="b-yeast" min="0" step="any" placeholder="e.g. 100" oninput="onBottleContentInput()" />
-          <span class="unit-suffix">mg</span>
-        </div>
+        <label>Yeast (mg)</label>
+        <input type="number" id="b-yeast" min="0" step="any" placeholder="e.g. 100" oninput="onBottleContentInput()" />
         <div class="hint subval" id="b-yeast-per">&nbsp;</div>
       </div>
       <div class="form-group">
-        <label>Spices</label>
+        <label>Spices (g)</label>
         <div id="b-flavours"></div>
         <button type="button" class="btn-ghost btn-add-flavour" onclick="addFlavorRow()">+ add spice</button>
         <div class="hint" id="b-flavour-hint">&nbsp;</div>
@@ -3044,7 +3008,7 @@
       <div class="hint">Auto: INF-&lt;date&gt;-&lt;vessel&gt; &middot; editable</div>
     </div>
     <div class="form-group">
-      <label>Source vessel</label>
+      <label>Source vessel (L)</label>
       <div id="i-sources"></div>
       <button type="button" class="btn-ghost btn-add-flavour" onclick="addInfSourceRow()">+ add vessel</button>
       <div class="hint">One or more first-fermentation vessels this infusion came from.</div>
@@ -3055,11 +3019,8 @@
       <input type="text" id="i-vessel" placeholder="e.g. Bowl, demijohn" oninput="onInfusionFieldInput()" style="margin-top:6px; display:none;" data-hist-field="vessel" autocomplete="off" />
     </div>
     <div class="form-group">
-      <label>Infusion volume</label>
-      <div class="amt">
-        <input type="number" id="i-volume" min="0" step="any" placeholder="e.g. 5" oninput="onInfusionFieldInput()" />
-        <span class="unit-suffix">L</span>
-      </div>
+      <label>Infusion volume (L)</label>
+      <input type="number" id="i-volume" min="0" step="any" placeholder="e.g. 5" oninput="onInfusionFieldInput()" />
     </div>
 
     <div class="form-section">
@@ -3071,7 +3032,7 @@
     </div>
 
     <div class="form-section">
-      <div class="form-section-title">Spices</div>
+      <div class="form-section-title">Spices (g)</div>
       <div class="form-group">
         <div id="i-flavours"></div>
         <button type="button" class="btn-ghost btn-add-flavour" onclick="addInfFlavorRow()">+ add spice</button>
@@ -3113,22 +3074,16 @@
     <div class="form-section">
       <div class="form-section-title">Measurements</div>
       <div class="form-group">
-        <label>Brix</label>
-        <div class="amt">
-          <input type="number" id="r-brix" min="0" step="0.1" placeholder="e.g. 6.5" />
-          <span class="unit-suffix">%</span>
-        </div>
+        <label>Brix (%)</label>
+        <input type="number" id="r-brix" min="0" step="0.1" placeholder="e.g. 6.5" />
       </div>
       <div class="form-group">
         <label>pH</label>
         <input type="number" id="r-ph" min="0" max="14" step="0.01" placeholder="e.g. 3.20" />
       </div>
       <div class="form-group">
-        <label>Temperature</label>
-        <div class="amt">
-          <input type="number" id="r-temp" step="0.1" placeholder="e.g. 22" />
-          <span class="unit-suffix">&deg;C</span>
-        </div>
+        <label>Temperature (&deg;C)</label>
+        <input type="number" id="r-temp" step="0.1" placeholder="e.g. 22" />
       </div>
     </div>
     <div class="form-section">
@@ -5621,7 +5576,7 @@ function onInfusionFieldInput() { maybeAutoInfusionId(); }
 /* ---- source rows (F1 vessels/barrels only — parallel to bottling's b-sources) ---- */
 function infSourceRowHtml(selectedUid, amount) {
   return '<div class="source-row"><select class="isrc-sel" onchange="onInfusionFieldInput()">' + f1OptionsHtml(selectedUid) + '</select>'
-    + '<input type="number" class="isrc-amt" min="0" step="any" placeholder="L" value="' + esc(amount == null ? '' : amount) + '" oninput="onInfusionFieldInput()" /><span class="unit-suffix">L</span>'
+    + '<input type="number" class="isrc-amt" min="0" step="any" placeholder="L" value="' + esc(amount == null ? '' : amount) + '" oninput="onInfusionFieldInput()" />'
     + '<button type="button" class="src-rm" onclick="removeInfSourceRow(this)" title="Remove">&times;</button></div>';
 }
 function setInfSourceRows(entries) {
@@ -5645,7 +5600,7 @@ function refreshInfSourceAmtVisibility() {
   var rows = c.querySelectorAll('.source-row');
   var show = rows.length > 1;
   for (var i = 0; i < rows.length; i++) {
-    var amt = rows[i].querySelector('.isrc-amt'), suf = rows[i].querySelector('.unit-suffix');
+    var amt = rows[i].querySelector('.isrc-amt'), suf = null;
     if (amt) { amt.style.display = show ? '' : 'none'; if (!show) amt.value = ''; }
     if (suf) suf.style.display = show ? '' : 'none';
   }
@@ -5679,7 +5634,6 @@ function infFlavorRowHtml(name, grams) {
   return '<div class="flavor-row">'
     + '<input type="text" class="fl-name" placeholder="spice" value="' + esc(name || '') + '" data-hist-field="spiceName" autocomplete="off" />'
     + '<input type="number" class="fl-g" min="0" step="any" placeholder="e.g. 2" value="' + esc(grams == null ? '' : grams) + '" />'
-    + '<span class="unit-suffix">g</span>'
     + '<button type="button" class="fl-rm" onclick="removeInfFlavorRow(this)" title="Remove">&times;</button>'
     + '</div>';
 }
@@ -6023,7 +5977,7 @@ function bottleSourceOptionsHtml(selectedUid) {
 }
 function sourceRowHtml(selectedUid, amount) {
   return '<div class="source-row"><select class="src-sel" onchange="onBottleDateInput(); applyInfusedFlavours();">' + bottleSourceOptionsHtml(selectedUid) + '</select>'
-    + '<input type="number" class="src-amt" min="0" step="any" placeholder="L" value="' + esc(amount == null ? '' : amount) + '" oninput="refreshBottleHints()" /><span class="unit-suffix">L</span>'
+    + '<input type="number" class="src-amt" min="0" step="any" placeholder="L" value="' + esc(amount == null ? '' : amount) + '" oninput="refreshBottleHints()" />'
     + '<button type="button" class="src-rm" onclick="removeSourceRow(this)" title="Remove">&times;</button></div>';
 }
 function setSourceRows(entries) {
@@ -6192,7 +6146,6 @@ function flavorRowHtml(name, grams, auto, autoIdx) {
   return '<div class="flavor-row"' + autoAttr + '>'
     + '<input type="text" class="fl-name" placeholder="spice"' + tip + ' value="' + esc(name || '') + '" oninput="' + onInput + '" data-hist-field="spiceName" autocomplete="off" />'
     + '<input type="number" class="fl-g" min="0" step="any" placeholder="e.g. 2"' + tip + ' value="' + esc(grams == null ? '' : grams) + '" oninput="' + onInput + '" />'
-    + '<span class="unit-suffix">g</span>'
     + '<button type="button" class="fl-rm" onclick="removeFlavorRow(this)" title="Remove">&times;</button>'
     + '</div>';
 }
@@ -7122,7 +7075,7 @@ function startSpicesInline(td, type, uidv, field, rec) {
   if (!list.length) list = [{ name: '', g: '' }];
   function rowHtml(name, g) {
     return '<div class="flavor-row"><input type="text" class="fl-name" placeholder="spice" value="' + esc(name || '') + '" data-hist-field="spiceName" autocomplete="off" />'
-      + '<input type="number" class="fl-g" min="0" step="any" placeholder="e.g. 2" value="' + esc(g == null ? '' : g) + '" /><span class="unit-suffix">g</span>'
+      + '<input type="number" class="fl-g" min="0" step="any" placeholder="g" value="' + esc(g == null ? '' : g) + '" />'
       + '<button type="button" class="fl-rm" title="Remove">&times;</button></div>';
   }
   var rowsHtml = '';
@@ -9945,7 +9898,6 @@ function planFlavorRowHtml(pid, idx, name, grams) {
   return '<div class="flavor-row">'
     + '<input type="text" class="fl-name" placeholder="spice" value="' + esc(name || '') + '" data-hist-field="spiceName" autocomplete="off" onchange="setPlanInfFlavor(\'' + pid + '\', ' + idx + ', \'name\', this.value)" />'
     + '<input type="number" class="fl-g" min="0" step="any" placeholder="e.g. 2" value="' + esc(grams == null ? '' : grams) + '" onchange="setPlanInfFlavor(\'' + pid + '\', ' + idx + ', \'g\', this.value)" />'
-    + '<span class="unit-suffix">g</span>'
     + '<button type="button" class="fl-rm" onclick="removePlanInfFlavor(\'' + pid + '\', ' + idx + ')" title="Remove">&times;</button>'
     + '</div>';
 }
@@ -10188,7 +10140,7 @@ function planInfBoxHtml(p) {
   h += '<div class="plan-field-row"><label class="plan-field-label">First fermentation source</label>'
      + '<div class="plan-field-input"><select onchange="setPlanInfField(\'' + pid + '\', \'sourceF1Uid\', this.value)">' + planInfF1OptionsHtml(p.sourceF1Uid) + '</select></div></div>';
   h += '<div class="plan-field-row"><label class="plan-field-label">Infusion vessel</label><div class="plan-field-input" id="planinf-vessel-wrap-' + pid + '">' + planInfVesselFieldHtml(pid, p.vessel) + '</div></div>';
-  h += '<div class="plan-field-row"><label class="plan-field-label">Spices</label><div class="plan-field-input"><div id="planinf-flavours-' + pid + '">' + planFlavorRowsHtml(pid, p.flavours) + '</div>'
+  h += '<div class="plan-field-row"><label class="plan-field-label">Spices (g)</label><div class="plan-field-input"><div id="planinf-flavours-' + pid + '">' + planFlavorRowsHtml(pid, p.flavours) + '</div>'
      + '<button type="button" class="btn-ghost btn-add-flavour" onclick="addPlanInfFlavor(\'' + pid + '\')">+ add spice</button></div></div>';
   h += '<div class="plan-form-actions"><button type="button" class="btn-primary" onclick="savePlannedInfusionCard(\'' + pid + '\')">Save</button>'
      + '<button type="button" class="btn-ghost" onclick="cancelPlannedInfusionCard(\'' + pid + '\')">Cancel</button></div>';
