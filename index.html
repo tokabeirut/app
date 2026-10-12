@@ -1609,7 +1609,7 @@
             <th>Sugar</th><th>Sugar source</th>
             <th>Tea</th><th>Tea type</th><th>Steep</th>
             <th>Hot water</th><th>Cold water</th><th>Water source</th>
-            <th>Starter</th><th>SCOBY</th><th>Notes</th><th></th>
+            <th>SCOBY</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody id="f1-tbody"></tbody>
@@ -1631,7 +1631,7 @@
               <th>Sugar</th><th>Sugar source</th>
               <th>Tea</th><th>Tea type</th><th>Steep</th>
               <th>Hot water</th><th>Cold water</th><th>Water source</th>
-              <th>Starter</th><th>SCOBY</th><th>Notes</th><th></th>
+              <th>SCOBY</th><th>Notes</th><th></th>
             </tr>
           </thead>
           <tbody id="f1-archived-tbody"></tbody>
@@ -2830,12 +2830,8 @@
     <div class="form-section">
       <div class="form-section-title">SCOBY</div>
       <div class="form-group">
-        <label>Starter liquid (L)</label>
+        <label>SCOBY (L)</label>
         <input type="number" id="f-starter" min="0" step="0.001" placeholder="e.g. 20" />
-      </div>
-      <div class="form-group">
-        <label>SCOBY weight (g)</label>
-        <input type="number" id="f-scoby" min="0" step="1" placeholder="e.g. 500" />
       </div>
     </div>
 
@@ -5188,7 +5184,6 @@ function openEdit(u) {
   document.getElementById('f-cold').value = (b.coldWater != null ? b.coldWater : '');
   document.getElementById('f-water-src').value = b.waterSource || '';
   document.getElementById('f-starter').value = (b.starter != null ? b.starter : '');
-  document.getElementById('f-scoby').value = (b.scoby != null ? b.scoby : '');
   document.getElementById('f-notes').value = b.notes || '';
   document.getElementById('add-drawer').classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
@@ -5206,7 +5201,6 @@ function resetForm() {
   document.getElementById('f-cold').value = '';
   document.getElementById('f-water-src').value = 'Filter';
   document.getElementById('f-starter').value = '';
-  document.getElementById('f-scoby').value = '';
   document.getElementById('f-notes').value = '';
   maybeAutoId();
 }
@@ -5243,7 +5237,6 @@ function saveBatch() {
     coldWater: val('f-cold').trim(),
     waterSource: val('f-water-src').trim(),
     starter: val('f-starter').trim(),
-    scoby: val('f-scoby').trim(),
     notes: val('f-notes').trim(),
     archived: isEdit ? origArchived : false,
     // Not in the drawer — carried over so editing never drops them.
@@ -5356,7 +5349,6 @@ function rowHtml(b) {
     + cellEd(fmtQty(b.coldWater, 'L'), { type: 'batch', uid: b.uid, field: 'coldWater', input: 'number', cls: 'num' })
     + cellEd(ellip(b.waterSource, 88), { type: 'batch', uid: b.uid, field: 'waterSource', input: 'text' })
     + cellEd(fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
-    + cellEd(fmtQty(b.scoby, 'g'), { type: 'batch', uid: b.uid, field: 'scoby', input: 'number', cls: 'num' })
     + cellEd('<div class="clip-inner muted">' + (b.notes ? esc(b.notes) : '\u2014') + '</div>', { type: 'batch', uid: b.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
@@ -5432,7 +5424,7 @@ function splitChildRecord(p, litres, vessel, splitDate, notes) {
     sugar: sc(p.sugar, 3), sugarSource: p.sugarSource || '',
     tea: sc(p.tea, 1), teaType: p.teaType || '', steep: p.steep || '',
     hotWater: sc(p.hotWater, 2), coldWater: sc(p.coldWater, 2), waterSource: p.waterSource || '',
-    starter: sc(p.starter, 2), scoby: '',
+    starter: sc(p.starter, 2),
     notes: notes, archived: false,
     totalVolume: String(litres),
     parentUid: p.uid, splitDate: splitDate, splitLitres: String(litres)
@@ -5484,7 +5476,7 @@ function renderTable() {
   // active table (order is already newest-first from the backend)
   var countEl = document.getElementById('f1-count');
   if (!active.length) {
-    tb.innerHTML = '<tr><td colspan="15" class="empty">No active batches. Click \u201c+ add new batch\u201d to start.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="14" class="empty">No active batches. Click \u201c+ add new batch\u201d to start.</td></tr>';
     if (countEl) countEl.textContent = 'No active batches.';
   } else {
     var rows = '';
@@ -9642,7 +9634,7 @@ function recipePanelHtml() {
   var h = '<div class="plan-card recipe-box' + (open ? '' : ' collapsed') + '" id="recipebox">';
   h += '<div class="brew-body"><div class="plan-src" style="margin-bottom:10px;">Recipe ratios, per litre · used for every brew plan below.</div><div class="recipe-grid">';
   h += field('Hot water', 'hotPct', '% of total', '1');
-  h += field('Starter liquid', 'starterPct', '% of total', '1');
+  h += field('SCOBY', 'starterPct', '% of total', '1');
   h += field('Tea', 'teaPerL', 'g / L', '0.5');
   h += field('Sugar', 'sugarPerL', 'g / L', '1');
   h += field('Steep time', 'steep', 'min', '1');
@@ -9807,7 +9799,7 @@ function brewBoxHtml(p) {
      + ' tea for ' + c.steep + ' min and take it out. Add ' + rn(fmtQty(c.sugarPerBoil / 1000, 'kg'))
      + ' sugar. Stir and transfer into the barrel.</li>';
   h += '<li>Top up with ' + rn(fmtQty(round1(c.coldPerBoil), '') + ' L') + ' cold water.</li>';
-  h += '<li>Add the SCOBY and ' + rn(fmtQty(round1(c.starter), '')) + ' L starter liquid once the temperature has dropped to 26 \u00b0C, either the next day or by replacing some of the top-up water by ice.</li>';
+  h += '<li>Add ' + rn(fmtQty(round1(c.starter), '')) + ' L of SCOBY once the temperature has dropped to 26 \u00b0C, either the next day or by replacing some of the top-up water by ice.</li>';
   h += '</ul>';
 
   h += '<table class="need-tbl"><thead><tr><th>What I need</th><th class="col-amt">Amount</th><th>Notes</th></tr></thead><tbody>';
@@ -9815,7 +9807,7 @@ function brewBoxHtml(p) {
   h += planRow(p, 'tea', 'Tea', Math.round(c.teaTotal) + ' g');
   h += planRow(p, 'sugar', 'Sugar', fmtQty(c.sugarTotal / 1000, 'kg'));
   h += planRow(p, 'cold', 'Cold water', fmtQty(round1(c.cold), 'L'));
-  h += planRow(p, 'starter', 'Starter liquid', fmtQty(round1(c.starter), 'L'));
+  h += planRow(p, 'starter', 'SCOBY', fmtQty(round1(c.starter), 'L'));
   h += '</tbody></table>';
 
   h += '<div class="plan-form-actions"><button type="button" class="btn-primary" onclick="savePlannedBrewCard(\'' + pid + '\')">Save</button>'
@@ -10925,8 +10917,7 @@ function batchFullTipHtml(b) {
   rows += row('Total volume', (b.totalVolume !== '' && b.totalVolume != null) ? esc(fmtQty(b.totalVolume, 'L')) : '');
   rows += row('Hot water', (b.hotWater !== '' && b.hotWater != null) ? esc(fmtQty(b.hotWater, 'L')) : '');
   rows += row('Cold water', (b.coldWater !== '' && b.coldWater != null) ? esc(fmtQty(b.coldWater, 'L')) : '');
-  rows += row('Starter', (b.starter !== '' && b.starter != null) ? esc(fmtQty(b.starter, 'L')) : '');
-  rows += row('SCOBY', (b.scoby !== '' && b.scoby != null) ? esc(fmtQty(b.scoby, 'g')) : '');
+  rows += row('SCOBY', (b.starter !== '' && b.starter != null) ? esc(fmtQty(b.starter, 'L')) : '');
   var sugarV = (b.sugar !== '' && b.sugar != null) ? (fmtQty(b.sugar, 'kg') + (b.sugarSource ? ' · ' + b.sugarSource : '')) : '';
   rows += row('Sugar', sugarV ? esc(sugarV) : '');
   var teaV = (b.tea !== '' && b.tea != null) ? (fmtQty(b.tea, 'g') + (b.teaType ? ' (' + b.teaType + ')' : '') + (b.steep ? ' · ' + fmtSteep(b.steep) : '')) : '';
