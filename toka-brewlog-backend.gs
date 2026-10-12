@@ -77,14 +77,14 @@ function renameLegacySheets_() {
   });
 }
 
-var VERSION = '40 (SCOBY weight column removed)';
+var VERSION = '40 (SCOBY weight column removed; starter_l renamed scoby_l)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
   'sugar_kg', 'sugar_source',
   'tea_g', 'tea_type', 'steep',
   'hot_l', 'cold_l', 'water_source',
-  'starter_l',
+  'scoby_l',
   'notes', 'archived',
   // Split-off branches: the batch this one was taken from, when, and how
   // many litres. Empty for normal batches.
@@ -92,7 +92,7 @@ var HEADERS = [
 ];
 
 // Columns that may exist on older sheets and are no longer used.
-var LEGACY_COLUMNS = ['created_at', 'scoby_g'];   // scoby_g: SCOBY weight no longer tracked (only the SCOBY liquid, starter_l)
+var LEGACY_COLUMNS = ['created_at', 'scoby_g'];   // scoby_g: SCOBY weight no longer tracked (only the SCOBY liquid, scoby_l)
 
 // Unit columns to convert-then-drop: [value, unit, smallUnit].
 // Values tagged with smallUnit are divided by 1000 (g→kg, ml→L).
@@ -109,6 +109,7 @@ var RENAME_MIGRATIONS = [
   ['hot_value', 'hot_l'],
   ['cold_value', 'cold_l'],
   ['starter_value', 'starter_l'],
+  ['starter_l', 'scoby_l'],
   ['scoby_value', 'scoby_g'],
   ['uid', 'batch_pk'],
   ['id', 'batch_id'],
@@ -303,7 +304,7 @@ function buildRow_(b, ncols, map) {
   set('hot_l', plain_(b.hotWater));            // L
   set('cold_l', plain_(b.coldWater));          // L
   set('water_source', b.waterSource || '');
-  set('starter_l', plain_(b.starter));         // L
+  set('scoby_l', plain_(b.starter));           // L (SCOBY liquid)
   set('notes', b.notes || '');
   set('archived', b.archived ? 'yes' : '');
   set('parent_f1_pk', b.parentUid || '');
@@ -346,7 +347,7 @@ function readAll_() {
       hotWater: g(r, 'hot_l'),
       coldWater: g(r, 'cold_l'),
       waterSource: g(r, 'water_source'),
-      starter: g(r, 'starter_l'),
+      starter: g(r, 'scoby_l'),
       notes: g(r, 'notes'),
       archived: truthy_(g(r, 'archived')),
       parentUid: String(g(r, 'parent_f1_pk') || ''),
