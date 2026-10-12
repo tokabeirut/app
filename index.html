@@ -62,8 +62,13 @@
 
   /* -- CROSS-PAGE TABS -- */
   #view-tabs { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 0 40px; display: -webkit-flex; display: flex; -webkit-align-items: stretch; align-items: stretch; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .view-tab-group { display: -webkit-flex; display: flex; -webkit-align-items: stretch; align-items: stretch; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .view-tab-divider { -webkit-align-self: center; align-self: center; width: 1px; height: 28px; background: var(--border); margin: 0 10px; -webkit-flex-shrink: 0; flex-shrink: 0; }
+  /* Groups grow in proportion to how many tabs they hold (flex-grow set inline
+     from the tab count), and each tab grows evenly inside its group — so the
+     strip fills the full width with equal spacing. On a narrow screen nothing
+     shrinks below its text, and the strip scrolls sideways as before. */
+  .view-tab-group { display: -webkit-flex; display: flex; -webkit-align-items: stretch; align-items: stretch; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-flex-basis: auto; flex-basis: auto; }
+  .view-tab-group > .view-tab { -webkit-flex: 1 0 auto; flex: 1 0 auto; }
+  .view-tab-divider { -webkit-align-self: center; align-self: center; width: 1px; height: 34px; background: rgba(30,27,24,0.28); margin: 0 12px; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .view-tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; padding: 12px 18px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-transition: color .15s, border-color .15s; transition: color .15s, border-color .15s; }
   /* Two-word names stack onto two lines; one-word names sit centred in the same height. */
   .view-tab { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; text-align: center; line-height: 1.35; }
@@ -1494,7 +1499,7 @@
      shown on every other page so you can jump straight to another page
      without going back to Home first. Grouped to match the Home sections. ===== -->
 <nav id="view-tabs" style="display:none">
-  <div class="view-tab-group">
+  <div class="view-tab-group" style="-webkit-flex-grow:6;flex-grow:6">
     <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">First<br>fermentation</button>
     <button type="button" class="view-tab" data-view="infusion" onclick="showView('infusion')">Infusion</button>
     <button type="button" class="view-tab" data-view="bottling" onclick="showView('bottling')">Bottling</button>
@@ -1503,14 +1508,14 @@
     <button type="button" class="view-tab" data-view="bottlecalc" onclick="showView('bottlecalc')">Volume<br>converter</button>
   </div>
   <div class="view-tab-divider"></div>
-  <div class="view-tab-group">
+  <div class="view-tab-group" style="-webkit-flex-grow:4;flex-grow:4">
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
     <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
     <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
   </div>
   <div class="view-tab-divider"></div>
-  <div class="view-tab-group">
+  <div class="view-tab-group" style="-webkit-flex-grow:3;flex-grow:3">
     <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
     <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
     <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle<br>math</button>
