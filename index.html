@@ -9340,13 +9340,15 @@ function setF1Days(v) {
   if (!isNaN(v) && v > 0) lsSet('toka_f1_days', String(v));
   renderToday();
 }
+// Default is 5 days. Stored under a new key so any old saved value (the
+// previous 3-day default) on a device doesn't override it.
 function getF2Days() {
-  var v = parseInt(lsGet('toka_f2_days'), 10);
-  return (!isNaN(v) && v > 0) ? v : 3;
+  var v = parseInt(lsGet('toka_f2_days_v2'), 10);
+  return (!isNaN(v) && v > 0) ? v : 5;
 }
 function setF2Days(v) {
   v = parseInt(v, 10);
-  if (!isNaN(v) && v > 0) lsSet('toka_f2_days', String(v));
+  if (!isNaN(v) && v > 0) lsSet('toka_f2_days_v2', String(v));
   renderToday();
 }
 // Elapsed-day threshold (0-indexed) at which a carbonating bottle is
