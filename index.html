@@ -1864,8 +1864,12 @@
     </div>
     <div class="hint" style="margin-top:-6px;margin-bottom:12px;">Add the country code (+961&hellip;) so the WhatsApp button works.</div>
     <div class="form-group">
-      <label>Address</label>
-      <textarea id="c-address" placeholder="Used on the invoice"></textarea>
+      <label>Street, building, apartment, floor</label>
+      <input type="text" id="c-address" placeholder="e.g. Badaro street, Hayek building, 2nd floor" />
+    </div>
+    <div class="form-group">
+      <label>Neighbourhood, city</label>
+      <input type="text" id="c-area" placeholder="e.g. Badaro, Beirut" />
     </div>
     <div class="form-group">
       <label>Reorder every (days)</label>
@@ -8086,7 +8090,8 @@ var SALES_PERIODS = [
 ];
 var INVOICE_FIELDS = [
   ['businessName', 'Business name', 'text', 'e.g. toka'],
-  ['address', 'Address', 'textarea', 'Street, building, city'],
+  ['address', 'Street, building, apartment, floor', 'text', 'e.g. Salah Labaki street, Freiha building, ground floor'],
+  ['area', 'Neighbourhood, city', 'text', 'e.g. Rmeil, Beirut'],
   ['phone', 'Phone', 'text', '+961 …'],
   ['email', 'Email', 'text', 'hello@…'],
   ['taxId', 'Registration / tax no.', 'text', 'optional'],
@@ -8323,7 +8328,7 @@ function crmCustomersHtml() {
       + cellEd(esc(c.type || 'B2C'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
       + cellEd(esc(c.phone ? fmtPhone(c.phone) : '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
-      + cellEd('<div class="clip-inner muted">' + esc(c.address || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', input: 'textarea', cls: 'notes-cell' })
+      + cellEd('<div class="clip-inner muted">' + esc([c.address, c.area].filter(Boolean).join(' · ') || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', cls: 'notes-cell' })
       + '<td class="mono">' + ins.n + '</td>'
       + '<td class="mono">' + fmtNum(ins.bottles) + '</td>'
       + '<td class="mono' + (ins.unpaid > 0 ? ' crm-unpaid-val' : '') + '"' + (ins.unpaid > 0 ? ' title="' + saleMoney(ins.unpaid) + ' still unpaid"' : '') + '>' + saleMoney(ins.spent) + '</td>'
@@ -8466,7 +8471,7 @@ function saveOrder() {
   if (!lines.some(function (l) { return l.qty > 0; })) { alert('Add at least one line with a quantity.'); return; }
   var c = customerByName(name), newCustomer = null;   // matches a name or an alias
   if (!c) {
-    newCustomer = { id: crmId('cus'), name: name, alias: '', type: val('o-channel'), contact: '', phone: '', email: '', address: '', reorderDays: '', notes: '', created: date };
+    newCustomer = { id: crmId('cus'), name: name, alias: '', type: val('o-channel'), contact: '', phone: '', email: '', address: '', area: '', reorderDays: '', notes: '', created: date };
     customers.push(newCustomer);
     c = newCustomer;
   }
@@ -8530,6 +8535,7 @@ function openCustomerDrawer(id) {
   document.getElementById('c-phone').value = c ? (c.phone || '') : '';
   document.getElementById('c-email').value = c ? (c.email || '') : '';
   document.getElementById('c-address').value = c ? (c.address || '') : '';
+  document.getElementById('c-area').value = c ? (c.area || '') : '';
   document.getElementById('c-reorder').value = c ? (c.reorderDays || '') : '';
   document.getElementById('c-notes').value = c ? (c.notes || '') : '';
   document.getElementById('c-history').innerHTML = c ? customerHistoryHtml(c) : '';
@@ -8570,7 +8576,7 @@ function saveCustomer() {
   var prev = editingCustomerId ? findCustomer(editingCustomerId) : null;
   var c = {
     id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-contact').trim(),
-    phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(),
+    phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(), area: val('c-area').trim(),
     reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO()
   };
   if (prev) customers = customers.map(function (x) { return String(x.id) === String(c.id) ? c : x; });
@@ -8665,10 +8671,10 @@ function invoiceHtml(o) {
     + '<div class="title"><div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '</div>'
     + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div></div>'
     + '<div class="rule"></div>'
-    + '<div class="parties"><div><div class="lbl">Issued by</div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
+    + '<div class="parties"><div><div class="lbl">Issued by</div><div class="who">' + esc(s.businessName || 'toka') + '</div>' + (s.address ? '<div>' + nl(s.address) + '</div>' : '') + (s.area ? '<div>' + esc(s.area) + '</div>' : '')
     + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
     + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>'
-    + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
+    + (c.address ? '<div>' + nl(c.address) + '</div>' : '') + (c.area ? '<div>' + esc(c.area) + '</div>' : '') + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
     + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '') + '</div></div>'
     + '<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table>'
     + '<div class="tot"><div><span>Subtotal</span><span>' + money(sub) + '</span></div>'

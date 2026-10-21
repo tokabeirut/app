@@ -995,7 +995,7 @@ var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
 var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes'];
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price'];
-var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'reorder_days', 'notes', 'created_date'];
+var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
 
 // Creates the tab with its headers, or adds any missing header columns.
 function ensureSheet_(name, headers) {
@@ -1116,7 +1116,7 @@ function readAllCustomers_() {
     return {
       id: String(c.customer_pk), name: String(c.name || ''), alias: String(c.alias || ''), type: String(c.type || 'B2C'),
       contact: String(c.contact_person || ''), phone: String(c.phone || ''), email: String(c.email || ''),
-      address: String(c.address || ''), reorderDays: c.reorder_days === '' ? '' : c.reorder_days,
+      address: String(c.address || ''), area: String(c.area || ''), reorderDays: c.reorder_days === '' ? '' : c.reorder_days,
       notes: String(c.notes || ''), created: ymd_(c.created_date)
     };
   });
@@ -1140,7 +1140,7 @@ function readAllOrders_() {
 }
 function customerRow_(c) {
   return { customer_pk: c.id, name: c.name || '', alias: c.alias || '', type: c.type || 'B2C', contact_person: c.contact || '', phone: c.phone || '',
-    email: c.email || '', address: c.address || '', reorder_days: (c.reorderDays == null ? '' : c.reorderDays), notes: c.notes || '',
+    email: c.email || '', address: c.address || '', area: c.area || '', reorder_days: (c.reorderDays == null ? '' : c.reorderDays), notes: c.notes || '',
     created_date: c.created || ymd_(new Date()) };
 }
 function upsertCustomer_(c) {
@@ -1623,13 +1623,14 @@ function migrateSettingsSheet_(sh) {
 // below the three settings above. Labels are written the first time.
 var INVOICE_FIELDS_ = [
   ['businessName', 'Invoice: business name'],
-  ['address', 'Invoice: address'],
+  ['address', 'Invoice: street, building, apartment, floor'],
   ['phone', 'Invoice: phone'],
   ['email', 'Invoice: email'],
   ['taxId', 'Invoice: registration / tax no.'],
   ['payment', 'Invoice: payment details'],
   ['footer', 'Invoice: footer note'],
-  ['taxRate', 'Invoice: tax rate (%)']
+  ['taxRate', 'Invoice: tax rate (%)'],
+  ['area', 'Invoice: neighbourhood, city']   // added later, so it sits last to keep the rows above in place
 ];
 var INVOICE_FIRST_ROW_ = 5;
 function getInvoiceSettings_() {
