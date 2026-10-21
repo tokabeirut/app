@@ -811,19 +811,19 @@
   .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 90px; }
   .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 170px; }
   .sales-table th:nth-child(9), .sales-table td:nth-child(9) { width: 100px; }
-  .crm-table { table-layout: fixed; min-width: 1500px; width: 1500px; width: max(1500px, 100%); }
+  .crm-table { table-layout: fixed; min-width: 1340px; width: 1340px; width: max(1340px, 100%); }
   .crm-table th:nth-child(1), .crm-table td:nth-child(1) { width: 170px; white-space: normal; }
-  .crm-table th:nth-child(2), .crm-table td:nth-child(2) { width: 120px; white-space: normal; }
+  .crm-table th:nth-child(2), .crm-table td:nth-child(2) { width: 150px; white-space: normal; }
   .crm-table th:nth-child(3), .crm-table td:nth-child(3) { width: 70px; }
-  .crm-table th:nth-child(4), .crm-table td:nth-child(4) { width: 140px; }
+  .crm-table th:nth-child(4), .crm-table td:nth-child(4) { width: 150px; }
   .crm-table th:nth-child(5), .crm-table td:nth-child(5) { width: 170px; }
   .crm-table th:nth-child(6), .crm-table td:nth-child(6) { width: 170px; }
   .crm-table th:nth-child(7), .crm-table td:nth-child(7) { width: 70px; }
   .crm-table th:nth-child(8), .crm-table td:nth-child(8) { width: 75px; }
   .crm-table th:nth-child(9), .crm-table td:nth-child(9) { width: 110px; }
-  .crm-table th:nth-child(10), .crm-table td:nth-child(10) { width: 110px; }
-  .crm-table th:nth-child(11), .crm-table td:nth-child(11) { width: 170px; }
-  .crm-table th:nth-child(12), .crm-table td:nth-child(12) { width: 200px; }
+  .crm-table th:nth-child(10), .crm-table td:nth-child(10) { width: 120px; }
+  .crm-table th:nth-child(11), .crm-table td:nth-child(11) { width: 210px; }
+  #view-sales td.crm-unpaid-val { color: var(--terra); }
   .crm-alias { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-faint); background: var(--surface2); border-radius: 99px; padding: 1px 7px; margin-left: 4px; white-space: nowrap; }
   #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'IBM Plex Mono', monospace; }
   #view-sales .crm-table td.row-actions { white-space: nowrap; text-align: right; }
@@ -8289,7 +8289,7 @@ function crmCustomersHtml() {
   var rows = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
     .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || customerDisplayName(a.c).localeCompare(customerDisplayName(b.c)); });
   var h = '<div class="table-wrap"><div class="table-scroll"><table class="crm-table"><thead><tr>'
-    + '<th>Alias</th><th>Official name</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th>Next order (est.)</th><th></th>'
+    + '<th>Alias</th><th>Official name</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th></th>'
     + '</tr></thead><tbody>';
   rows.forEach(function (x) {
     var c = x.c, ins = x.ins;
@@ -8302,9 +8302,8 @@ function crmCustomersHtml() {
       + cellEd('<div class="clip-inner muted">' + esc(c.address || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', input: 'textarea', cls: 'notes-cell' })
       + '<td class="mono">' + ins.n + '</td>'
       + '<td class="mono">' + fmtNum(ins.bottles) + '</td>'
-      + '<td class="mono">' + saleMoney(ins.spent) + (ins.unpaid > 0 ? '<div class="crm-unpaid">' + saleMoney(ins.unpaid) + ' unpaid</div>' : '') + '</td>'
+      + '<td class="mono' + (ins.unpaid > 0 ? ' crm-unpaid-val' : '') + '"' + (ins.unpaid > 0 ? ' title="' + saleMoney(ins.unpaid) + ' still unpaid"' : '') + '>' + saleMoney(ins.spent) + '</td>'
       + '<td class="mono">' + (ins.last ? esc(fmtDate(ins.last)) : '—') + '</td>'
-      + '<td>' + crmStatusChip(ins) + '</td>'
       + '<td class="row-actions">' + crmContactButtons(c)
       + '<button type="button" class="icon-btn" title="Details & order history" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">&#9998;</button>'
       + '<button type="button" class="icon-btn" title="Delete customer" onclick="deleteCustomer(\'' + esc(c.id) + '\')">&times;</button></td>'
