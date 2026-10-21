@@ -8667,8 +8667,9 @@ function invoiceHtml(o) {
     + '<div class="rule"></div>'
     + '<div class="parties"><div><div class="lbl">Issued by</div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
     + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
-    + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>' + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '')
-    + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '') + '</div></div>'
+    + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>'
+    + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
+    + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '') + '</div></div>'
     + '<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table>'
     + '<div class="tot"><div><span>Subtotal</span><span>' + money(sub) + '</span></div>'
     + (rate ? '<div><span>Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
