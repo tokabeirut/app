@@ -77,7 +77,7 @@ function renameLegacySheets_() {
   });
 }
 
-var VERSION = '40 (SCOBY weight column removed; starter_l renamed scoby_l)';
+var VERSION = '41 (Sales CRM: customers, multi-line orders, invoices, sold stock)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -975,81 +975,234 @@ function readAllIngredientPurchases_() {
   return out;
 }
 
-/* ---------- sales (Business > Sales) ----------
-   One row per sale: who bought what, how many, at what price, and whether
-   it's been paid. Totals are worked out on the page from qty x unit_price,
-   so they're never out of step with the row. */
+/* ---------- Sales CRM (Business > Sales) ----------
+   Three tabs:
+   - "Customers":   one row per buyer (name, B2B/B2C, contact, phone, email,
+                    address, optional "reorder every N days", notes).
+   - "Sales":       one row per order (= one invoice): invoice number, date,
+                    customer, channel, paid, whether it takes bottles out of
+                    Bottle inventory, notes.
+   - "Sales lines": one row per product on an order (size, flavour, qty,
+                    price per bottle), linked to its order by order_fk.
+   Saving an order replaces its lines and its automatic "sold" rows in
+   Bottle inventory in one go, so the three never drift apart. Invoice
+   numbers are TOKA-<year>-<NNN>, restarting at 001 each year.
+   The previous one-row-per-sale "Sales" tab is converted automatically the
+   first time (kept as "Sales (old)" as a backup). */
 var SALES_SHEET = 'Sales';
-var SALES_HEADERS = ['sale_pk', 'sale_date', 'customer', 'channel', 'size', 'flavour', 'qty', 'unit_price', 'paid', 'notes'];
+var SALES_OLD_SHEET = 'Sales (old)';
+var SALES_LINES_SHEET = 'Sales lines';
+var CUSTOMERS_SHEET = 'Customers';
+var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes'];
+var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price'];
+var CUSTOMER_HEADERS = ['customer_pk', 'name', 'type', 'contact_person', 'phone', 'email', 'address', 'reorder_days', 'notes', 'created_date'];
 
-function getSalesSheet_() {
+// Creates the tab with its headers, or adds any missing header columns.
+function ensureSheet_(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(SALES_SHEET);
-  if (!sh) sh = ss.insertSheet(SALES_SHEET);
+  var sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
   if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), SALES_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, SALES_HEADERS.length).setValues([SALES_HEADERS]);
+    sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.setFrozenRows(1);
     return sh;
   }
   var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < SALES_HEADERS.length; h++) {
-    if (hdr.indexOf(SALES_HEADERS[h]) === -1) {
+  for (var h = 0; h < headers.length; h++) {
+    if (hdr.indexOf(headers[h]) === -1) {
       var c = sh.getLastColumn() + 1;
       sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(SALES_HEADERS[h]);
-      hdr.push(SALES_HEADERS[h]);
+      sh.getRange(1, c).setValue(headers[h]);
+      hdr.push(headers[h]);
     }
   }
   return sh;
 }
-
-function buildSaleRow_(e, ncols, map) {
-  e = e || {};
+function rowFrom_(obj, ncols, map) {
   var row = [];
   for (var i = 0; i < ncols; i++) row.push('');
-  function set(name, value) { if (map[name] != null) row[map[name]] = value; }
-  set('sale_pk', e.id || '');
-  set('sale_date', e.date || '');
-  set('customer', e.customer || '');
-  set('channel', e.channel || '');
-  set('size', e.size || '');
-  set('flavour', e.flavour || '');
-  set('qty', (e.qty == null ? '' : e.qty));
-  set('unit_price', (e.unitPrice == null ? '' : e.unitPrice));
-  set('paid', e.paid ? 'yes' : '');
-  set('notes', e.notes || '');
+  for (var k in obj) if (map[k] != null) row[map[k]] = (obj[k] == null ? '' : obj[k]);
   return row;
 }
-
-function readAllSales_() {
-  var sh = getSalesSheet_();
+function readSheetObjects_(sh, keyCol) {
   var map = headerMap_(sh);
   var data = sh.getDataRange().getValues();
-  function g(r, name) { var i = map[name]; return (i == null) ? '' : r[i]; }
   var out = [];
   for (var i = 1; i < data.length; i++) {
-    var r = data[i];
-    if (!g(r, 'sale_pk')) continue;
-    out.push({
-      id: String(g(r, 'sale_pk')),
-      date: ymd_(g(r, 'sale_date')),
-      customer: String(g(r, 'customer') || ''),
-      channel: String(g(r, 'channel') || ''),
-      size: String(g(r, 'size') || ''),
-      flavour: String(g(r, 'flavour') || ''),
-      qty: g(r, 'qty'),
-      unitPrice: g(r, 'unit_price'),
-      paid: truthy_(g(r, 'paid')),
-      notes: String(g(r, 'notes') || '')
-    });
+    var r = data[i], o = {};
+    for (var k in map) o[k] = r[map[k]];
+    if (!o[keyCol]) continue;
+    out.push(o);
   }
   return out;
+}
+// Deletes every data row whose column `col` equals `val` (bottom-up).
+function deleteRowsWhere_(sh, col, val) {
+  var map = headerMap_(sh);
+  if (map[col] == null || sh.getLastRow() < 2) return 0;
+  var vals = sh.getRange(2, map[col] + 1, sh.getLastRow() - 1, 1).getValues();
+  var n = 0;
+  for (var i = vals.length - 1; i >= 0; i--) {
+    if (String(vals[i][0]) === String(val)) { sh.deleteRow(i + 2); n++; }
+  }
+  return n;
+}
+
+function getCustomersSheet_() { return ensureSheet_(CUSTOMERS_SHEET, CUSTOMER_HEADERS); }
+function getSalesLinesSheet_() { return ensureSheet_(SALES_LINES_SHEET, LINE_HEADERS); }
+function getOrdersSheet_() {
+  migrateOldSales_();
+  return ensureSheet_(SALES_SHEET, ORDER_HEADERS);
+}
+
+function nextInvoiceNo_(dateIso, existing) {
+  var year = String(dateIso || ymd_(new Date())).slice(0, 4);
+  var max = 0, re = new RegExp('^TOKA-' + year + '-(\\d+)$');
+  existing.forEach(function (no) { var m = re.exec(String(no || '')); if (m) max = Math.max(max, parseInt(m[1], 10)); });
+  var n = String(max + 1);
+  while (n.length < 3) n = '0' + n;
+  return 'TOKA-' + year + '-' + n;
+}
+
+// Old layout: "Sales" with sale_pk/customer/size/... one row per sale.
+function migrateOldSales_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var old = ss.getSheetByName(SALES_SHEET);
+  if (!old || old.getLastColumn() === 0) return;
+  var hdr = old.getRange(1, 1, 1, old.getLastColumn()).getValues()[0];
+  if (hdr.indexOf('sale_pk') === -1 || hdr.indexOf('order_pk') !== -1) return;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    old = ss.getSheetByName(SALES_SHEET);
+    hdr = old.getRange(1, 1, 1, old.getLastColumn()).getValues()[0];
+    if (hdr.indexOf('sale_pk') === -1) return;   // another request already did it
+    var rows = readSheetObjects_(old, 'sale_pk');
+    old.setName(SALES_OLD_SHEET);
+    var osh = ensureSheet_(SALES_SHEET, ORDER_HEADERS), lsh = getSalesLinesSheet_(), csh = getCustomersSheet_();
+    var omap = headerMap_(osh), lmap = headerMap_(lsh), cmap = headerMap_(csh);
+    var custByName = {};
+    readSheetObjects_(csh, 'customer_pk').forEach(function (c) { custByName[String(c.name).trim().toLowerCase()] = c.customer_pk; });
+    rows.sort(function (a, b) { return String(ymd_(a.sale_date)).localeCompare(String(ymd_(b.sale_date))); });
+    var invoices = [], oRows = [], lRows = [], cRows = [];
+    rows.forEach(function (r) {
+      var name = String(r.customer || '').trim();
+      var key = name.toLowerCase(), cid = '';
+      if (name) {
+        cid = custByName[key];
+        if (!cid) {
+          cid = Utilities.getUuid(); custByName[key] = cid;
+          cRows.push(rowFrom_({ customer_pk: cid, name: name, type: r.channel || 'B2C', created_date: ymd_(r.sale_date) }, csh.getLastColumn(), cmap));
+        }
+      }
+      var date = ymd_(r.sale_date);
+      var inv = nextInvoiceNo_(date, invoices); invoices.push(inv);
+      var oid = String(r.sale_pk);
+      oRows.push(rowFrom_({ order_pk: oid, invoice_no: inv, order_date: date, customer_fk: cid, customer_name: name, channel: r.channel || 'B2C',
+        paid: truthy_(r.paid) ? 'yes' : '', deduct_stock: '', notes: r.notes || '' }, osh.getLastColumn(), omap));
+      lRows.push(rowFrom_({ line_pk: Utilities.getUuid(), order_fk: oid, size: r.size || '', flavour: r.flavour || '', qty: r.qty, unit_price: r.unit_price }, lsh.getLastColumn(), lmap));
+    });
+    if (cRows.length) csh.getRange(csh.getLastRow() + 1, 1, cRows.length, cRows[0].length).setValues(cRows);
+    if (oRows.length) osh.getRange(osh.getLastRow() + 1, 1, oRows.length, oRows[0].length).setValues(oRows);
+    if (lRows.length) lsh.getRange(lsh.getLastRow() + 1, 1, lRows.length, lRows[0].length).setValues(lRows);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function readAllCustomers_() {
+  return readSheetObjects_(getCustomersSheet_(), 'customer_pk').map(function (c) {
+    return {
+      id: String(c.customer_pk), name: String(c.name || ''), type: String(c.type || 'B2C'),
+      contact: String(c.contact_person || ''), phone: String(c.phone || ''), email: String(c.email || ''),
+      address: String(c.address || ''), reorderDays: c.reorder_days === '' ? '' : c.reorder_days,
+      notes: String(c.notes || ''), created: ymd_(c.created_date)
+    };
+  });
+}
+function readAllOrders_() {
+  var osh = getOrdersSheet_();
+  var lines = {};
+  readSheetObjects_(getSalesLinesSheet_(), 'line_pk').forEach(function (l) {
+    var k = String(l.order_fk);
+    (lines[k] = lines[k] || []).push({ id: String(l.line_pk), size: String(l.size || ''), flavour: String(l.flavour || ''), qty: l.qty, unitPrice: l.unit_price });
+  });
+  return readSheetObjects_(osh, 'order_pk').map(function (o) {
+    return {
+      id: String(o.order_pk), invoiceNo: String(o.invoice_no || ''), date: ymd_(o.order_date),
+      customerId: String(o.customer_fk || ''), customerName: String(o.customer_name || ''),
+      channel: String(o.channel || 'B2C'), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
+      deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''),
+      lines: lines[String(o.order_pk)] || []
+    };
+  });
+}
+function customerRow_(c) {
+  return { customer_pk: c.id, name: c.name || '', type: c.type || 'B2C', contact_person: c.contact || '', phone: c.phone || '',
+    email: c.email || '', address: c.address || '', reorder_days: (c.reorderDays == null ? '' : c.reorderDays), notes: c.notes || '',
+    created_date: c.created || ymd_(new Date()) };
+}
+function upsertCustomer_(c) {
+  var sh = getCustomersSheet_(), map = headerMap_(sh), n = sh.getLastColumn();
+  var row = rowFrom_(customerRow_(c), n, map);
+  var r = findRowByKey_(sh, map, 'customer_pk', c.id);
+  if (r === -1) sh.appendRow(row); else sh.getRange(r, 1, 1, n).setValues([row]);
+}
+function invSizeLabel_(size) {
+  var s = String(size);
+  if (s === '375') return 'Small (375ml)';
+  if (s === '750') return 'Big (750ml)';
+  return s ? s + ' ml' : '';
+}
+// Saves an order + its lines + its "sold" inventory rows, all replaced together.
+function saveOrder_(o, customer) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (customer && customer.id) upsertCustomer_(customer);
+    var osh = getOrdersSheet_(), omap = headerMap_(osh), on = osh.getLastColumn();
+    if (!o.id) o.id = Utilities.getUuid();
+    if (!o.invoiceNo) {
+      var existing = readSheetObjects_(osh, 'order_pk').map(function (x) { return x.invoice_no; });
+      o.invoiceNo = nextInvoiceNo_(o.date, existing);
+    }
+    var orow = rowFrom_({ order_pk: o.id, invoice_no: o.invoiceNo, order_date: o.date || '', customer_fk: o.customerId || '',
+      customer_name: o.customerName || '', channel: o.channel || 'B2C', paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
+      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '' }, on, omap);
+    var r = findRowByKey_(osh, omap, 'order_pk', o.id);
+    if (r === -1) osh.appendRow(orow); else osh.getRange(r, 1, 1, on).setValues([orow]);
+
+    var lsh = getSalesLinesSheet_(), lmap = headerMap_(lsh), ln = lsh.getLastColumn();
+    deleteRowsWhere_(lsh, 'order_fk', o.id);
+    var lrows = (o.lines || []).map(function (l) {
+      return rowFrom_({ line_pk: l.id || Utilities.getUuid(), order_fk: o.id, size: l.size || '', flavour: l.flavour || '', qty: l.qty, unit_price: l.unitPrice }, ln, lmap);
+    });
+    if (lrows.length) lsh.getRange(lsh.getLastRow() + 1, 1, lrows.length, ln).setValues(lrows);
+
+    var ish = getBottleInvSheet_(), imap = headerMap_(ish), inN = ish.getLastColumn();
+    deleteRowsWhere_(ish, 'order_fk', o.id);
+    if (o.deductStock) {
+      var irows = (o.lines || []).filter(function (l) { return parseFloat(l.qty) > 0; }).map(function (l) {
+        return buildBottleInvRow_({ id: Utilities.getUuid(), stage: 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
+          qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'Sold: ' + o.invoiceNo + (o.customerName ? ' · ' + o.customerName : ''), auto: true, orderId: o.id }, inN, imap);
+      });
+      if (irows.length) ish.getRange(ish.getLastRow() + 1, 1, irows.length, inN).setValues(irows);
+    }
+    return { id: o.id, invoiceNo: o.invoiceNo };
+  } finally {
+    lock.releaseLock();
+  }
+}
+function deleteOrder_(id) {
+  deleteRowsWhere_(getOrdersSheet_(), 'order_pk', id);
+  deleteRowsWhere_(getSalesLinesSheet_(), 'order_fk', id);
+  deleteRowsWhere_(getBottleInvSheet_(), 'order_fk', id);
 }
 
 var BOTTLE_INV_SHEET = 'Bottle inventory';
 
-var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto'];
+var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto', 'order_fk'];   // order_fk: the Sales order an automatic 'sold' row belongs to
 
 function getBottleInvSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1135,6 +1288,7 @@ function buildBottleInvRow_(e, ncols, map) {
   set('qty', (e.qty == null ? '' : e.qty));
   set('notes', e.notes || '');
   set('auto', e.auto ? 'yes' : '');
+  set('order_fk', e.orderId || '');
   return row;
 }
 
@@ -1155,7 +1309,8 @@ function readAllBottleInv_() {
       flavour: g(r, 'flavour'),
       qty: g(r, 'qty'),
       notes: g(r, 'notes'),
-      auto: truthy_(g(r, 'auto'))
+      auto: truthy_(g(r, 'auto')),
+      orderId: String(g(r, 'order_fk') || '')
     });
   }
   return out;
@@ -1464,6 +1619,35 @@ function migrateSettingsSheet_(sh) {
     lock.releaseLock();
   }
 }
+// Invoice details (Sales > invoice PDF): one labelled row each in A:B,
+// below the three settings above. Labels are written the first time.
+var INVOICE_FIELDS_ = [
+  ['businessName', 'Invoice: business name'],
+  ['address', 'Invoice: address'],
+  ['phone', 'Invoice: phone'],
+  ['email', 'Invoice: email'],
+  ['taxId', 'Invoice: registration / tax no.'],
+  ['payment', 'Invoice: payment details'],
+  ['footer', 'Invoice: footer note'],
+  ['taxRate', 'Invoice: tax rate (%)']
+];
+var INVOICE_FIRST_ROW_ = 5;
+function getInvoiceSettings_() {
+  var sh = getSettingsSheet_();
+  var vals = sh.getRange(INVOICE_FIRST_ROW_, 1, INVOICE_FIELDS_.length, 2).getValues();
+  var out = {};
+  INVOICE_FIELDS_.forEach(function (f, i) { out[f[0]] = (vals[i][1] == null ? '' : String(vals[i][1])); });
+  return out;
+}
+function setInvoiceSettings_(obj) {
+  var sh = getSettingsSheet_();
+  var rows = INVOICE_FIELDS_.map(function (f) { return [f[1], obj[f[0]] == null ? '' : String(obj[f[0]])]; });
+  var rng = sh.getRange(INVOICE_FIRST_ROW_, 1, rows.length, 2);
+  sh.getRange(INVOICE_FIRST_ROW_, 2, rows.length, 1).setNumberFormat('@');
+  rng.setValues(rows);
+  sh.getRange(INVOICE_FIRST_ROW_, 1, rows.length, 1).setFontWeight('bold');
+}
+
 // Last row used in the deposits block (1 = header only).
 function depositsLastRow_(sh) {
   var last = sh.getLastRow();
@@ -1692,7 +1876,7 @@ function doGet(e) {
     return json_({ ok: true, ingredientPurchases: readAllIngredientPurchases_() });
   }
   if (action === 'getSales') {
-    return json_({ ok: true, sales: readAllSales_() });
+    return json_({ ok: true, orders: readAllOrders_(), customers: readAllCustomers_(), invoiceSettings: getInvoiceSettings_() });
   }
   if (action === 'getBottleInventory') {
     return json_({ ok: true, bottleInventory: readAllBottleInv_() });
@@ -1748,7 +1932,9 @@ function doGet(e) {
       plannedInfusions: readAllPlannedInfusions_(),
       plannedBrews: readAllPlannedBrews_(),
       bottleInventory: readAllBottleInv_(),
-      sales: readAllSales_(),
+      orders: readAllOrders_(),
+      customers: readAllCustomers_(),
+      invoiceSettings: getInvoiceSettings_(),
       ingredientPurchases: readAllIngredientPurchases_(),
       bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : ''
     });
@@ -2002,29 +2188,15 @@ function handleAction_(body) {
     return json_({ ok: true });
   }
 
-  // ---- sales actions (Business > Sales) ----
-  if (action === 'createSale' || action === 'updateSale' || action === 'deleteSale') {
-    var ssh = getSalesSheet_();
-    var smap = headerMap_(ssh);
-    var sncols = ssh.getLastColumn();
-    if (action === 'createSale') {
-      var newS = body.sale || {};
-      if (!newS.id) newS.id = Utilities.getUuid();
-      ssh.appendRow(buildSaleRow_(newS, sncols, smap));
-      return json_({ ok: true, id: newS.id });
-    }
-    if (action === 'updateSale') {
-      var us = body.sale || {};
-      var urow = findRowByKey_(ssh, smap, 'sale_pk', us.id);
-      if (urow === -1) return json_({ ok: false, error: 'not found' });
-      ssh.getRange(urow, 1, 1, sncols).setValues([buildSaleRow_(us, sncols, smap)]);
-      return json_({ ok: true });
-    }
-    var sdr = findRowByKey_(ssh, smap, 'sale_pk', body.id);
-    if (sdr === -1) return json_({ ok: false, error: 'not found' });
-    ssh.deleteRow(sdr);
-    return json_({ ok: true });
+  // ---- sales CRM actions (Business > Sales) ----
+  if (action === 'saveOrder') {
+    var so = saveOrder_(body.order || {}, body.customer || null);
+    return json_({ ok: true, id: so.id, invoiceNo: so.invoiceNo });
   }
+  if (action === 'deleteOrder') { deleteOrder_(body.id); return json_({ ok: true }); }
+  if (action === 'saveCustomer') { upsertCustomer_(body.customer || {}); return json_({ ok: true }); }
+  if (action === 'deleteCustomer') { deleteRowsWhere_(getCustomersSheet_(), 'customer_pk', body.id); return json_({ ok: true }); }
+  if (action === 'setInvoiceSettings') { setInvoiceSettings_(body.settings || {}); return json_({ ok: true }); }
 
   // ---- bottle inventory actions (Inventory > Bottle count) ----
   if (action === 'createBottleInvEntry' || action === 'updateBottleInvEntry' || action === 'deleteBottleInvEntry') {

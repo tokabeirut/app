@@ -797,18 +797,70 @@
   #view-sales .paid-pill.is-paid { border-color: #b9d9c4; background: #edf6f0; color: #3d7a55; }
   /* px column widths + max(sum, 100%) like Bottling/Infusion: fills a
      laptop screen, scrolls sideways on a phone instead of squashing. */
-  .sales-table { table-layout: fixed; min-width: 1320px; width: 1320px; width: max(1320px, 100%); }
-  .sales-table th:nth-child(1), .sales-table td:nth-child(1) { width: 120px; }
-  .sales-table th:nth-child(2), .sales-table td:nth-child(2) { width: 200px; white-space: normal; }
-  .sales-table th:nth-child(3), .sales-table td:nth-child(3) { width: 90px; }
-  .sales-table th:nth-child(4), .sales-table td:nth-child(4) { width: 90px; }
-  .sales-table th:nth-child(5), .sales-table td:nth-child(5) { width: 150px; white-space: normal; }
-  .sales-table th:nth-child(6), .sales-table td:nth-child(6) { width: 70px; }
-  .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 110px; }
-  .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 120px; }
+  .sales-table { table-layout: fixed; min-width: 1240px; width: 1240px; width: max(1240px, 100%); }
+  .sales-table th:nth-child(1), .sales-table td:nth-child(1) { width: 130px; }
+  .sales-table th:nth-child(2), .sales-table td:nth-child(2) { width: 110px; }
+  .sales-table th:nth-child(3), .sales-table td:nth-child(3) { width: 190px; white-space: normal; }
+  .sales-table th:nth-child(4), .sales-table td:nth-child(4) { width: 270px; white-space: normal; }
+  .sales-table th:nth-child(5), .sales-table td:nth-child(5) { width: 70px; }
+  .sales-table th:nth-child(6), .sales-table td:nth-child(6) { width: 110px; }
+  .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 90px; }
+  .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 170px; }
   .sales-table th:nth-child(9), .sales-table td:nth-child(9) { width: 100px; }
-  .sales-table th:nth-child(10), .sales-table td:nth-child(10) { width: 190px; }
-  .sales-table th:nth-child(11), .sales-table td:nth-child(11) { width: 80px; }
+  .crm-table { table-layout: fixed; min-width: 1380px; width: 1380px; width: max(1380px, 100%); }
+  .crm-table th:nth-child(1), .crm-table td:nth-child(1) { width: 170px; white-space: normal; }
+  .crm-table th:nth-child(2), .crm-table td:nth-child(2) { width: 70px; }
+  .crm-table th:nth-child(3), .crm-table td:nth-child(3) { width: 140px; }
+  .crm-table th:nth-child(4), .crm-table td:nth-child(4) { width: 170px; }
+  .crm-table th:nth-child(5), .crm-table td:nth-child(5) { width: 170px; }
+  .crm-table th:nth-child(6), .crm-table td:nth-child(6) { width: 70px; }
+  .crm-table th:nth-child(7), .crm-table td:nth-child(7) { width: 75px; }
+  .crm-table th:nth-child(8), .crm-table td:nth-child(8) { width: 110px; }
+  .crm-table th:nth-child(9), .crm-table td:nth-child(9) { width: 110px; }
+  .crm-table th:nth-child(10), .crm-table td:nth-child(10) { width: 170px; }
+  .crm-table th:nth-child(11), .crm-table td:nth-child(11) { width: 200px; }
+  #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'IBM Plex Mono', monospace; }
+  #view-sales .crm-table td.row-actions { white-space: nowrap; text-align: right; }
+  .crm-bar-btns { display: -webkit-flex; display: flex; gap: 8px; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; }
+  #view-sales .crm-tabs { display: -webkit-flex; display: flex; gap: 22px; padding: 0 48px; margin: 4px 0 18px; border-bottom: 1px solid var(--border); }
+  #view-sales .crm-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 0 9px; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; margin-bottom: -1px; }
+  #view-sales .crm-tab.active { color: var(--terra); border-bottom-color: var(--terra); }
+  #view-sales .crm-nudge { margin: 0 48px 22px; padding: 16px 18px; background: var(--terra-pale); border: 1px solid var(--terra-light, #e7b49f); border-radius: var(--radius); }
+  #view-sales .crm-nudge-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--ink); margin-bottom: 12px; }
+  #view-sales .crm-nudge-count { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 6px; border-radius: 99px; background: var(--terra); color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; text-align: center; vertical-align: middle; }
+  #view-sales .crm-nudge-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  #view-sales .crm-nudge-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; cursor: pointer; }
+  #view-sales .crm-nudge-card:hover { border-color: var(--terra-light, #e7b49f); }
+  #view-sales .crm-nudge-name { font-weight: 500; margin-bottom: 4px; }
+  #view-sales .crm-nudge-meta { font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 4px; }
+  .crm-nudge-acts { display: -webkit-flex; display: flex; gap: 6px; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin-top: 6px; font-size: 0.78rem; }
+  .crm-act { display: inline-block; padding: 3px 9px; border: 1px solid var(--border); border-radius: 99px; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); text-decoration: none; background: var(--surface); margin-right: 4px; }
+  .crm-act:hover { border-color: var(--terra); color: var(--terra); }
+  .crm-chip { display: inline-block; padding: 2px 9px; border-radius: 99px; font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; letter-spacing: 0.04em; background: var(--surface2); color: var(--ink-faint); white-space: nowrap; }
+  .crm-chip.crm-ok { background: #edf6f0; color: #3d7a55; }
+  .crm-chip.crm-due { background: #fbf1dc; color: #8a6a2f; }
+  .crm-chip.crm-overdue { background: var(--terra-pale); color: var(--terra); }
+  .crm-link { background: none; border: none; padding: 0; color: var(--ink); cursor: pointer; text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; font: inherit; text-align: left; }
+  .crm-link:hover { color: var(--terra); text-decoration-color: var(--terra); }
+  .crm-chan { font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem; letter-spacing: 0.08em; color: var(--ink-faint); margin-left: 4px; }
+  .crm-items { font-size: 0.86rem; line-height: 1.35; }
+  .crm-nostock { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.56rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); border: 1px dashed var(--border); border-radius: 99px; padding: 0 6px; margin-left: 3px; }
+  .crm-unpaid { color: var(--terra); font-size: 0.72rem; }
+  .crm-wide-drawer { width: 520px; }
+  /* Each product line: flavour on its own line, then size / qty / price / line total. */
+  .ol-row { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 0.9fr) minmax(64px, auto) 20px; gap: 6px; -webkit-align-items: center; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--border); }
+  .ol-row:first-child { padding-top: 2px; }
+  .ol-row .ol-flavour { grid-column: 1 / -1; }
+  .ol-row input, .ol-row select { min-width: 0; width: 100%; }
+  .ol-total { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); text-align: right; white-space: nowrap; }
+  .crm-hist-stats { display: -webkit-flex; display: flex; gap: 16px; -webkit-flex-wrap: wrap; flex-wrap: wrap; font-size: 0.86rem; margin-bottom: 8px; }
+  .crm-hist-list { margin-top: 12px; border-top: 1px solid var(--border); }
+  .crm-hist-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .crm-hist-top { display: -webkit-flex; display: flex; gap: 12px; -webkit-align-items: center; align-items: center; font-size: 0.8rem; }
+  .crm-hist-top .paid-pill { margin-left: auto; cursor: default; }
+  .crm-hist-items { font-size: 0.82rem; color: var(--ink-faint); margin-top: 3px; }
+  #customer-drawer .paid-pill { border: 1px solid var(--terra-light, #e7b49f); background: var(--terra-pale); color: var(--terra); border-radius: 99px; padding: 2px 9px; font-family: 'IBM Plex Mono', monospace; font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  #customer-drawer .paid-pill.is-paid { border-color: #b9d9c4; background: #edf6f0; color: #3d7a55; }
   .sale-total-line { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin: 12px 0 16px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
   .sale-total-line strong { font-size: 1rem; letter-spacing: 0; color: var(--ink); }
   .sale-paid-label { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 10px; cursor: pointer; text-transform: none; letter-spacing: normal; font-family: 'Newsreader', Georgia, serif; font-size: 0.96rem; color: var(--ink); margin: 0; }
@@ -881,7 +933,9 @@
     .page-eyebrow { margin-bottom: 18px; gap: 4px 20px; }
     .page-accent { margin: 20px 0 18px; }
     .table-wrap { padding: 0 20px 28px; }
-    #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix { padding-left: 20px; padding-right: 20px; }
+    #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix, #view-sales .crm-tabs { padding-left: 20px; padding-right: 20px; }
+    #view-sales .crm-nudge { margin-left: 20px; margin-right: 20px; }
+    .crm-wide-drawer { width: 100%; }
     #view-sales .sales-empty { padding: 24px 20px; }
     #view-spices .ing-grid { padding-left: 20px; padding-right: 20px; }
     #an-body, #today-body, #biv-body { padding: 0 20px 28px; }
@@ -1692,7 +1746,11 @@
 <div id="view-sales" style="display:none;">
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
-    <button class="btn-primary" onclick="openSaleDrawer()">+ add sale</button>
+    <div class="crm-bar-btns">
+      <button class="btn-ghost" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
+      <button class="btn-ghost" onclick="openCustomerDrawer()">+ customer</button>
+      <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
+    </div>
   </div>
   <div class="content-head">
     <div class="content-title">Sales</div>
@@ -1700,67 +1758,127 @@
   </div>
   <div id="sales-body"></div>
 </div>
-<div class="drawer-overlay" id="sale-overlay" onclick="closeSaleDrawer()"></div>
-<div class="add-drawer" id="sale-drawer">
+<datalist id="crm-customer-list"></datalist>
+<datalist id="crm-flavour-list"></datalist>
+
+<div class="drawer-overlay" id="order-overlay" onclick="closeOrderDrawer()"></div>
+<div class="add-drawer crm-wide-drawer" id="order-drawer">
   <div class="drawer-head">
-    <div class="drawer-head-title" id="sale-title">New sale</div>
-    <button class="drawer-close" onclick="closeSaleDrawer()">&times;</button>
+    <div class="drawer-head-title" id="order-title">New order</div>
+    <button class="drawer-close" onclick="closeOrderDrawer()">&times;</button>
   </div>
   <div class="drawer-body">
-    <div class="form-section-title">Sale</div>
+    <div class="hint" id="o-invoice-hint" style="margin-bottom:12px;"></div>
     <div class="form-group">
       <label>Date</label>
-      <input type="date" id="s-date" />
+      <input type="date" id="o-date" />
     </div>
     <div class="form-group">
       <label>Customer</label>
-      <input type="text" id="s-customer" placeholder="e.g. a caf&eacute;, shop or person" data-hist-field="saleCustomer" autocomplete="off" />
+      <input type="text" id="o-customer" list="crm-customer-list" placeholder="pick a customer or type a new name" autocomplete="off" oninput="onOrderCustomerInput()" />
+      <div class="hint" id="o-customer-hint"></div>
+    </div>
+    <div class="form-group">
+      <label>Channel</label>
+      <select id="o-channel" onchange="onOrderChannelChange()">
+        <option value="B2C">B2C &mdash; direct</option>
+        <option value="B2B">B2B &mdash; shop / caf&eacute;</option>
+      </select>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Products</div>
+      <div id="o-lines"></div>
+      <button type="button" class="btn-ghost btn-add-flavour" onclick="addOrderLine()">+ add product</button>
+      <div class="hint">Prices are pre-filled from Bottle math (average of the channel&rsquo;s range) and can be changed.</div>
+      <div class="sale-total-line">Total <strong id="o-total">$ 0.00</strong></div>
+    </div>
+    <div class="form-group">
+      <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" /> <span>Paid</span></label>
+    </div>
+    <div class="form-group">
+      <label class="sale-paid-label"><input type="checkbox" id="o-deduct" class="task-check" /> <span>Take these bottles out of Bottle inventory</span></label>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Notes</div>
+      <div class="form-group">
+        <textarea id="o-notes" placeholder="Delivery, special requests &mdash; shown on the invoice."></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" onclick="closeOrderDrawer()">Cancel</button>
+    <button class="btn-primary" id="order-save-btn" onclick="saveOrder()">Save order</button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="customer-overlay" onclick="closeCustomerDrawer()"></div>
+<div class="add-drawer crm-wide-drawer" id="customer-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-title" id="customer-title">New customer</div>
+    <button class="drawer-close" onclick="closeCustomerDrawer()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="c-name" placeholder="person, caf&eacute; or shop" />
     </div>
     <div class="pt-field-row">
       <div class="form-group">
-        <label>Channel</label>
-        <select id="s-channel" onchange="onSaleFieldChange('channel')">
+        <label>Type</label>
+        <select id="c-type">
           <option value="B2C">B2C &mdash; direct</option>
           <option value="B2B">B2B &mdash; shop / caf&eacute;</option>
         </select>
       </div>
       <div class="form-group">
-        <label>Bottle</label>
-        <select id="s-size" onchange="onSaleFieldChange('size')">
-          <option value="750">750 ml</option>
-          <option value="375">375 ml</option>
-        </select>
+        <label>Contact person</label>
+        <input type="text" id="c-contact" placeholder="optional" />
       </div>
-    </div>
-    <div class="form-group">
-      <label>Flavour</label>
-      <input type="text" id="s-flavour" placeholder="e.g. Cardamom" data-hist-field="saleFlavour" autocomplete="off" />
     </div>
     <div class="pt-field-row">
       <div class="form-group">
-        <label>Bottles</label>
-        <input type="number" id="s-qty" min="0" step="1" placeholder="e.g. 6" oninput="updateSaleTotal()" />
+        <label>Phone</label>
+        <input type="tel" id="c-phone" placeholder="+961 3 123 456" />
       </div>
       <div class="form-group">
-        <label>Price per bottle ($)</label>
-        <input type="number" id="s-price" min="0" step="0.01" oninput="salePriceEdited = true; updateSaleTotal();" />
+        <label>Email</label>
+        <input type="email" id="c-email" placeholder="optional" />
       </div>
     </div>
-    <div class="hint" id="s-price-hint"></div>
-    <div class="sale-total-line">Total <strong id="s-total">$ 0.00</strong></div>
+    <div class="hint" style="margin-top:-6px;margin-bottom:12px;">Add the country code (+961&hellip;) so the WhatsApp button works.</div>
     <div class="form-group">
-      <label class="sale-paid-label"><input type="checkbox" id="s-paid" class="task-check" /> <span>Paid</span></label>
+      <label>Address</label>
+      <textarea id="c-address" placeholder="Used on the invoice"></textarea>
     </div>
-    <div class="form-section">
-      <div class="form-section-title">Notes</div>
-      <div class="form-group">
-        <textarea id="s-notes" placeholder="Invoice number, delivery, anything worth remembering."></textarea>
-      </div>
+    <div class="form-group">
+      <label>Reorder every (days)</label>
+      <input type="number" id="c-reorder" min="0" step="1" placeholder="leave empty to estimate from their orders" />
     </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="c-notes" placeholder="Preferences, delivery times, anything worth remembering."></textarea>
+    </div>
+    <div id="c-history"></div>
   </div>
   <div class="drawer-foot">
-    <button class="btn-ghost" onclick="closeSaleDrawer()">Cancel</button>
-    <button class="btn-primary" id="sale-save-btn" onclick="saveSale()">Save sale</button>
+    <button class="btn-ghost" onclick="closeCustomerDrawer()">Cancel</button>
+    <button class="btn-primary" id="customer-save-btn" onclick="saveCustomer()">Save customer</button>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="invset-overlay" onclick="closeInvoiceSettings()"></div>
+<div class="add-drawer" id="invset-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-title">Invoice details</div>
+    <button class="drawer-close" onclick="closeInvoiceSettings()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="hint" style="margin-bottom:14px;">Your details as they appear on every invoice. Saved in the &ldquo;settings&rdquo; sheet.</div>
+    <div id="invset-fields"></div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" onclick="closeInvoiceSettings()">Cancel</button>
+    <button class="btn-primary" onclick="saveInvoiceSettings()">Save details</button>
   </div>
 </div>
 
@@ -4661,7 +4779,9 @@ function applyAllData(res) {
     plannedInfusions = res.plannedInfusions || [];
     plannedBrews = res.plannedBrews || [];
     bottleInventory = res.bottleInventory || [];
-    if (Array.isArray(res.sales)) sales = res.sales;
+    if (Array.isArray(res.orders)) orders = res.orders;
+    if (Array.isArray(res.customers)) customers = res.customers;
+    if (res.invoiceSettings && typeof res.invoiceSettings === 'object') invoiceSettings = res.invoiceSettings;
     if (Array.isArray(res.ingredientPurchases)) ingredientPurchases = res.ingredientPurchases;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
     planInfUnsaved = {}; planInfOriginal = {};
@@ -4712,7 +4832,7 @@ function snapshotFromGlobals() {
     batches: batches, bottles: bottles, infusions: infusions, readings: readings,
     feedback: feedback, productionTasks: productionTasks, dailyChecklist: dailyChecklist,
     plannedInfusions: plannedInfusions, plannedBrews: plannedBrews,
-    bottleInventory: bottleInventory, sales: sales, ingredientPurchases: ingredientPurchases, bottleMathSettings: bottleMathSettingsRaw,
+    bottleInventory: bottleInventory, orders: orders, customers: customers, invoiceSettings: invoiceSettings, ingredientPurchases: ingredientPurchases, bottleMathSettings: bottleMathSettingsRaw,
     savedAt: Date.now()
   };
 }
@@ -5208,7 +5328,7 @@ function closeDrawer() {
   document.getElementById('add-drawer').classList.remove('open');
   document.getElementById('drawer-overlay').classList.remove('open');
 }
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeDrawer(); if (typeof closeSplitDrawer === 'function') closeSplitDrawer(); } });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeDrawer(); if (typeof closeSplitDrawer === 'function') closeSplitDrawer(); if (typeof closeOrderDrawer === 'function') { closeOrderDrawer(); closeCustomerDrawer(); closeInvoiceSettings(); } } });
 
 /* ---- save / delete (Google Sheets) ---- */
 function uid() { return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7); }
@@ -6878,9 +6998,9 @@ function cellEd(inner, opts) {
 // inline editor can look either up without each type needing its own
 // lookup/commit function.
 function recKeyOf(rec) { return rec.uid != null ? rec.uid : rec.id; }
-function recArray(type) { return type === 'purchase' ? ingredientPurchases : type === 'sale' ? sales : (type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings))))); }
-function rerenderType(type) { if (type === 'purchase') renderSpiceInventory(); else if (type === 'sale') renderSales(); else if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
-function reloadType(type) { if (type === 'purchase') loadIngredientPurchases(function () { renderSpiceInventory(); }); else if (type === 'sale') loadSales(function () { renderSales(); }); else if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
+function recArray(type) { return type === 'purchase' ? ingredientPurchases : type === 'order' ? orders : type === 'customer' ? customers : (type === 'batch' ? batches : (type === 'bottle' ? bottles : (type === 'infusion' ? infusions : (type === 'production' ? productionTasks : (type === 'bottleinv' ? bottleInventory : readings))))); }
+function rerenderType(type) { if (type === 'purchase') renderSpiceInventory(); else if (type === 'order' || type === 'customer') renderSales(); else if (type === 'batch') renderTable(); else if (type === 'bottle') renderBottles(); else if (type === 'infusion') renderInfusions(); else if (type === 'production') renderProduction(); else if (type === 'bottleinv') renderBottleInventory(); else renderReadings(); }
+function reloadType(type) { if (type === 'purchase') loadIngredientPurchases(function () { renderSpiceInventory(); }); else if (type === 'order' || type === 'customer') loadSales(function () { renderSales(); }); else if (type === 'batch') loadData(); else if (type === 'bottle') loadBottles(); else if (type === 'infusion') loadInfusions(); else if (type === 'production') loadProductionTasks(); else if (type === 'bottleinv') loadBottleInventory(); else loadReadings(); }
 function commitInline(type, uidv, field, value) {
   var arr = recArray(type), rec = null;
   for (var i = 0; i < arr.length; i++) { if (String(recKeyOf(arr[i])) === String(uidv)) { rec = arr[i]; break; } }
@@ -6912,8 +7032,8 @@ function commitInline(type, uidv, field, value) {
     rec.dateWorst = value;
   }
   rerenderType(type);
-  var action = type === 'purchase' ? 'updateIngredientPurchase' : type === 'sale' ? 'updateSale' : type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
-  var key = type === 'purchase' ? 'purchase' : type === 'sale' ? 'sale' : type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
+  var action = type === 'purchase' ? 'updateIngredientPurchase' : type === 'order' ? 'saveOrder' : type === 'customer' ? 'saveCustomer' : type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
+  var key = type === 'purchase' ? 'purchase' : type === 'order' ? 'order' : type === 'customer' ? 'customer' : type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
   var body = { action: action }; body[key] = JSON.parse(JSON.stringify(rec));
   setSyncStatus('saving', 'saving\u2026');
   apiPost(body, function (err, res) {
@@ -7549,10 +7669,11 @@ var HIST_FIELDS = {
     return out;
   },
   ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); },
-  saleCustomer: function () { return sales.map(function (s) { return s.customer; }); },
+  saleCustomer: function () { return customers.map(function (c) { return c.name; }); },
   ingredientName: function () { return ingredientNames(); },
   saleFlavour: function () {
-    var out = sales.map(function (s) { return s.flavour; });
+    var out = [];
+    orders.forEach(function (o) { (o.lines || []).forEach(function (l) { out.push(l.flavour); }); });
     bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { out.push(f.name); }); });
     return out;
   }
@@ -7912,34 +8033,75 @@ function deletePurchase(id) {
   });
 }
 
-/* ===================== SALES (Business > Sales) =====================
-   One row per sale in the `sales` sheet (see readAllSales_ in the backend):
-   date, customer, channel (B2B shop/café vs B2C direct), bottle size,
-   flavour, number of bottles, price per bottle, paid yes/no, notes.
-   Totals are always qty x price, worked out here. The page shows a period
-   switch (this month / last month / this year / all time), summary cards
-   for that period, the B2B/B2C split of revenue, and the list of sales.
-   The price per bottle is pre-filled from Bottle Math (the average of that
-   channel + size's price range) and can be overwritten per sale. */
-var sales = [];
+/* ===================== SALES CRM (Business > Sales) =====================
+   Orders (one per invoice, several product lines each), customers, and a
+   "time to reach out" list. Data lives in three sheet tabs (Sales, Sales
+   lines, Customers — see the backend). Saving an order with "take bottles
+   out of Bottle inventory" ticked writes automatic "sold" rows there, so
+   stock always matches what was sold.
+   Reorder estimate per customer (customerInsights):
+   - if a "reorder every N days" is set on the customer, last order + N;
+   - else with 2+ orders: their drinking rate = bottles bought before the
+     last order ÷ days between first and last order; the last order runs
+     out after (its bottles ÷ that rate);
+   - else (one order): last order + 30 days.
+   Due within 7 days or past → listed under "Time to reach out". */
+var orders = [];
+var customers = [];
+var invoiceSettings = {};
 var salesPeriod = 'month';
-var editingSaleId = null;
-var salePriceEdited = false;
+var salesTab = 'orders';
+var editingOrderId = null;
+var editingCustomerId = null;
+var CRM_DEFAULT_REORDER_DAYS = 30;
+var CRM_DUE_SOON_DAYS = 7;
 var SALES_PERIODS = [
   { key: 'month', label: 'This month' },
   { key: 'lastmonth', label: 'Last month' },
   { key: 'year', label: 'This year' },
   { key: 'all', label: 'All time' }
 ];
+var INVOICE_FIELDS = [
+  ['businessName', 'Business name', 'text', 'e.g. toka'],
+  ['address', 'Address', 'textarea', 'Street, building, city'],
+  ['phone', 'Phone', 'text', '+961 …'],
+  ['email', 'Email', 'text', 'hello@…'],
+  ['taxId', 'Registration / tax no.', 'text', 'optional'],
+  ['payment', 'Payment details', 'textarea', 'Bank, account, Whish/OMT number, terms …'],
+  ['footer', 'Footer note', 'textarea', 'e.g. Thank you for drinking toka!'],
+  ['taxRate', 'Tax rate (%)', 'number', '0 = no tax line']
+];
 function loadSales(cb) {
   api({ action: 'getSales' }, function (err, res) {
-    if (err || !res || !res.ok || !Array.isArray(res.sales)) { if (cb) cb(err || new Error('load failed')); return; }
-    sales = res.sales;
+    if (err || !res || !res.ok || !Array.isArray(res.orders)) { if (cb) cb(err || new Error('load failed')); return; }
+    orders = res.orders;
+    customers = res.customers || [];
+    if (res.invoiceSettings) invoiceSettings = res.invoiceSettings;
     if (cb) cb(null);
   });
 }
-function saleTotal(s) { return (parseFloat(s.qty) || 0) * (parseFloat(s.unitPrice) || 0); }
 function saleMoney(n) { return '$ ' + fmtUSD(n || 0); }
+function crmId(prefix) { return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function lineTotal(l) { return (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0); }
+function orderTotal(o) { return (o.lines || []).reduce(function (a, l) { return a + lineTotal(l); }, 0); }
+function orderBottles(o) { return (o.lines || []).reduce(function (a, l) { return a + (parseFloat(l.qty) || 0); }, 0); }
+function orderItemsText(o) {
+  return (o.lines || []).map(function (l) { return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : ''); }).join(' · ');
+}
+function findOrder(id) { for (var i = 0; i < orders.length; i++) if (String(orders[i].id) === String(id)) return orders[i]; return null; }
+function findCustomer(id) { for (var i = 0; i < customers.length; i++) if (String(customers[i].id) === String(id)) return customers[i]; return null; }
+function customerByName(name) {
+  var k = String(name || '').trim().toLowerCase();
+  if (!k) return null;
+  for (var i = 0; i < customers.length; i++) if (String(customers[i].name).trim().toLowerCase() === k) return customers[i];
+  return null;
+}
+function customerForOrder(o) { return findCustomer(o.customerId) || customerByName(o.customerName); }
+function orderCustomerName(o) { var c = customerForOrder(o); return c ? c.name : (o.customerName || ''); }
+function ordersOfCustomer(c) {
+  return orders.filter(function (o) { return (o.customerId && String(o.customerId) === String(c.id)) || (!o.customerId && String(o.customerName).trim().toLowerCase() === String(c.name).trim().toLowerCase()); })
+    .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+}
 function salesPeriodRange(period) {
   var d = new Date(), y = d.getFullYear(), m = d.getMonth();
   function iso(Y, M, D) { var t = new Date(Y, M, D); return t.getFullYear() + '-' + pad(t.getMonth() + 1) + '-' + pad(t.getDate()); }
@@ -7948,47 +8110,120 @@ function salesPeriodRange(period) {
   if (period === 'year') return [iso(y, 0, 1), iso(y, 11, 31)];
   return null;
 }
-function salesForPeriod(period) {
+function ordersForPeriod(period) {
   var r = salesPeriodRange(period);
-  return sales.filter(function (s) { return !r || (s.date && s.date >= r[0] && s.date <= r[1]); })
-    .sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || String(b.id).localeCompare(String(a.id)); });
+  return orders.filter(function (o) { return !r || (o.date && o.date >= r[0] && o.date <= r[1]); })
+    .sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || String(b.invoiceNo).localeCompare(String(a.invoiceNo)); });
 }
 function setSalesPeriod(p) { salesPeriod = p; renderSales(); }
+function setSalesTab(t) { salesTab = t; renderSales(); }
 function suggestedSalePrice(channel, size) {
   try {
-    var p = bmState.pricing[size === '375' ? 'bottle375' : 'bottle750'][channel === 'B2B' ? 'wholesale' : 'retail'];
+    var p = bmState.pricing[String(size) === '375' ? 'bottle375' : 'bottle750'][channel === 'B2B' ? 'wholesale' : 'retail'];
     return Math.round(bmPriceAvg(p) * 100) / 100;
   } catch (e) { return 0; }
 }
+
+/* ---- reorder estimate ---- */
+function customerInsights(c) {
+  var list = ordersOfCustomer(c);
+  var out = { orders: list, n: list.length, bottles: 0, spent: 0, unpaid: 0, first: '', last: '', next: '', basis: '', daysLeft: null, status: 'none' };
+  list.forEach(function (o) { out.bottles += orderBottles(o); out.spent += orderTotal(o); if (!o.paid) out.unpaid += orderTotal(o); });
+  if (!list.length) return out;
+  out.first = list[0].date; out.last = list[list.length - 1].date;
+  var lastBottles = orderBottles(list[list.length - 1]);
+  var rd = parseFloat(c.reorderDays);
+  if (rd > 0) {
+    out.next = addDaysIso(out.last, Math.round(rd)); out.basis = 'every ' + fmtNum(rd) + ' days (set on the customer)';
+  } else if (list.length >= 2 && daysBetween(out.first, out.last) > 0 && out.bottles - lastBottles > 0) {
+    var rate = (out.bottles - lastBottles) / daysBetween(out.first, out.last);   // bottles per day
+    out.next = addDaysIso(out.last, Math.max(1, Math.round(lastBottles / rate)));
+    out.basis = 'from their order rhythm (about ' + fmtNum(Math.round(rate * 7 * 10) / 10) + ' bottles a week)';
+  } else {
+    out.next = addDaysIso(out.last, CRM_DEFAULT_REORDER_DAYS); out.basis = 'default ' + CRM_DEFAULT_REORDER_DAYS + ' days after their only order';
+  }
+  out.daysLeft = daysBetween(todayISO(), out.next);
+  out.status = out.daysLeft < 0 ? 'overdue' : (out.daysLeft <= CRM_DUE_SOON_DAYS ? 'due' : 'ok');
+  return out;
+}
+function crmStatusChip(ins) {
+  if (!ins.next) return '<span class="crm-chip">no orders yet</span>';
+  var d = ins.daysLeft, txt;
+  if (d < 0) txt = (-d) + (d === -1 ? ' day' : ' days') + ' overdue';
+  else if (d === 0) txt = 'today';
+  else txt = 'in ' + d + (d === 1 ? ' day' : ' days');
+  return '<span class="crm-chip crm-' + ins.status + '" title="Expected to need more around ' + esc(fmtDate(ins.next)) + ' — ' + esc(ins.basis) + '">' + esc(fmtDate(ins.next)) + ' · ' + txt + '</span>';
+}
+function crmPhoneDigits(p) { var d = String(p || '').replace(/[^\d]/g, ''); return d.indexOf('00') === 0 ? d.slice(2) : d; }
+function crmNudgeText(c) {
+  var first = String(c.contact || c.name || '').split(' ')[0];
+  return 'Hi ' + first + ', it’s toka! Hope you’re enjoying the kombucha. Are you running low — shall we bring you some more?';
+}
+function crmContactButtons(c) {
+  var h = '', d = crmPhoneDigits(c.phone);
+  if (d) {
+    h += '<a class="crm-act" href="https://wa.me/' + d + '?text=' + encodeURIComponent(crmNudgeText(c)) + '" target="_blank" rel="noopener" title="WhatsApp ' + esc(c.phone) + '" onclick="event.stopPropagation()">WhatsApp</a>';
+    h += '<a class="crm-act" href="tel:' + esc(String(c.phone).replace(/[^\d+]/g, '')) + '" title="Call ' + esc(c.phone) + '" onclick="event.stopPropagation()">Call</a>';
+  }
+  if (c.email) h += '<a class="crm-act" href="mailto:' + esc(c.email) + '" onclick="event.stopPropagation()">Email</a>';
+  return h;
+}
+
+/* ---- render ---- */
 function renderSales() {
   var body = document.getElementById('sales-body');
   if (!body) return;
   var sub = document.getElementById('sales-sub');
   if (sub) {
-    var last = sales.reduce(function (a, s) { return (s.date || '') > a ? s.date : a; }, '');
-    sub.textContent = sales.length
-      ? sales.length + ' sale' + (sales.length === 1 ? '' : 's') + ' logged' + (last ? ' · last on ' + fmtDate(last) : '') + '.'
-      : 'No sales logged yet — add the first one with “+ add sale”.';
+    var last = orders.reduce(function (a, o) { return (o.date || '') > a ? o.date : a; }, '');
+    sub.textContent = orders.length
+      ? orders.length + ' order' + (orders.length === 1 ? '' : 's') + ' · ' + customers.length + ' customer' + (customers.length === 1 ? '' : 's') + (last ? ' · last order ' + fmtDate(last) : '') + '.'
+      : 'No orders yet — add the first one with “+ new order”.';
   }
-  var list = salesForPeriod(salesPeriod);
+  var h = crmNudgeHtml();
+  h += '<div class="crm-tabs">'
+    + '<button type="button" class="crm-tab' + (salesTab === 'orders' ? ' active' : '') + '" onclick="setSalesTab(\'orders\')">Orders</button>'
+    + '<button type="button" class="crm-tab' + (salesTab === 'customers' ? ' active' : '') + '" onclick="setSalesTab(\'customers\')">Customers</button>'
+    + '</div>';
+  h += salesTab === 'customers' ? crmCustomersHtml() : crmOrdersHtml();
+  body.innerHTML = h;
+}
+function crmNudgeHtml() {
+  var due = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
+    .filter(function (x) { return x.ins.n && (x.ins.status === 'due' || x.ins.status === 'overdue'); })
+    .sort(function (a, b) { return a.ins.daysLeft - b.ins.daysLeft; });
+  if (!due.length) return '';
+  return '<div class="crm-nudge"><div class="crm-nudge-title">Time to reach out <span class="crm-nudge-count">' + due.length + '</span></div><div class="crm-nudge-list">'
+    + due.map(function (x) {
+      var lo = x.ins.orders[x.ins.orders.length - 1];
+      return '<div class="crm-nudge-card" onclick="openCustomerDrawer(\'' + esc(x.c.id) + '\')">'
+        + '<div class="crm-nudge-name">' + esc(x.c.name) + '</div>'
+        + '<div class="crm-nudge-meta">Last order ' + esc(fmtDate(lo.date)) + ' · ' + fmtNum(orderBottles(lo)) + ' bottles</div>'
+        + '<div class="crm-nudge-meta">' + crmStatusChip(x.ins) + '</div>'
+        + '<div class="crm-nudge-acts">' + (crmContactButtons(x.c) || '<span class="muted">add a phone number to contact them</span>') + '</div>'
+        + '</div>';
+    }).join('') + '</div></div>';
+}
+function crmOrdersHtml() {
+  var list = ordersForPeriod(salesPeriod);
   var revenue = 0, bottles = 0, b750 = 0, b375 = 0, unpaid = 0, unpaidN = 0, b2b = 0, b2c = 0;
-  list.forEach(function (s) {
-    var t = saleTotal(s), q = parseFloat(s.qty) || 0;
-    revenue += t; bottles += q;
-    if (String(s.size) === '375') b375 += q; else b750 += q;
-    if (!s.paid) { unpaid += t; unpaidN++; }
-    if (s.channel === 'B2B') b2b += t; else b2c += t;
+  list.forEach(function (o) {
+    var t = orderTotal(o);
+    revenue += t; bottles += orderBottles(o);
+    (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') b375 += q; else b750 += q; });
+    if (!o.paid) { unpaid += t; unpaidN++; }
+    if (o.channel === 'B2B') b2b += t; else b2c += t;
   });
   var h = '<div class="sales-periods">' + SALES_PERIODS.map(function (p) {
     return '<button type="button" class="sales-chip' + (p.key === salesPeriod ? ' active' : '') + '" onclick="setSalesPeriod(\'' + p.key + '\')">' + p.label + '</button>';
   }).join('') + '</div>';
   h += '<div class="sales-stats">'
     + '<div class="sales-stat"><div class="sales-stat-label">Revenue</div><div class="sales-stat-val">' + saleMoney(revenue) + '</div>'
-    + '<div class="sales-stat-note">' + list.length + ' sale' + (list.length === 1 ? '' : 's') + '</div></div>'
+    + '<div class="sales-stat-note">' + list.length + ' order' + (list.length === 1 ? '' : 's') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Bottles sold</div><div class="sales-stat-val">' + fmtNum(bottles) + '</div>'
     + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Still to be paid</div><div class="sales-stat-val' + (unpaid > 0 ? ' warn' : '') + '">' + saleMoney(unpaid) + '</div>'
-    + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid sale' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
+    + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid order' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Average per bottle</div><div class="sales-stat-val">' + saleMoney(bottles ? revenue / bottles : 0) + '</div>'
     + '<div class="sales-stat-note">across both sizes</div></div>'
     + '</div>';
@@ -7997,138 +8232,403 @@ function renderSales() {
     h += '<div class="sales-mix"><div class="sales-mix-labels"><span>B2B · ' + saleMoney(b2b) + ' · ' + pb + '%</span><span>B2C · ' + saleMoney(b2c) + ' · ' + pc + '%</span></div>'
       + '<div class="sales-mix-bar"><div class="sales-mix-b2b" style="width:' + pb + '%"></div></div></div>';
   }
-  if (!list.length) {
-    h += '<div class="sales-empty">' + (sales.length ? 'No sales in this period.' : 'No sales yet.') + '</div>';
+  if (!list.length) return h + '<div class="sales-empty">' + (orders.length ? 'No orders in this period.' : 'No orders yet.') + '</div>';
+  h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table"><thead><tr>'
+    + '<th>Invoice</th><th>Date</th><th>Customer</th><th>Items</th><th>Bottles</th><th>Total</th><th>Paid</th><th>Notes</th><th></th>'
+    + '</tr></thead><tbody>';
+  list.forEach(function (o) {
+    var c = customerForOrder(o);
+    h += '<tr>'
+      + '<td class="mono"><button type="button" class="crm-link" onclick="openInvoice(\'' + esc(o.id) + '\')" title="Open the invoice">' + esc(o.invoiceNo || '…') + '</button></td>'
+      + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
+      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(c.name) + '</button>' : esc(o.customerName || '—'))
+        + ' <span class="crm-chan">' + esc(o.channel || '') + '</span></td>'
+      + '<td class="crm-items">' + esc(orderItemsText(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
+      + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
+      + '<td class="mono"><strong>' + saleMoney(orderTotal(o)) + '</strong></td>'
+      + '<td><button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button></td>'
+      + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+      + '<td class="row-actions"><button type="button" class="icon-btn" title="Invoice PDF" onclick="openInvoice(\'' + esc(o.id) + '\')">' + crmInvoiceIcon() + '</button>'
+      + '<button type="button" class="icon-btn" title="Edit order" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
+      + '<button type="button" class="icon-btn" title="Delete order" onclick="deleteOrder(\'' + esc(o.id) + '\')">&times;</button></td>'
+      + '</tr>';
+  });
+  return h + '</tbody></table></div></div>';
+}
+function crmInvoiceIcon() {
+  return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>';
+}
+function crmCustomersHtml() {
+  if (!customers.length) return '<div class="sales-empty">No customers yet — they’re added automatically with their first order, or with “+ customer”.</div>';
+  var rows = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
+    .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || String(a.c.name).localeCompare(String(b.c.name)); });
+  var h = '<div class="table-wrap"><div class="table-scroll"><table class="crm-table"><thead><tr>'
+    + '<th>Customer</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th>Next order (est.)</th><th></th>'
+    + '</tr></thead><tbody>';
+  rows.forEach(function (x) {
+    var c = x.c, ins = x.ins;
+    h += '<tr>'
+      + cellEd(esc(c.name || '—'), { type: 'customer', uid: c.id, field: 'name' })
+      + cellEd(esc(c.type || 'B2C'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
+      + cellEd(esc(c.phone || '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
+      + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
+      + cellEd('<div class="clip-inner muted">' + esc(c.address || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', input: 'textarea', cls: 'notes-cell' })
+      + '<td class="mono">' + ins.n + '</td>'
+      + '<td class="mono">' + fmtNum(ins.bottles) + '</td>'
+      + '<td class="mono">' + saleMoney(ins.spent) + (ins.unpaid > 0 ? '<div class="crm-unpaid">' + saleMoney(ins.unpaid) + ' unpaid</div>' : '') + '</td>'
+      + '<td class="mono">' + (ins.last ? esc(fmtDate(ins.last)) : '—') + '</td>'
+      + '<td>' + crmStatusChip(ins) + '</td>'
+      + '<td class="row-actions">' + crmContactButtons(c)
+      + '<button type="button" class="icon-btn" title="Details & order history" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">&#9998;</button>'
+      + '<button type="button" class="icon-btn" title="Delete customer" onclick="deleteCustomer(\'' + esc(c.id) + '\')">&times;</button></td>'
+      + '</tr>';
+  });
+  return h + '</tbody></table></div></div>';
+}
+
+/* ---- order drawer ---- */
+function crmFlavourOptions() {
+  var seen = {}, out = [];
+  function add(f) { f = String(f || '').trim(); var k = f.toLowerCase(); if (f && !seen[k]) { seen[k] = 1; out.push(f); } }
+  BIV_FLAVOUR_OPTS.split(',').forEach(add);
+  bottleInventory.forEach(function (e) { if (e.stage === 'filled') add(e.flavour); });
+  orders.forEach(function (o) { (o.lines || []).forEach(function (l) { add(l.flavour); }); });
+  return out;
+}
+function refreshCrmDatalists() {
+  var cl = document.getElementById('crm-customer-list'), fl = document.getElementById('crm-flavour-list');
+  if (cl) cl.innerHTML = customers.map(function (c) { return '<option value="' + esc(c.name) + '"></option>'; }).join('');
+  if (fl) fl.innerHTML = crmFlavourOptions().map(function (f) { return '<option value="' + esc(f) + '"></option>'; }).join('');
+}
+function orderLineRowHtml(l) {
+  l = l || {};
+  var size = String(l.size || '375');
+  return '<div class="ol-row"' + (l.priceEdited ? ' data-edited="1"' : '') + '>'
+    + '<input type="text" class="ol-flavour" list="crm-flavour-list" placeholder="flavour" value="' + esc(l.flavour || '') + '" />'
+    + '<select class="ol-size" onchange="onOrderLineChange(this, true)"><option value="375"' + (size === '375' ? ' selected' : '') + '>375 ml</option><option value="750"' + (size === '750' ? ' selected' : '') + '>750 ml</option></select>'
+    + '<input type="number" class="ol-qty" min="0" step="1" placeholder="bottles" value="' + esc(l.qty == null ? '' : l.qty) + '" oninput="onOrderLineChange(this)" />'
+    + '<input type="number" class="ol-price" min="0" step="0.01" placeholder="$ / bottle" value="' + esc(l.unitPrice == null ? '' : l.unitPrice) + '" oninput="this.closest(\'.ol-row\').setAttribute(\'data-edited\',\'1\'); onOrderLineChange(this)" />'
+    + '<span class="ol-total"></span>'
+    + '<button type="button" class="fl-rm" onclick="removeOrderLine(this)" title="Remove">&times;</button>'
+    + '</div>';
+}
+function addOrderLine(l) {
+  var box = document.getElementById('o-lines');
+  box.insertAdjacentHTML('beforeend', orderLineRowHtml(l));
+  var row = box.lastElementChild;
+  if (!l || l.unitPrice == null || l.unitPrice === '') applyLinePrice(row);
+  updateOrderTotal();
+}
+function removeOrderLine(btn) { var r = btn.closest('.ol-row'); if (r) r.remove(); updateOrderTotal(); }
+function applyLinePrice(row) {
+  if (row.getAttribute('data-edited')) return;
+  var p = suggestedSalePrice(val('o-channel'), row.querySelector('.ol-size').value);
+  row.querySelector('.ol-price').value = p ? p.toFixed(2) : '';
+}
+function onOrderLineChange(el, sizeChanged) {
+  if (sizeChanged) applyLinePrice(el.closest('.ol-row'));
+  updateOrderTotal();
+}
+function onOrderChannelChange() {
+  [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice);
+  if (!editingOrderId) document.getElementById('o-paid').checked = val('o-channel') !== 'B2B';
+  updateOrderTotal();
+}
+function onOrderCustomerInput() {
+  var c = customerByName(val('o-customer'));
+  var hint = document.getElementById('o-customer-hint');
+  if (c) {
+    if (c.type && document.getElementById('o-channel').value !== c.type) { document.getElementById('o-channel').value = c.type; onOrderChannelChange(); }
+    hint.textContent = 'Existing customer' + (c.phone ? ' · ' + c.phone : '') + '.';
   } else {
-    h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table"><thead><tr>'
-      + '<th>Date</th><th>Customer</th><th>Channel</th><th>Bottle</th><th>Flavour</th><th>Qty</th><th>Price</th><th>Total</th><th>Paid</th><th>Notes</th><th></th>'
-      + '</tr></thead><tbody>';
-    list.forEach(function (s) {
-      // Every value cell is click-to-edit (same inline editor as the other
-      // tables); Total is worked out from Qty x Price so it isn't editable.
-      h += '<tr>'
-        + cellEd(esc(fmtDate(s.date)), { type: 'sale', uid: s.id, field: 'date', input: 'date', cls: 'mono' })
-        + cellEd(esc(s.customer || '—'), { type: 'sale', uid: s.id, field: 'customer', hist: 'saleCustomer' })
-        + cellEd(esc(s.channel || ''), { type: 'sale', uid: s.id, field: 'channel', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
-        + cellEd(esc(s.size ? s.size + ' ml' : ''), { type: 'sale', uid: s.id, field: 'size', input: 'select', options: '750:750 ml,375:375 ml', cls: 'mono' })
-        + cellEd(esc(s.flavour || '—'), { type: 'sale', uid: s.id, field: 'flavour', hist: 'saleFlavour' })
-        + cellEd(esc(fmtNum(parseFloat(s.qty) || 0)), { type: 'sale', uid: s.id, field: 'qty', input: 'number', cls: 'mono' })
-        + cellEd(saleMoney(parseFloat(s.unitPrice) || 0), { type: 'sale', uid: s.id, field: 'unitPrice', input: 'number', cls: 'mono' })
-        + '<td class="mono"><strong>' + saleMoney(saleTotal(s)) + '</strong></td>'
-        + '<td><button type="button" class="paid-pill' + (s.paid ? ' is-paid' : '') + '" onclick="toggleSalePaid(\'' + esc(s.id) + '\')" title="Click to switch between paid and unpaid">' + (s.paid ? 'Paid' : 'Unpaid') + '</button></td>'
-        + cellEd(esc(s.notes || ''), { type: 'sale', uid: s.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
-        + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openSaleDrawer(\'' + esc(s.id) + '\')">&#9998;</button>'
-        + '<button type="button" class="icon-btn" title="Delete" onclick="deleteSale(\'' + esc(s.id) + '\')">&times;</button></td>'
-        + '</tr>';
-    });
-    h += '</tbody></table></div></div>';
+    hint.textContent = val('o-customer').trim() ? 'New customer — added to Customers when you save (fill in their details there later).' : '';
   }
-  body.innerHTML = h;
 }
-function findSale(id) { for (var i = 0; i < sales.length; i++) if (String(sales[i].id) === String(id)) return sales[i]; return null; }
-function openSaleDrawer(id) {
-  var s = id ? findSale(id) : null;
-  editingSaleId = s ? s.id : null;
-  salePriceEdited = !!s;
-  document.getElementById('sale-title').textContent = s ? 'Edit sale' : 'New sale';
-  document.getElementById('sale-save-btn').textContent = s ? 'Update sale' : 'Save sale';
-  document.getElementById('s-date').value = s ? (s.date || todayISO()) : todayISO();
-  document.getElementById('s-customer').value = s ? (s.customer || '') : '';
-  document.getElementById('s-channel').value = s ? (s.channel || 'B2C') : 'B2C';
-  document.getElementById('s-size').value = s ? (String(s.size) || '750') : '750';
-  document.getElementById('s-flavour').value = s ? (s.flavour || '') : '';
-  document.getElementById('s-qty').value = s ? s.qty : '';
-  document.getElementById('s-price').value = s ? s.unitPrice : '';
-  document.getElementById('s-paid').checked = s ? !!s.paid : true;
-  document.getElementById('s-notes').value = s ? (s.notes || '') : '';
-  if (!s) applySuggestedSalePrice();
-  updateSaleTotal();
-  document.getElementById('sale-drawer').classList.add('open');
-  document.getElementById('sale-overlay').classList.add('open');
+function readOrderLines() {
+  return [].map.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
+    return { flavour: r.querySelector('.ol-flavour').value.trim(), size: r.querySelector('.ol-size').value,
+      qty: parseFloat(r.querySelector('.ol-qty').value) || 0, unitPrice: parseFloat(r.querySelector('.ol-price').value) || 0 };
+  }).filter(function (l) { return l.qty > 0 || l.flavour; });
 }
-function closeSaleDrawer() {
-  document.getElementById('sale-drawer').classList.remove('open');
-  document.getElementById('sale-overlay').classList.remove('open');
+function updateOrderTotal() {
+  var tot = 0;
+  [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
+    var t = (parseFloat(r.querySelector('.ol-qty').value) || 0) * (parseFloat(r.querySelector('.ol-price').value) || 0);
+    r.querySelector('.ol-total').textContent = t ? saleMoney(t) : '';
+    tot += t;
+  });
+  document.getElementById('o-total').textContent = saleMoney(tot);
 }
-function applySuggestedSalePrice() {
-  var ch = document.getElementById('s-channel').value, sz = document.getElementById('s-size').value;
-  var p = suggestedSalePrice(ch, sz);
-  var hint = document.getElementById('s-price-hint');
-  if (!salePriceEdited) document.getElementById('s-price').value = p ? p.toFixed(2) : '';
-  if (hint) hint.textContent = p ? 'Bottle Math average for ' + ch + ' ' + sz + ' ml: ' + saleMoney(p) : '';
+function openOrderDrawer(id) {
+  var o = id ? findOrder(id) : null;
+  editingOrderId = o ? o.id : null;
+  refreshCrmDatalists();
+  document.getElementById('order-title').textContent = o ? 'Edit order ' + (o.invoiceNo || '') : 'New order';
+  document.getElementById('order-save-btn').textContent = o ? 'Update order' : 'Save order';
+  document.getElementById('o-date').value = o ? (o.date || todayISO()) : todayISO();
+  document.getElementById('o-customer').value = o ? orderCustomerName(o) : '';
+  document.getElementById('o-channel').value = o ? (o.channel || 'B2C') : 'B2C';
+  document.getElementById('o-paid').checked = o ? !!o.paid : true;
+  document.getElementById('o-deduct').checked = o ? !!o.deductStock : true;
+  document.getElementById('o-notes').value = o ? (o.notes || '') : '';
+  document.getElementById('o-invoice-hint').textContent = o ? ('Invoice ' + (o.invoiceNo || '—')) : 'The invoice number is given automatically when you save.';
+  document.getElementById('o-customer-hint').textContent = '';
+  document.getElementById('o-lines').innerHTML = '';
+  if (o && o.lines && o.lines.length) o.lines.forEach(function (l) { addOrderLine({ flavour: l.flavour, size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
+  else addOrderLine();
+  if (o) onOrderCustomerInput();
+  updateOrderTotal();
+  document.getElementById('order-drawer').classList.add('open');
+  document.getElementById('order-overlay').classList.add('open');
 }
-function onSaleFieldChange(which) {
-  if (which === 'channel' && !editingSaleId) {
-    // Shops/cafés usually pay later on an invoice; direct sales on the spot.
-    document.getElementById('s-paid').checked = document.getElementById('s-channel').value !== 'B2B';
-  }
-  applySuggestedSalePrice();
-  updateSaleTotal();
+function closeOrderDrawer() {
+  document.getElementById('order-drawer').classList.remove('open');
+  document.getElementById('order-overlay').classList.remove('open');
 }
-function updateSaleTotal() {
-  var q = parseFloat(document.getElementById('s-qty').value) || 0;
-  var p = parseFloat(document.getElementById('s-price').value) || 0;
-  document.getElementById('s-total').textContent = saleMoney(q * p);
+// Sends one order (and, for a brand-new customer, that customer) to the sheet.
+function postOrder(o, newCustomer, onFail) {
+  setSyncStatus('saving', 'saving…');
+  var payload = {};
+  for (var k in o) if (k !== '_hadStock') payload[k] = o[k];
+  apiPost({ action: 'saveOrder', order: payload, customer: newCustomer || null }, function (err, res) {
+    if (err || !res || !res.ok) {
+      setSyncStatus('error', 'save failed');
+      alert('The order couldn’t be saved to the sheet. If this keeps happening, redeploy the latest toka-brewlog-backend.gs as a new version.');
+      if (onFail) onFail();
+      return;
+    }
+    if (res.invoiceNo && !o.invoiceNo) o.invoiceNo = res.invoiceNo;
+    setSyncStatus('live', 'connected · google sheets');
+    renderSales();
+    if (o.deductStock || o._hadStock) loadBottleInventory();
+  });
 }
-function saveSale() {
-  var date = document.getElementById('s-date').value;
-  var qty = parseFloat(document.getElementById('s-qty').value);
+function saveOrder() {
+  var date = val('o-date');
+  var lines = readOrderLines();
+  var name = val('o-customer').trim();
   if (!date) { alert('Please set a date.'); return; }
-  if (!(qty > 0)) { alert('Please enter how many bottles were sold.'); return; }
-  var sale = {
-    id: editingSaleId || ('sale-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
-    date: date,
-    customer: document.getElementById('s-customer').value.trim(),
-    channel: document.getElementById('s-channel').value,
-    size: document.getElementById('s-size').value,
-    flavour: document.getElementById('s-flavour').value.trim(),
-    qty: qty,
-    unitPrice: parseFloat(document.getElementById('s-price').value) || 0,
-    paid: document.getElementById('s-paid').checked,
-    notes: document.getElementById('s-notes').value.trim()
-  };
-  var isEdit = !!editingSaleId;
-  if (isEdit) {
-    for (var i = 0; i < sales.length; i++) if (String(sales[i].id) === String(sale.id)) sales[i] = sale;
-  } else {
-    sales.push(sale);
+  if (!name) { alert('Please enter the customer.'); return; }
+  if (!lines.some(function (l) { return l.qty > 0; })) { alert('Add at least one line with a quantity.'); return; }
+  var c = customerByName(name), newCustomer = null;
+  if (!c) {
+    newCustomer = { id: crmId('cus'), name: name, type: val('o-channel'), contact: '', phone: '', email: '', address: '', reorderDays: '', notes: '', created: date };
+    customers.push(newCustomer);
+    c = newCustomer;
   }
-  closeSaleDrawer();
+  var prev = editingOrderId ? findOrder(editingOrderId) : null;
+  var o = {
+    id: prev ? prev.id : crmId('ord'),
+    invoiceNo: prev ? prev.invoiceNo : '',
+    date: date, customerId: c.id, customerName: c.name,
+    channel: val('o-channel'),
+    paid: document.getElementById('o-paid').checked,
+    paidDate: prev ? (prev.paidDate || '') : '',
+    deductStock: document.getElementById('o-deduct').checked,
+    notes: val('o-notes').trim(),
+    lines: lines,
+    _hadStock: prev ? !!prev.deductStock : false
+  };
+  if (o.paid && !o.paidDate) o.paidDate = todayISO();
+  if (!o.paid) o.paidDate = '';
+  if (prev) orders = orders.map(function (x) { return String(x.id) === String(o.id) ? o : x; });
+  else orders.push(o);
+  closeOrderDrawer();
+  renderSales();
+  postOrder(o, newCustomer, function () {
+    if (prev) orders = orders.map(function (x) { return String(x.id) === String(o.id) ? prev : x; });
+    else orders = orders.filter(function (x) { return x !== o; });
+    if (newCustomer) customers = customers.filter(function (x) { return x !== newCustomer; });
+    renderSales();
+  });
+}
+function toggleOrderPaid(id) {
+  var o = findOrder(id);
+  if (!o) return;
+  var was = o.paid, wasDate = o.paidDate;
+  o.paid = !o.paid;
+  o.paidDate = o.paid ? todayISO() : '';
+  renderSales();
+  postOrder(o, null, function () { o.paid = was; o.paidDate = wasDate; renderSales(); });
+}
+function deleteOrder(id) {
+  var o = findOrder(id);
+  if (!o) return;
+  if (!confirm('Delete order ' + (o.invoiceNo || '') + ' (' + (orderCustomerName(o) || 'no customer') + ', ' + fmtDate(o.date) + ')?' + (o.deductStock ? '\n\nIts bottles go back into Bottle inventory.' : ''))) return;
+  orders = orders.filter(function (x) { return String(x.id) !== String(id); });
+  renderSales();
+  apiPost({ action: 'deleteOrder', id: id }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'delete failed'); orders.push(o); renderSales(); return; }
+    if (o.deductStock) loadBottleInventory();
+  });
+}
+
+/* ---- customer drawer ---- */
+function openCustomerDrawer(id) {
+  var c = id ? findCustomer(id) : null;
+  editingCustomerId = c ? c.id : null;
+  document.getElementById('customer-title').textContent = c ? c.name : 'New customer';
+  document.getElementById('customer-save-btn').textContent = c ? 'Update customer' : 'Save customer';
+  document.getElementById('c-name').value = c ? c.name : '';
+  document.getElementById('c-type').value = c ? (c.type || 'B2C') : 'B2C';
+  document.getElementById('c-contact').value = c ? (c.contact || '') : '';
+  document.getElementById('c-phone').value = c ? (c.phone || '') : '';
+  document.getElementById('c-email').value = c ? (c.email || '') : '';
+  document.getElementById('c-address').value = c ? (c.address || '') : '';
+  document.getElementById('c-reorder').value = c ? (c.reorderDays || '') : '';
+  document.getElementById('c-notes').value = c ? (c.notes || '') : '';
+  document.getElementById('c-history').innerHTML = c ? customerHistoryHtml(c) : '';
+  document.getElementById('customer-drawer').classList.add('open');
+  document.getElementById('customer-overlay').classList.add('open');
+}
+function closeCustomerDrawer() {
+  document.getElementById('customer-drawer').classList.remove('open');
+  document.getElementById('customer-overlay').classList.remove('open');
+}
+function customerHistoryHtml(c) {
+  var ins = customerInsights(c);
+  var h = '<div class="form-section"><div class="form-section-title">History</div>';
+  if (!ins.n) return h + '<div class="hint">No orders yet.</div></div>';
+  h += '<div class="crm-hist-stats">'
+    + '<div><b>' + ins.n + '</b> order' + (ins.n === 1 ? '' : 's') + '</div>'
+    + '<div><b>' + fmtNum(ins.bottles) + '</b> bottles</div>'
+    + '<div><b>' + saleMoney(ins.spent) + '</b> spent</div>'
+    + (ins.unpaid > 0 ? '<div class="crm-unpaid"><b>' + saleMoney(ins.unpaid) + '</b> unpaid</div>' : '')
+    + '</div>'
+    + '<div class="hint">Next order expected ' + crmStatusChip(ins) + '<br>Estimated ' + esc(ins.basis) + '.</div>'
+    + (crmContactButtons(c) ? '<div class="crm-nudge-acts" style="margin:10px 0 4px">' + crmContactButtons(c) + '</div>' : '');
+  h += '<div class="crm-hist-list">' + ins.orders.slice().reverse().map(function (o) {
+    return '<div class="crm-hist-row"><div class="crm-hist-top"><button type="button" class="crm-link mono" onclick="openInvoice(\'' + esc(o.id) + '\')">' + esc(o.invoiceNo || '…') + '</button>'
+      + '<span class="mono">' + esc(fmtDate(o.date)) + '</span><span class="mono"><b>' + saleMoney(orderTotal(o)) + '</b></span>'
+      + '<span class="paid-pill' + (o.paid ? ' is-paid' : '') + '">' + (o.paid ? 'Paid' : 'Unpaid') + '</span></div>'
+      + '<div class="crm-hist-items">' + esc(orderItemsText(o)) + '</div></div>';
+  }).join('') + '</div></div>';
+  return h;
+}
+function saveCustomer() {
+  var name = val('c-name').trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  var dupe = customerByName(name);
+  if (dupe && String(dupe.id) !== String(editingCustomerId)) { alert('There’s already a customer called “' + dupe.name + '”.'); return; }
+  var prev = editingCustomerId ? findCustomer(editingCustomerId) : null;
+  var c = {
+    id: prev ? prev.id : crmId('cus'), name: name, type: val('c-type'), contact: val('c-contact').trim(),
+    phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(),
+    reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO()
+  };
+  if (prev) customers = customers.map(function (x) { return String(x.id) === String(c.id) ? c : x; });
+  else customers.push(c);
+  closeCustomerDrawer();
   renderSales();
   setSyncStatus('saving', 'saving…');
-  apiPost({ action: isEdit ? 'updateSale' : 'createSale', sale: sale }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('The sale couldn’t be saved to the sheet. If this is the first sale, the Apps Script backend may need redeploying.'); return; }
+  apiPost({ action: 'saveCustomer', customer: c }, function (err, res) {
+    if (err || !res || !res.ok) {
+      if (prev) customers = customers.map(function (x) { return String(x.id) === String(c.id) ? prev : x; });
+      else customers = customers.filter(function (x) { return x !== c; });
+      renderSales();
+      setSyncStatus('error', 'save failed'); alert('Couldn’t save the customer — the Apps Script backend may need redeploying.');
+      return;
+    }
     setSyncStatus('live', 'connected · google sheets');
   });
 }
-function setSalePaid(id, paid) {
-  var s = findSale(id);
-  if (!s) return;
-  s.paid = !!paid;
+function deleteCustomer(id) {
+  var c = findCustomer(id);
+  if (!c) return;
+  var n = ordersOfCustomer(c).length;
+  if (!confirm('Delete customer “' + c.name + '”?' + (n ? '\n\nTheir ' + n + ' order' + (n === 1 ? '' : 's') + ' stay, under their name.' : ''))) return;
+  customers = customers.filter(function (x) { return String(x.id) !== String(id); });
   renderSales();
-  setSyncStatus('saving', 'saving\u2026');
-  apiPost({ action: 'updateSale', sale: s }, function (err, res) {
-    if (err || !res || !res.ok) {
-      // Put it back so the screen never shows something the sheet doesn't have.
-      s.paid = !paid;
-      renderSales();
-      setSyncStatus('error', 'save failed');
-      alert('Couldn\u2019t save that to the sheet \u2014 the Apps Script backend may need redeploying for Sales.');
-      return;
-    }
-    setSyncStatus('live', 'connected \u00b7 google sheets');
+  apiPost({ action: 'deleteCustomer', id: id }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'delete failed'); customers.push(c); renderSales(); }
   });
 }
-function toggleSalePaid(id) { var s = findSale(id); if (s) setSalePaid(id, !s.paid); }
-function deleteSale(id) {
-  var s = findSale(id);
-  if (!s) return;
-  if (!confirm('Delete this sale (' + (s.customer || 'no customer') + ', ' + fmtDate(s.date) + ')?')) return;
-  sales = sales.filter(function (x) { return String(x.id) !== String(id); });
-  renderSales();
-  apiPost({ action: 'deleteSale', id: id }, function (err, res) {
-    if (err || !res || !res.ok) setSyncStatus('error', 'delete failed');
+
+/* ---- invoice details + invoice PDF ---- */
+function openInvoiceSettings() {
+  var box = document.getElementById('invset-fields');
+  box.innerHTML = INVOICE_FIELDS.map(function (f) {
+    var v = esc(invoiceSettings[f[0]] || '');
+    var input = f[2] === 'textarea'
+      ? '<textarea id="inv-' + f[0] + '" placeholder="' + esc(f[3]) + '">' + v + '</textarea>'
+      : '<input type="' + f[2] + '" id="inv-' + f[0] + '" placeholder="' + esc(f[3]) + '" value="' + v + '"' + (f[2] === 'number' ? ' min="0" step="any"' : '') + ' />';
+    return '<div class="form-group"><label>' + esc(f[1]) + '</label>' + input + '</div>';
+  }).join('');
+  document.getElementById('invset-drawer').classList.add('open');
+  document.getElementById('invset-overlay').classList.add('open');
+}
+function closeInvoiceSettings() {
+  document.getElementById('invset-drawer').classList.remove('open');
+  document.getElementById('invset-overlay').classList.remove('open');
+}
+function saveInvoiceSettings() {
+  var prev = invoiceSettings, next = {};
+  INVOICE_FIELDS.forEach(function (f) { next[f[0]] = val('inv-' + f[0]).trim(); });
+  invoiceSettings = next;
+  closeInvoiceSettings();
+  setSyncStatus('saving', 'saving…');
+  apiPost({ action: 'setInvoiceSettings', settings: next }, function (err, res) {
+    if (err || !res || !res.ok) { invoiceSettings = prev; setSyncStatus('error', 'save failed'); alert('Couldn’t save the invoice details — the Apps Script backend may need redeploying.'); return; }
+    setSyncStatus('live', 'connected · google sheets');
   });
+}
+function invoiceHtml(o) {
+  var c = customerForOrder(o) || { name: o.customerName };
+  var s = invoiceSettings || {};
+  var logoEl = document.querySelector('#main-header img');
+  var logo = logoEl ? logoEl.getAttribute('src') : '';
+  var sub = orderTotal(o), rate = parseFloat(s.taxRate) || 0, tax = Math.round(sub * rate) / 100, total = sub + tax;
+  function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
+  function money(n) { return '$ ' + fmtUSD(n); }
+  var rows = (o.lines || []).map(function (l) {
+    return '<tr><td>' + esc(l.flavour || 'Kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
+      + '<td class="r">' + fmtNum(parseFloat(l.qty) || 0) + '</td><td class="r">' + money(parseFloat(l.unitPrice) || 0) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>';
+  }).join('');
+  return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc((o.invoiceNo || 'Invoice') + (c.name ? ' ' + c.name : '')) + '</title>'
+    + '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    + '<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">'
+    + '<style>'
+    + '@page{size:A4;margin:16mm}*{box-sizing:border-box}body{margin:0;background:#f4f1ec;color:#1e1b18;font-family:Newsreader,Georgia,serif;font-size:14px}'
+    + '.bar{position:sticky;top:0;display:flex;gap:10px;justify-content:center;padding:12px;background:#1e1b18}.bar button{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:9px 18px;border-radius:4px;border:1px solid #fff;background:#fff;color:#1e1b18;cursor:pointer}.bar button.g{background:none;color:#fff}'
+    + '.page{max-width:780px;margin:24px auto;background:#fff;padding:48px 52px;box-shadow:0 2px 18px rgba(0,0,0,.08)}'
+    + '.head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}.logo{height:90px}.title{text-align:right}.title h1{font-family:"Bricolage Grotesque",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:-.01em}'
+    + '.meta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:#6f665d;line-height:1.7}'
+    + '.rule{height:3px;width:56px;background:#c0542a;margin:22px 0 26px}'
+    + '.parties{display:flex;gap:40px;margin-bottom:30px}.parties>div{flex:1;line-height:1.5}.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a9088;margin-bottom:6px}.who{font-weight:500;font-size:16px}'
+    + 'table{width:100%;border-collapse:collapse}th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9088;text-align:left;border-bottom:1px solid #e4ddd2;padding:8px 6px}td{padding:11px 6px;border-bottom:1px solid #efe9df}th.r,.r{text-align:right}td.r{font-family:"IBM Plex Mono",monospace}.muted{color:#9a9088}'
+    + '.tot{margin-left:auto;width:280px;margin-top:16px}.tot div{display:flex;justify-content:space-between;padding:5px 6px;font-family:"IBM Plex Mono",monospace}.tot .big{border-top:2px solid #1e1b18;margin-top:6px;padding-top:10px;font-size:17px;font-weight:500}'
+    + '.status{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:99px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:#fdf0eb;color:#c0542a}.status.paid{background:#edf6f0;color:#3d7a55}'
+    + '.foot{margin-top:36px;display:flex;gap:40px;font-size:13px;line-height:1.55}.foot>div{flex:1}.thanks{margin-top:30px;text-align:center;color:#6f665d;font-style:italic}'
+    + '@media print{body{background:#fff}.bar{display:none}.page{box-shadow:none;margin:0;padding:0;max-width:none}}'
+    + '@media (max-width:600px){.page{padding:28px 22px;margin:0}.parties,.foot{flex-direction:column;gap:18px}.logo{height:64px}}'
+    + '</style></head><body>'
+    + '<div class="bar"><button onclick="window.print()">Save as PDF / Print</button><button class="g" onclick="window.close()">Close</button></div>'
+    + '<div class="page">'
+    + '<div class="head">' + (logo ? '<img class="logo" src="' + logo + '" alt="toka">' : '<div></div>')
+    + '<div class="title"><h1>Invoice</h1><div class="meta">No. ' + esc(o.invoiceNo || '—') + '<br>Date ' + esc(fmtDate(o.date)) + '</div>'
+    + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div></div>'
+    + '<div class="rule"></div>'
+    + '<div class="parties"><div><div class="lbl">From</div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
+    + (s.phone ? '<div>' + esc(s.phone) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
+    + '<div><div class="lbl">Bill to</div><div class="who">' + esc(c.name || '') + '</div>' + (c.contact ? '<div>Attn. ' + esc(c.contact) + '</div>' : '')
+    + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(c.phone) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '') + '</div></div>'
+    + '<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<div class="tot"><div><span>Subtotal</span><span>' + money(sub) + '</span></div>'
+    + (rate ? '<div><span>Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
+    + '<div class="big"><span>Total (USD)</span><span>' + money(total) + '</span></div></div>'
+    + '<div class="foot">' + (s.payment ? '<div><div class="lbl">Payment</div>' + nl(s.payment) + '</div>' : '') + (o.notes ? '<div><div class="lbl">Notes</div>' + nl(o.notes) + '</div>' : '') + '</div>'
+    + (s.footer ? '<div class="thanks">' + nl(s.footer) + '</div>' : '')
+    + '</div></body></html>';
+}
+function openInvoice(id) {
+  var o = findOrder(id);
+  if (!o) return;
+  if (!o.invoiceNo) { alert('This order is still being saved — try again in a moment.'); return; }
+  var w = window.open('', '_blank');
+  if (!w) { alert('Your browser blocked the invoice window — allow pop-ups for this page and try again.'); return; }
+  w.document.open();
+  w.document.write(invoiceHtml(o));
+  w.document.close();
 }
 
 function loadBottleInventory(cb) {
@@ -8165,7 +8665,7 @@ function bivBalances() {
   //     reverses, matching the top progress bar).
   //   consumed     = lifetime total ever consumed (stage:'consumed').
   //   "Filled bottles at atelier" (current, on-hand) = filledEvents - consumed.
-  var received = {}, depot = {}, atelierEmpty = {}, filledEvents = {}, consumed = {};
+  var received = {}, depot = {}, atelierEmpty = {}, filledEvents = {}, consumed = {}, sold = {}, soldByFlavourSize = {};
   // Parts behind each total, only used for the hover tooltips.
   var depotIn = {}, depotOut = {}, atelierIn = {}, atelierOut = {}, recycled = {};
   function add(m, k, v) { m[k] = (m[k] || 0) + v; }
@@ -8195,6 +8695,11 @@ function bivBalances() {
       consumedByFlavour[fcat] = (consumedByFlavour[fcat] || 0) + Math.abs(q);
       consumedByFlavourSize[fcat] = consumedByFlavourSize[fcat] || {};
       consumedByFlavourSize[fcat][scat] = (consumedByFlavourSize[fcat][scat] || 0) + Math.abs(q);
+    } else if (stage === 'sold') {
+      // Written automatically by Sales orders: leaves the filled stock.
+      sold[scat] = (sold[scat] || 0) + Math.abs(q);
+      soldByFlavourSize[fcat] = soldByFlavourSize[fcat] || {};
+      soldByFlavourSize[fcat][scat] = (soldByFlavourSize[fcat][scat] || 0) + Math.abs(q);
     } else if (stage === 'atelier') {
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
       if (q >= 0) add(atelierIn, scat, q); else add(atelierOut, scat, -q);
@@ -8212,13 +8717,13 @@ function bivBalances() {
       if (q >= 0) add(depotIn, scat, q); else add(depotOut, scat, -q);
     }
   }
-  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize, depotIn: depotIn, depotOut: depotOut, atelierIn: atelierIn, atelierOut: atelierOut, recycled: recycled };
+  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize, depotIn: depotIn, depotOut: depotOut, atelierIn: atelierIn, atelierOut: atelierOut, recycled: recycled, sold: sold, soldByFlavourSize: soldByFlavourSize };
 }
 function bivSizeList(b) {
   // Known sizes always show first (even at zero), then any extra category
   // someone free-types later still gets picked up automatically.
   var sizes = ['Small (375ml)', 'Big (750ml)'];
-  [b.received, b.depot, b.atelierEmpty, b.filledEvents, b.consumed].forEach(function (m) {
+  [b.received, b.depot, b.atelierEmpty, b.filledEvents, b.consumed, b.sold].forEach(function (m) {
     for (var k in m) { if (sizes.indexOf(k) === -1) sizes.push(k); }
   });
   return sizes;
@@ -8276,7 +8781,7 @@ function bivKpisHtml() {
   var filledAtelierNet = {}, i;
   for (i = 0; i < sizes.length; i++) {
     var s = sizes[i];
-    filledAtelierNet[s] = (b.filledEvents[s] || 0) - (b.consumed[s] || 0);
+    filledAtelierNet[s] = (b.filledEvents[s] || 0) - (b.consumed[s] || 0) - (b.sold[s] || 0);
   }
   var h = '<div class="an-section"><div class="sec-title">Bottle count</div>';
   h += bivProgressRowHtml(sizes, b);
@@ -8293,13 +8798,15 @@ function bivKpisHtml() {
     var fl = flavours[j];
     var filledBySize = b.filledByFlavourSize[fl] || {};
     var consumedBySize = b.consumedByFlavourSize[fl] || {};
+    var soldBySize = b.soldByFlavourSize[fl] || {};
     var netBySize = {};
     for (var k = 0; k < sizes.length; k++) {
       var sz = sizes[k];
-      netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0);
+      netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0) - (soldBySize[sz] || 0);
     }
     h += bivStatSubRowHtml(fl, sizes, netBySize);
   }
+  h += bivStatRowHtml('Sold bottles', sizes, b.sold);
   h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
   h += '</div>';
   h += '</div>';
@@ -8310,7 +8817,7 @@ function bivKpisHtml() {
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
 var BIV_SIZE_OPTS = 'Small (375ml),Big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
-var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,consumed:Consumed,recycled:Recycled,other:Other';
+var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,recycled:Recycled,other:Other';
 function bivOptionsHtml(optStr) {
   var parts = optStr.split(','), h = '';
   for (var i = 0; i < parts.length; i++) {
@@ -8381,6 +8888,7 @@ function bivStageLabel(stage) {
   if (stage === 'filled') return 'Filled';
   if (stage === 'consumed') return 'Consumed';
   if (stage === 'recycled') return 'Recycled';
+  if (stage === 'sold') return 'Sold';
   if (stage === 'other') return 'Other';
   return 'Depot';
 }
@@ -8439,6 +8947,7 @@ function bivFlavourRank(flavour) {
 // broken/lost/untracked, trails at the very bottom).
 function bivStageRank(stage) {
   if (stage === 'consumed') return 0;
+  if (stage === 'sold') return 0;
   if (stage === 'filled') return 1;
   if (stage === 'atelier') return 2;
   if (stage === 'recycled') return 2;
