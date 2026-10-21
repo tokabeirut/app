@@ -8624,7 +8624,7 @@ function invoiceHtml(o) {
     + '.bar{position:sticky;top:0;display:flex;gap:10px;justify-content:center;padding:12px;background:#1e1b18}.bar button{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:9px 18px;border-radius:4px;border:1px solid #fff;background:#fff;color:#1e1b18;cursor:pointer}.bar button.g{background:none;color:#fff}'
     + '.page{max-width:780px;margin:24px auto;background:#fff;padding:48px 52px;box-shadow:0 2px 18px rgba(0,0,0,.08)}'
     + '.head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}.logo{height:90px}.title{text-align:right}.title h1{font-family:"Bricolage Grotesque",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:-.01em}'
-    + '.meta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:#6f665d;line-height:1.7}'
+    + '.meta{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#1e1b18;line-height:1.8}.title .meta{margin-top:8px}.ml{color:#9a9088}'
     + '.rule{height:3px;width:56px;background:#c0542a;margin:22px 0 26px}'
     + '.parties{display:flex;gap:40px;margin-bottom:30px}.parties>div{flex:1;line-height:1.5}.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a9088;margin-bottom:6px}.who{font-weight:500;font-size:16px}'
     + 'table{width:100%;border-collapse:collapse}th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9088;text-align:left;border-bottom:1px solid #e4ddd2;padding:8px 6px}td{padding:11px 6px;border-bottom:1px solid #efe9df}th.r,.r{text-align:right}td.r{font-family:"IBM Plex Mono",monospace}.muted{color:#9a9088}'
@@ -8637,7 +8637,7 @@ function invoiceHtml(o) {
     + '<div class="bar"><button onclick="window.print()">Save as PDF / Print</button><button class="g" onclick="window.close()">Close</button></div>'
     + '<div class="page">'
     + '<div class="head">' + (logo ? '<img class="logo" src="' + logo + '" alt="toka">' : '<div></div>')
-    + '<div class="title"><h1>Invoice</h1><div class="meta">No. ' + esc(o.invoiceNo || '—') + '<br>Date ' + esc(fmtDate(o.date)) + '</div>'
+    + '<div class="title"><div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '</div>'
     + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div></div>'
     + '<div class="rule"></div>'
     + '<div class="parties"><div><div class="lbl">From</div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
