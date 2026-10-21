@@ -807,18 +807,20 @@
   .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 90px; }
   .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 170px; }
   .sales-table th:nth-child(9), .sales-table td:nth-child(9) { width: 100px; }
-  .crm-table { table-layout: fixed; min-width: 1380px; width: 1380px; width: max(1380px, 100%); }
+  .crm-table { table-layout: fixed; min-width: 1500px; width: 1500px; width: max(1500px, 100%); }
   .crm-table th:nth-child(1), .crm-table td:nth-child(1) { width: 170px; white-space: normal; }
-  .crm-table th:nth-child(2), .crm-table td:nth-child(2) { width: 70px; }
-  .crm-table th:nth-child(3), .crm-table td:nth-child(3) { width: 140px; }
-  .crm-table th:nth-child(4), .crm-table td:nth-child(4) { width: 170px; }
+  .crm-table th:nth-child(2), .crm-table td:nth-child(2) { width: 120px; white-space: normal; }
+  .crm-table th:nth-child(3), .crm-table td:nth-child(3) { width: 70px; }
+  .crm-table th:nth-child(4), .crm-table td:nth-child(4) { width: 140px; }
   .crm-table th:nth-child(5), .crm-table td:nth-child(5) { width: 170px; }
-  .crm-table th:nth-child(6), .crm-table td:nth-child(6) { width: 70px; }
-  .crm-table th:nth-child(7), .crm-table td:nth-child(7) { width: 75px; }
-  .crm-table th:nth-child(8), .crm-table td:nth-child(8) { width: 110px; }
+  .crm-table th:nth-child(6), .crm-table td:nth-child(6) { width: 170px; }
+  .crm-table th:nth-child(7), .crm-table td:nth-child(7) { width: 70px; }
+  .crm-table th:nth-child(8), .crm-table td:nth-child(8) { width: 75px; }
   .crm-table th:nth-child(9), .crm-table td:nth-child(9) { width: 110px; }
-  .crm-table th:nth-child(10), .crm-table td:nth-child(10) { width: 170px; }
-  .crm-table th:nth-child(11), .crm-table td:nth-child(11) { width: 200px; }
+  .crm-table th:nth-child(10), .crm-table td:nth-child(10) { width: 110px; }
+  .crm-table th:nth-child(11), .crm-table td:nth-child(11) { width: 170px; }
+  .crm-table th:nth-child(12), .crm-table td:nth-child(12) { width: 200px; }
+  .crm-alias { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-faint); background: var(--surface2); border-radius: 99px; padding: 1px 7px; margin-left: 4px; white-space: nowrap; }
   #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'IBM Plex Mono', monospace; }
   #view-sales .crm-table td.row-actions { white-space: nowrap; text-align: right; }
   .crm-bar-btns { display: -webkit-flex; display: flex; gap: 8px; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; }
@@ -1821,6 +1823,10 @@
     <div class="form-group">
       <label>Name</label>
       <input type="text" id="c-name" placeholder="person, caf&eacute; or shop" />
+    </div>
+    <div class="form-group">
+      <label>Alias (optional)</label>
+      <input type="text" id="c-alias" placeholder="nickname or what you call them &mdash; not shown on invoices" />
     </div>
     <div class="pt-field-row">
       <div class="form-group">
@@ -8090,12 +8096,15 @@ function orderItemsText(o) {
 }
 function findOrder(id) { for (var i = 0; i < orders.length; i++) if (String(orders[i].id) === String(id)) return orders[i]; return null; }
 function findCustomer(id) { for (var i = 0; i < customers.length; i++) if (String(customers[i].id) === String(id)) return customers[i]; return null; }
+// Finds a customer by their name or their alias (case-insensitive).
 function customerByName(name) {
   var k = String(name || '').trim().toLowerCase();
   if (!k) return null;
   for (var i = 0; i < customers.length; i++) if (String(customers[i].name).trim().toLowerCase() === k) return customers[i];
+  for (var j = 0; j < customers.length; j++) if (customers[j].alias && String(customers[j].alias).trim().toLowerCase() === k) return customers[j];
   return null;
 }
+function crmAliasHtml(c) { return c && c.alias ? ' <span class="crm-alias">' + esc(c.alias) + '</span>' : ''; }
 function customerForOrder(o) { return findCustomer(o.customerId) || customerByName(o.customerName); }
 function orderCustomerName(o) { var c = customerForOrder(o); return c ? c.name : (o.customerName || ''); }
 function ordersOfCustomer(c) {
@@ -8197,7 +8206,7 @@ function crmNudgeHtml() {
     + due.map(function (x) {
       var lo = x.ins.orders[x.ins.orders.length - 1];
       return '<div class="crm-nudge-card" onclick="openCustomerDrawer(\'' + esc(x.c.id) + '\')">'
-        + '<div class="crm-nudge-name">' + esc(x.c.name) + '</div>'
+        + '<div class="crm-nudge-name">' + esc(x.c.name) + crmAliasHtml(x.c) + '</div>'
         + '<div class="crm-nudge-meta">Last order ' + esc(fmtDate(lo.date)) + ' · ' + fmtNum(orderBottles(lo)) + ' bottles</div>'
         + '<div class="crm-nudge-meta">' + crmStatusChip(x.ins) + '</div>'
         + '<div class="crm-nudge-acts">' + (crmContactButtons(x.c) || '<span class="muted">add a phone number to contact them</span>') + '</div>'
@@ -8241,7 +8250,7 @@ function crmOrdersHtml() {
     h += '<tr>'
       + '<td class="mono"><button type="button" class="crm-link" onclick="openInvoice(\'' + esc(o.id) + '\')" title="Open the invoice">' + esc(o.invoiceNo || '…') + '</button></td>'
       + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
-      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(c.name) + '</button>' : esc(o.customerName || '—'))
+      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(c.name) + '</button>' + crmAliasHtml(c) : esc(o.customerName || '—'))
         + ' <span class="crm-chan">' + esc(o.channel || '') + '</span></td>'
       + '<td class="crm-items">' + esc(orderItemsText(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
@@ -8263,12 +8272,13 @@ function crmCustomersHtml() {
   var rows = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
     .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || String(a.c.name).localeCompare(String(b.c.name)); });
   var h = '<div class="table-wrap"><div class="table-scroll"><table class="crm-table"><thead><tr>'
-    + '<th>Customer</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th>Next order (est.)</th><th></th>'
+    + '<th>Customer</th><th>Alias</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th>Next order (est.)</th><th></th>'
     + '</tr></thead><tbody>';
   rows.forEach(function (x) {
     var c = x.c, ins = x.ins;
     h += '<tr>'
       + cellEd(esc(c.name || '—'), { type: 'customer', uid: c.id, field: 'name' })
+      + cellEd(c.alias ? esc(c.alias) : '<span class="muted">—</span>', { type: 'customer', uid: c.id, field: 'alias' })
       + cellEd(esc(c.type || 'B2C'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
       + cellEd(esc(c.phone || '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
@@ -8297,7 +8307,9 @@ function crmFlavourOptions() {
 }
 function refreshCrmDatalists() {
   var cl = document.getElementById('crm-customer-list'), fl = document.getElementById('crm-flavour-list');
-  if (cl) cl.innerHTML = customers.map(function (c) { return '<option value="' + esc(c.name) + '"></option>'; }).join('');
+  if (cl) cl.innerHTML = customers.map(function (c) {
+    return '<option value="' + esc(c.name) + '">' + esc(c.alias || '') + '</option>' + (c.alias ? '<option value="' + esc(c.alias) + '">' + esc(c.name) + '</option>' : '');
+  }).join('');
   if (fl) fl.innerHTML = crmFlavourOptions().map(function (f) { return '<option value="' + esc(f) + '"></option>'; }).join('');
 }
 function orderLineRowHtml(l) {
@@ -8410,9 +8422,9 @@ function saveOrder() {
   if (!date) { alert('Please set a date.'); return; }
   if (!name) { alert('Please enter the customer.'); return; }
   if (!lines.some(function (l) { return l.qty > 0; })) { alert('Add at least one line with a quantity.'); return; }
-  var c = customerByName(name), newCustomer = null;
+  var c = customerByName(name), newCustomer = null;   // matches a name or an alias
   if (!c) {
-    newCustomer = { id: crmId('cus'), name: name, type: val('o-channel'), contact: '', phone: '', email: '', address: '', reorderDays: '', notes: '', created: date };
+    newCustomer = { id: crmId('cus'), name: name, alias: '', type: val('o-channel'), contact: '', phone: '', email: '', address: '', reorderDays: '', notes: '', created: date };
     customers.push(newCustomer);
     c = newCustomer;
   }
@@ -8467,9 +8479,10 @@ function deleteOrder(id) {
 function openCustomerDrawer(id) {
   var c = id ? findCustomer(id) : null;
   editingCustomerId = c ? c.id : null;
-  document.getElementById('customer-title').textContent = c ? c.name : 'New customer';
+  document.getElementById('customer-title').textContent = c ? c.name + (c.alias ? ' (' + c.alias + ')' : '') : 'New customer';
   document.getElementById('customer-save-btn').textContent = c ? 'Update customer' : 'Save customer';
   document.getElementById('c-name').value = c ? c.name : '';
+  document.getElementById('c-alias').value = c ? (c.alias || '') : '';
   document.getElementById('c-type').value = c ? (c.type || 'B2C') : 'B2C';
   document.getElementById('c-contact').value = c ? (c.contact || '') : '';
   document.getElementById('c-phone').value = c ? (c.phone || '') : '';
@@ -8510,9 +8523,11 @@ function saveCustomer() {
   if (!name) { alert('Please enter a name.'); return; }
   var dupe = customerByName(name);
   if (dupe && String(dupe.id) !== String(editingCustomerId)) { alert('There’s already a customer called “' + dupe.name + '”.'); return; }
+  var aliasClash = val('c-alias').trim() ? customerByName(val('c-alias')) : null;
+  if (aliasClash && String(aliasClash.id) !== String(editingCustomerId)) { alert('“' + val('c-alias').trim() + '” is already used by ' + aliasClash.name + '.'); return; }
   var prev = editingCustomerId ? findCustomer(editingCustomerId) : null;
   var c = {
-    id: prev ? prev.id : crmId('cus'), name: name, type: val('c-type'), contact: val('c-contact').trim(),
+    id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-contact').trim(),
     phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(),
     reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO()
   };

@@ -995,7 +995,7 @@ var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
 var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes'];
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price'];
-var CUSTOMER_HEADERS = ['customer_pk', 'name', 'type', 'contact_person', 'phone', 'email', 'address', 'reorder_days', 'notes', 'created_date'];
+var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'reorder_days', 'notes', 'created_date'];
 
 // Creates the tab with its headers, or adds any missing header columns.
 function ensureSheet_(name, headers) {
@@ -1114,7 +1114,7 @@ function migrateOldSales_() {
 function readAllCustomers_() {
   return readSheetObjects_(getCustomersSheet_(), 'customer_pk').map(function (c) {
     return {
-      id: String(c.customer_pk), name: String(c.name || ''), type: String(c.type || 'B2C'),
+      id: String(c.customer_pk), name: String(c.name || ''), alias: String(c.alias || ''), type: String(c.type || 'B2C'),
       contact: String(c.contact_person || ''), phone: String(c.phone || ''), email: String(c.email || ''),
       address: String(c.address || ''), reorderDays: c.reorder_days === '' ? '' : c.reorder_days,
       notes: String(c.notes || ''), created: ymd_(c.created_date)
@@ -1139,7 +1139,7 @@ function readAllOrders_() {
   });
 }
 function customerRow_(c) {
-  return { customer_pk: c.id, name: c.name || '', type: c.type || 'B2C', contact_person: c.contact || '', phone: c.phone || '',
+  return { customer_pk: c.id, name: c.name || '', alias: c.alias || '', type: c.type || 'B2C', contact_person: c.contact || '', phone: c.phone || '',
     email: c.email || '', address: c.address || '', reorder_days: (c.reorderDays == null ? '' : c.reorderDays), notes: c.notes || '',
     created_date: c.created || ymd_(new Date()) };
 }
