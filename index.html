@@ -855,6 +855,8 @@
   .crm-link:hover { color: var(--terra); text-decoration-color: var(--terra); }
   .crm-chan { font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem; letter-spacing: 0.08em; color: var(--ink-faint); margin-left: 4px; }
   .crm-items { font-size: 0.86rem; line-height: 1.35; }
+  .crm-item { white-space: nowrap; }
+  .crm-item + .crm-item { margin-top: 3px; }
   .crm-nostock { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.56rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); border: 1px dashed var(--border); border-radius: 99px; padding: 0 6px; margin-left: 3px; }
   .crm-unpaid { color: var(--terra); font-size: 0.72rem; }
   .crm-wide-drawer { width: 520px; }
@@ -8109,6 +8111,12 @@ function orderBottles(o) { return (o.lines || []).reduce(function (a, l) { retur
 function orderItemsText(o) {
   return (o.lines || []).map(function (l) { return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : ''); }).join(' · ');
 }
+// One product per line (orders table, customer history).
+function orderItemsHtml(o) {
+  return (o.lines || []).map(function (l) {
+    return '<div class="crm-item">' + esc(fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '')) + '</div>';
+  }).join('');
+}
 function findOrder(id) { for (var i = 0; i < orders.length; i++) if (String(orders[i].id) === String(id)) return orders[i]; return null; }
 function findCustomer(id) { for (var i = 0; i < customers.length; i++) if (String(customers[i].id) === String(id)) return customers[i]; return null; }
 // Finds a customer by their name or their alias (case-insensitive).
@@ -8285,7 +8293,7 @@ function crmOrdersHtml() {
       + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
       + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')"' + (c.alias ? ' title="' + esc(c.name) + '"' : '') + '>' + esc(customerDisplayName(c)) + '</button>' : esc(o.customerName || '—'))
         + ' <span class="crm-chan">' + esc(o.channel || '') + '</span></td>'
-      + '<td class="crm-items">' + esc(orderItemsText(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
+      + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
       + '<td class="mono"><strong>' + saleMoney(orderTotal(o)) + '</strong></td>'
       + '<td><button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button></td>'
@@ -8548,7 +8556,7 @@ function customerHistoryHtml(c) {
     return '<div class="crm-hist-row"><div class="crm-hist-top"><button type="button" class="crm-link mono" onclick="openInvoice(\'' + esc(o.id) + '\')">' + esc(o.invoiceNo || '…') + '</button>'
       + '<span class="mono">' + esc(fmtDate(o.date)) + '</span><span class="mono"><b>' + saleMoney(orderTotal(o)) + '</b></span>'
       + '<span class="paid-pill' + (o.paid ? ' is-paid' : '') + '">' + (o.paid ? 'Paid' : 'Unpaid') + '</span></div>'
-      + '<div class="crm-hist-items">' + esc(orderItemsText(o)) + '</div></div>';
+      + '<div class="crm-hist-items">' + orderItemsHtml(o) + '</div></div>';
   }).join('') + '</div></div>';
   return h;
 }
