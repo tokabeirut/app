@@ -4624,11 +4624,11 @@ var PAGE_EYEBROWS = {
   'view-analytics': [],
   'view-today': [],
   'view-production': [],
-  'view-expenses': ['All figures in USD'],
-  'view-sales': ['All figures in USD'],
+  'view-expenses': [],
+  'view-sales': [],
   'view-inventory': [],
   'view-spices': [],
-  'view-bottlemath': ['All figures in USD']
+  'view-bottlemath': []
 };
 function decoratePageHeads() {
   for (var id in PAGE_EYEBROWS) {
@@ -12578,7 +12578,7 @@ function renderToday() {
   // see the .today-grid rules near .an-section in the stylesheet.
   body.innerHTML = '<div class="today-grid">' + todayBrewPlan() + todayPlanInf() + todayStrainInf() + todayFridge() + '</div>';
   var sub = document.getElementById('today-sub');
-  if (sub) sub.textContent = fmtDate(todayISO()) + ' \u00b7 ' + todayActiveF1().length + ' fermenting \u00b7 ' + todayActiveInf().length + ' infusing \u00b7 ' + todayActiveF2().length + ' carbonating';
+  if (sub) sub.textContent = todayActiveF1().length + ' fermenting \u00b7 ' + todayActiveInf().length + ' infusing \u00b7 ' + todayActiveF2().length + ' carbonating';
   renderChecklist();
 }
 
