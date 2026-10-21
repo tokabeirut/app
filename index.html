@@ -823,7 +823,7 @@
   .crm-alias { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-faint); background: var(--surface2); border-radius: 99px; padding: 1px 7px; margin-left: 4px; white-space: nowrap; }
   #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'IBM Plex Mono', monospace; }
   #view-sales .crm-table td.row-actions { white-space: nowrap; text-align: right; }
-  .crm-bar-btns { display: -webkit-flex; display: flex; gap: 8px; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; }
+  .crm-bar-btns { margin-left: auto; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; }
   #view-sales .crm-tabs { display: -webkit-flex; display: flex; gap: 22px; padding: 0 48px; margin: 4px 0 18px; border-bottom: 1px solid var(--border); }
   #view-sales .crm-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 0 9px; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; margin-bottom: -1px; }
   #view-sales .crm-tab.active { color: var(--terra); border-bottom-color: var(--terra); }
@@ -4610,21 +4610,21 @@ function hideConfig() {
 // an optional second note, like the Bottle Math artifact's
 // "INTERNAL — COSTS AND PRICING · ALL FIGURES IN USD".
 var PAGE_EYEBROWS = {
-  'view-f1': ['Toka \u2014 Brewing process'],
-  'view-infusion': ['Toka \u2014 Brewing process'],
-  'view-bottling': ['Toka \u2014 Brewing process'],
-  'view-faucet': ['Toka \u2014 Brewing process'],
-  'view-bottlecalc': ['Toka \u2014 Brewing process'],
-  'view-readings': ['Toka \u2014 Brewing process'],
-  'view-overview': ['Toka \u2014 Quality control'],
-  'view-analytics': ['Toka \u2014 Quality control'],
-  'view-today': ['Toka \u2014 Operations'],
-  'view-production': ['Toka \u2014 Operations'],
-  'view-expenses': ['Toka \u2014 Business', 'All figures in USD'],
-  'view-sales': ['Toka \u2014 Business', 'All figures in USD'],
-  'view-inventory': ['Toka \u2014 Operations'],
-  'view-spices': ['Toka \u2014 Operations'],
-  'view-bottlemath': ['Toka \u2014 Costs and pricing', 'All figures in USD']
+  'view-f1': [],
+  'view-infusion': [],
+  'view-bottling': [],
+  'view-faucet': [],
+  'view-bottlecalc': [],
+  'view-readings': [],
+  'view-overview': [],
+  'view-analytics': [],
+  'view-today': [],
+  'view-production': [],
+  'view-expenses': ['All figures in USD'],
+  'view-sales': ['All figures in USD'],
+  'view-inventory': [],
+  'view-spices': [],
+  'view-bottlemath': ['All figures in USD']
 };
 function decoratePageHeads() {
   for (var id in PAGE_EYEBROWS) {
@@ -4632,15 +4632,20 @@ function decoratePageHeads() {
     if (!view) continue;
     var bar = view.querySelector(':scope > .view-bar');
     var head = bar && bar.nextElementSibling;
-    if (!head || !head.classList.contains('content-head') || head.querySelector('.page-eyebrow')) continue;
-    var eb = document.createElement('div');
+    if (!head || !head.classList.contains('content-head') || head.querySelector('.page-eyebrow') || head.querySelector('.page-accent')) continue;
+    // Pages with nothing to say above the title (the category name was
+    // removed as clutter) get just the big title and its accent rule.
+    var eb = null;
+    if (PAGE_EYEBROWS[id].length) eb = document.createElement('div');
+    if (eb) {
     eb.className = 'page-eyebrow';
     PAGE_EYEBROWS[id].forEach(function (t) { var sp = document.createElement('span'); sp.textContent = t; eb.appendChild(sp); });
+    }
     var title = head.querySelector('.content-title');
     // Usually the title sits directly in the head; Expenses wraps it in its
     // own block next to the stat boxes, so the eyebrow goes in that block.
     var titleBox = title ? title.parentNode : head;
-    titleBox.insertBefore(eb, titleBox.firstChild);
+    if (eb) titleBox.insertBefore(eb, titleBox.firstChild);
     if (title) {
       var rule = document.createElement('div');
       rule.className = 'page-accent';
@@ -8104,9 +8109,12 @@ function customerByName(name) {
   for (var j = 0; j < customers.length; j++) if (customers[j].alias && String(customers[j].alias).trim().toLowerCase() === k) return customers[j];
   return null;
 }
-function crmAliasHtml(c) { return c && c.alias ? ' <span class="crm-alias">' + esc(c.alias) + '</span>' : ''; }
+// In the overview a customer goes by their alias when they have one; the
+// official name (used on invoices) is shown next to it as a small tag.
+function customerDisplayName(c) { return c ? (c.alias || c.name || '') : ''; }
+function crmAliasHtml(c) { return c && c.alias ? ' <span class="crm-alias" title="Official name (used on invoices)">' + esc(c.name) + '</span>' : ''; }
 function customerForOrder(o) { return findCustomer(o.customerId) || customerByName(o.customerName); }
-function orderCustomerName(o) { var c = customerForOrder(o); return c ? c.name : (o.customerName || ''); }
+function orderCustomerName(o) { var c = customerForOrder(o); return c ? customerDisplayName(c) : (o.customerName || ''); }
 function ordersOfCustomer(c) {
   return orders.filter(function (o) { return (o.customerId && String(o.customerId) === String(c.id)) || (!o.customerId && String(o.customerName).trim().toLowerCase() === String(c.name).trim().toLowerCase()); })
     .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
@@ -8206,7 +8214,7 @@ function crmNudgeHtml() {
     + due.map(function (x) {
       var lo = x.ins.orders[x.ins.orders.length - 1];
       return '<div class="crm-nudge-card" onclick="openCustomerDrawer(\'' + esc(x.c.id) + '\')">'
-        + '<div class="crm-nudge-name">' + esc(x.c.name) + crmAliasHtml(x.c) + '</div>'
+        + '<div class="crm-nudge-name">' + esc(customerDisplayName(x.c)) + crmAliasHtml(x.c) + '</div>'
         + '<div class="crm-nudge-meta">Last order ' + esc(fmtDate(lo.date)) + ' · ' + fmtNum(orderBottles(lo)) + ' bottles</div>'
         + '<div class="crm-nudge-meta">' + crmStatusChip(x.ins) + '</div>'
         + '<div class="crm-nudge-acts">' + (crmContactButtons(x.c) || '<span class="muted">add a phone number to contact them</span>') + '</div>'
@@ -8250,7 +8258,7 @@ function crmOrdersHtml() {
     h += '<tr>'
       + '<td class="mono"><button type="button" class="crm-link" onclick="openInvoice(\'' + esc(o.id) + '\')" title="Open the invoice">' + esc(o.invoiceNo || '…') + '</button></td>'
       + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
-      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(c.name) + '</button>' + crmAliasHtml(c) : esc(o.customerName || '—'))
+      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(customerDisplayName(c)) + '</button>' + crmAliasHtml(c) : esc(o.customerName || '—'))
         + ' <span class="crm-chan">' + esc(o.channel || '') + '</span></td>'
       + '<td class="crm-items">' + esc(orderItemsText(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
@@ -8270,15 +8278,15 @@ function crmInvoiceIcon() {
 function crmCustomersHtml() {
   if (!customers.length) return '<div class="sales-empty">No customers yet — they’re added automatically with their first order, or with “+ customer”.</div>';
   var rows = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
-    .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || String(a.c.name).localeCompare(String(b.c.name)); });
+    .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || customerDisplayName(a.c).localeCompare(customerDisplayName(b.c)); });
   var h = '<div class="table-wrap"><div class="table-scroll"><table class="crm-table"><thead><tr>'
-    + '<th>Customer</th><th>Alias</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th>Next order (est.)</th><th></th>'
+    + '<th>Alias</th><th>Official name</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th>Next order (est.)</th><th></th>'
     + '</tr></thead><tbody>';
   rows.forEach(function (x) {
     var c = x.c, ins = x.ins;
     h += '<tr>'
-      + cellEd(esc(c.name || '—'), { type: 'customer', uid: c.id, field: 'name' })
-      + cellEd(c.alias ? esc(c.alias) : '<span class="muted">—</span>', { type: 'customer', uid: c.id, field: 'alias' })
+      + cellEd(c.alias ? '<strong>' + esc(c.alias) + '</strong>' : '<span class="muted">—</span>', { type: 'customer', uid: c.id, field: 'alias' })
+      + cellEd(c.alias ? esc(c.name || '—') : '<strong>' + esc(c.name || '—') + '</strong>', { type: 'customer', uid: c.id, field: 'name' })
       + cellEd(esc(c.type || 'B2C'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
       + cellEd(esc(c.phone || '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
@@ -8378,7 +8386,7 @@ function openOrderDrawer(id) {
   document.getElementById('order-title').textContent = o ? 'Edit order ' + (o.invoiceNo || '') : 'New order';
   document.getElementById('order-save-btn').textContent = o ? 'Update order' : 'Save order';
   document.getElementById('o-date').value = o ? (o.date || todayISO()) : todayISO();
-  document.getElementById('o-customer').value = o ? orderCustomerName(o) : '';
+  document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
   document.getElementById('o-channel').value = o ? (o.channel || 'B2C') : 'B2C';
   document.getElementById('o-paid').checked = o ? !!o.paid : true;
   document.getElementById('o-deduct').checked = o ? !!o.deductStock : true;
@@ -8479,7 +8487,7 @@ function deleteOrder(id) {
 function openCustomerDrawer(id) {
   var c = id ? findCustomer(id) : null;
   editingCustomerId = c ? c.id : null;
-  document.getElementById('customer-title').textContent = c ? c.name + (c.alias ? ' (' + c.alias + ')' : '') : 'New customer';
+  document.getElementById('customer-title').textContent = c ? customerDisplayName(c) + (c.alias ? ' (' + c.name + ')' : '') : 'New customer';
   document.getElementById('customer-save-btn').textContent = c ? 'Update customer' : 'Save customer';
   document.getElementById('c-name').value = c ? c.name : '';
   document.getElementById('c-alias').value = c ? (c.alias || '') : '';
