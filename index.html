@@ -827,6 +827,8 @@
   .crm-alias { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; color: var(--ink-faint); background: var(--surface2); border-radius: 99px; padding: 1px 7px; margin-left: 4px; white-space: nowrap; }
   #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'IBM Plex Mono', monospace; }
   #view-sales .crm-table td.row-actions { white-space: nowrap; text-align: right; }
+  .crm-text-btn { background: none; border: none; padding: 0 10px 0 0; color: var(--ink-faint); cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; }
+  .crm-text-btn:hover { color: var(--terra); }
   .crm-bar-btns { margin-left: auto; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; }
   #view-sales .crm-tabs { display: -webkit-flex; display: flex; gap: 22px; padding: 0 48px; margin: 4px 0 18px; border-bottom: 1px solid var(--border); }
   #view-sales .crm-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 0 9px; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); cursor: pointer; margin-bottom: -1px; }
@@ -834,11 +836,14 @@
   #view-sales .crm-nudge { margin: 0 48px 22px; padding: 16px 18px; background: var(--terra-pale); border: 1px solid var(--terra-light, #e7b49f); border-radius: var(--radius); }
   #view-sales .crm-nudge-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--ink); margin-bottom: 12px; }
   #view-sales .crm-nudge-count { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 6px; border-radius: 99px; background: var(--terra); color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; text-align: center; vertical-align: middle; }
-  #view-sales .crm-nudge-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
-  #view-sales .crm-nudge-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; cursor: pointer; }
+  #view-sales .crm-nudge-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  #view-sales .crm-nudge-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; cursor: pointer; line-height: 1.5; }
+  #view-sales .crm-nudge-date { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink); }
+  #view-sales .crm-nudge-date.crm-overdue { color: var(--terra); }
   #view-sales .crm-nudge-card:hover { border-color: var(--terra-light, #e7b49f); }
-  #view-sales .crm-nudge-name { font-weight: 500; margin-bottom: 4px; }
-  #view-sales .crm-nudge-meta { font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 4px; }
+  #view-sales .crm-nudge-name { font-weight: 500; font-size: 1.05rem; margin-bottom: 8px; }
+  #view-sales .crm-nudge-meta { font-size: 0.85rem; color: var(--ink-faint); margin-bottom: 6px; }
+  #view-sales .crm-nudge-card .crm-nudge-acts { margin-top: 12px; }
   .crm-nudge-acts { display: -webkit-flex; display: flex; gap: 6px; -webkit-flex-wrap: wrap; flex-wrap: wrap; margin-top: 6px; font-size: 0.78rem; }
   .crm-act { display: inline-block; padding: 3px 9px; border: 1px solid var(--border); border-radius: 99px; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); text-decoration: none; background: var(--surface); margin-right: 4px; }
   .crm-act:hover { border-color: var(--terra); color: var(--terra); }
@@ -1753,7 +1758,7 @@
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
-      <button class="btn-ghost" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
+      <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
@@ -8218,9 +8223,9 @@ function crmNudgeHtml() {
     + due.map(function (x) {
       var lo = x.ins.orders[x.ins.orders.length - 1];
       return '<div class="crm-nudge-card" onclick="openCustomerDrawer(\'' + esc(x.c.id) + '\')">'
-        + '<div class="crm-nudge-name">' + esc(customerDisplayName(x.c)) + crmAliasHtml(x.c) + '</div>'
+        + '<div class="crm-nudge-name"' + (x.c.alias ? ' title="' + esc(x.c.name) + '"' : '') + '>' + esc(customerDisplayName(x.c)) + '</div>'
         + '<div class="crm-nudge-meta">Last order ' + esc(fmtDate(lo.date)) + ' · ' + fmtNum(orderBottles(lo)) + ' bottles</div>'
-        + '<div class="crm-nudge-meta">' + crmStatusChip(x.ins) + '</div>'
+        + '<div class="crm-nudge-meta" title="Estimated ' + esc(x.ins.basis) + '">Predicted next order: <span class="crm-nudge-date crm-' + x.ins.status + '">' + esc(fmtDate(x.ins.next)) + '</span></div>'
         + '<div class="crm-nudge-acts">' + (crmContactButtons(x.c) || '<span class="muted">add a phone number to contact them</span>') + '</div>'
         + '</div>';
     }).join('') + '</div></div>';
@@ -8262,7 +8267,7 @@ function crmOrdersHtml() {
     h += '<tr>'
       + '<td class="mono"><button type="button" class="crm-link" onclick="openInvoice(\'' + esc(o.id) + '\')" title="Open the invoice">' + esc(o.invoiceNo || '…') + '</button></td>'
       + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
-      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(customerDisplayName(c)) + '</button>' + crmAliasHtml(c) : esc(o.customerName || '—'))
+      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')"' + (c.alias ? ' title="' + esc(c.name) + '"' : '') + '>' + esc(customerDisplayName(c)) + '</button>' : esc(o.customerName || '—'))
         + ' <span class="crm-chan">' + esc(o.channel || '') + '</span></td>'
       + '<td class="crm-items">' + esc(orderItemsText(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
