@@ -137,6 +137,10 @@
   .btn-primary { background: var(--ink); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 10px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; -webkit-transition: background .15s; transition: background .15s; }
   .btn-primary:hover { background: #000; }
   .view-bar .btn-primary { margin-left: auto; }
+  /* Same bar height on every page, whether or not it has an "add" button,
+     so the page title doesn't jump up or down when switching tabs. */
+  .view-bar { min-height: 64px; }
+  .view-bar button { white-space: nowrap; }
 
   .content-head { padding: 36px 48px 18px; }
   /* Section headings share the page-title font (Inter bold, slightly tight),
