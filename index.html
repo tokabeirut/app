@@ -7055,6 +7055,7 @@ function commitInline(type, uidv, field, value) {
   var action = type === 'purchase' ? 'updateIngredientPurchase' : type === 'order' ? 'saveOrder' : type === 'customer' ? 'saveCustomer' : type === 'batch' ? 'update' : (type === 'bottle' ? 'updateBottle' : (type === 'infusion' ? 'updateInfusion' : (type === 'production' ? 'updateProductionTask' : (type === 'bottleinv' ? 'updateBottleInvEntry' : 'updateReading'))));
   var key = type === 'purchase' ? 'purchase' : type === 'order' ? 'order' : type === 'customer' ? 'customer' : type === 'batch' ? 'batch' : (type === 'bottle' ? 'bottle' : (type === 'infusion' ? 'infusion' : (type === 'production' ? 'task' : (type === 'bottleinv' ? 'entry' : 'reading'))));
   var body = { action: action }; body[key] = JSON.parse(JSON.stringify(rec));
+  if (type === 'order') body.order.customerLabel = orderCustomerName(rec);
   setSyncStatus('saving', 'saving\u2026');
   apiPost(body, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); reloadType(type); return; }
@@ -8433,6 +8434,8 @@ function postOrder(o, newCustomer, onFail) {
   setSyncStatus('saving', 'saving…');
   var payload = {};
   for (var k in o) if (k !== '_hadStock') payload[k] = o[k];
+  // The automatic "Sold" line in Bottle inventory uses the alias when there is one.
+  payload.customerLabel = orderCustomerName(o);
   apiPost({ action: 'saveOrder', order: payload, customer: newCustomer || null }, function (err, res) {
     if (err || !res || !res.ok) {
       setSyncStatus('error', 'save failed');
@@ -8654,7 +8657,7 @@ function invoiceHtml(o) {
     + '<div class="title"><div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '</div>'
     + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div></div>'
     + '<div class="rule"></div>'
-    + '<div class="parties"><div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
+    + '<div class="parties"><div><div class="lbl">Issued by</div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
     + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
     + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>' + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '')
     + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '') + '</div></div>'
@@ -8970,6 +8973,14 @@ function renameBaseBrewRows() {
       if (todo.indexOf(a) === -1) todo.push(a);
       break;
     }
+  });
+  // Automatic "Sold" lines name the customer by alias when they have one.
+  bottleInventory.forEach(function (e) {
+    if (e.stage !== 'sold' || !e.orderId || typeof findOrder !== 'function') return;
+    var o = findOrder(e.orderId);
+    if (!o || !o.invoiceNo) return;
+    var want = 'Sold: ' + o.invoiceNo + (orderCustomerName(o) ? ' · ' + orderCustomerName(o) : '');
+    if (String(e.notes || '') !== want && /^Sold: /.test(String(e.notes || ''))) { e.notes = want; if (todo.indexOf(e) === -1) todo.push(e); }
   });
   if (!todo.length) return;
   if (typeof renderBottleInventory === 'function') renderBottleInventory();

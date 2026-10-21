@@ -1185,7 +1185,7 @@ function saveOrder_(o, customer) {
     if (o.deductStock) {
       var irows = (o.lines || []).filter(function (l) { return parseFloat(l.qty) > 0; }).map(function (l) {
         return buildBottleInvRow_({ id: Utilities.getUuid(), stage: 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
-          qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'Sold: ' + o.invoiceNo + (o.customerName ? ' · ' + o.customerName : ''), auto: true, orderId: o.id }, inN, imap);
+          qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'Sold: ' + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
       });
       if (irows.length) ish.getRange(ish.getLastRow() + 1, 1, irows.length, inN).setValues(irows);
     }
