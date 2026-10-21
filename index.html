@@ -8180,6 +8180,21 @@ function crmStatusChip(ins) {
   else txt = 'in ' + d + (d === 1 ? ' day' : ' days');
   return '<span class="crm-chip crm-' + ins.status + '" title="Expected to need more around ' + esc(fmtDate(ins.next)) + ' — ' + esc(ins.basis) + '">' + esc(fmtDate(ins.next)) + ' · ' + txt + '</span>';
 }
+// Lebanese numbers shown the local way: +961 76 343 940 (mobile, 8 digits)
+// or +961 3 123 456 / +961 1 234 567 (7 digits). Anything else is left as typed.
+function fmtPhone(p) {
+  var raw = String(p || '').trim();
+  var d = raw.replace(/[^\d]/g, '');
+  if (d.indexOf('00') === 0) d = d.slice(2);
+  var local = null;
+  if (d.indexOf('961') === 0) local = d.slice(3);
+  else if (d.charAt(0) === '0' && (d.length === 8 || d.length === 9)) local = d.slice(1);   // 03 123 456 / 076 343 940
+  else if (raw.charAt(0) !== '+' && (d.length === 7 || d.length === 8)) local = d;
+  if (local && local.charAt(0) === '0') local = local.slice(1);
+  if (local && local.length === 8) return '+961 ' + local.slice(0, 2) + ' ' + local.slice(2, 5) + ' ' + local.slice(5);
+  if (local && local.length === 7) return '+961 ' + local.slice(0, 1) + ' ' + local.slice(1, 4) + ' ' + local.slice(4);
+  return raw;
+}
 function crmPhoneDigits(p) { var d = String(p || '').replace(/[^\d]/g, ''); return d.indexOf('00') === 0 ? d.slice(2) : d; }
 function crmNudgeText(c) {
   var first = String(c.contact || c.name || '').split(' ')[0];
@@ -8297,7 +8312,7 @@ function crmCustomersHtml() {
       + cellEd(c.alias ? '<strong>' + esc(c.alias) + '</strong>' : '<span class="muted">—</span>', { type: 'customer', uid: c.id, field: 'alias' })
       + cellEd(c.alias ? esc(c.name || '—') : '<strong>' + esc(c.name || '—') + '</strong>', { type: 'customer', uid: c.id, field: 'name' })
       + cellEd(esc(c.type || 'B2C'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
-      + cellEd(esc(c.phone || '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
+      + cellEd(esc(c.phone ? fmtPhone(c.phone) : '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
       + cellEd('<div class="clip-inner muted">' + esc(c.address || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', input: 'textarea', cls: 'notes-cell' })
       + '<td class="mono">' + ins.n + '</td>'
@@ -8367,7 +8382,7 @@ function onOrderCustomerInput() {
   var hint = document.getElementById('o-customer-hint');
   if (c) {
     if (c.type && document.getElementById('o-channel').value !== c.type) { document.getElementById('o-channel').value = c.type; onOrderChannelChange(); }
-    hint.textContent = 'Existing customer' + (c.phone ? ' · ' + c.phone : '') + '.';
+    hint.textContent = 'Existing customer' + (c.phone ? ' · ' + fmtPhone(c.phone) : '') + '.';
   } else {
     hint.textContent = val('o-customer').trim() ? 'New customer — added to Customers when you save (fill in their details there later).' : '';
   }
@@ -8625,13 +8640,13 @@ function invoiceHtml(o) {
     + '.head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}.logo{height:90px}.title{text-align:right}.title h1{font-family:"Bricolage Grotesque",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:-.01em}'
     + '.meta{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#1e1b18;line-height:1.8}.title .meta{margin-top:8px}.ml{color:#9a9088}'
     + '.rule{height:3px;width:56px;background:#c0542a;margin:22px 0 26px}'
-    + '.parties{display:flex;gap:40px;margin-bottom:30px}.parties>div{flex:1;line-height:1.5}.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a9088;margin-bottom:6px}.who{font-weight:500;font-size:16px}'
+    + '.parties{display:flex;gap:40px;margin-bottom:30px}.parties>div{flex:1;line-height:1.5}.parties .to{text-align:right}.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a9088;margin-bottom:6px}.who{font-weight:500;font-size:16px}'
     + 'table{width:100%;border-collapse:collapse}th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9088;text-align:left;border-bottom:1px solid #e4ddd2;padding:8px 6px}td{padding:11px 6px;border-bottom:1px solid #efe9df}th.r,.r{text-align:right}td.r{font-family:"IBM Plex Mono",monospace}.muted{color:#9a9088}'
     + '.tot{margin-left:auto;width:280px;margin-top:16px}.tot div{display:flex;justify-content:space-between;padding:5px 6px;font-family:"IBM Plex Mono",monospace}.tot .big{border-top:2px solid #1e1b18;margin-top:6px;padding-top:10px;font-size:17px;font-weight:500}'
     + '.status{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:99px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:#fdf0eb;color:#c0542a}.status.paid{background:#edf6f0;color:#3d7a55}'
     + '.foot{margin-top:36px;display:flex;gap:40px;font-size:13px;line-height:1.55}.foot>div{flex:1}.thanks{margin-top:30px;text-align:center;color:#6f665d;font-style:italic}'
     + '@media print{body{background:#fff}.bar{display:none}.page{box-shadow:none;margin:0;padding:0;max-width:none}}'
-    + '@media (max-width:600px){.page{padding:28px 22px;margin:0}.parties,.foot{flex-direction:column;gap:18px}.logo{height:64px}}'
+    + '@media (max-width:600px){.page{padding:28px 22px;margin:0}.parties,.foot{flex-direction:column;gap:18px}.parties .to{text-align:left}.logo{height:64px}}'
     + '</style></head><body>'
     + '<div class="bar"><button onclick="window.print()">Save as PDF / Print</button><button class="g" onclick="window.close()">Close</button></div>'
     + '<div class="page">'
@@ -8639,10 +8654,10 @@ function invoiceHtml(o) {
     + '<div class="title"><div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '</div>'
     + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div></div>'
     + '<div class="rule"></div>'
-    + '<div class="parties"><div><div class="lbl">From</div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
-    + (s.phone ? '<div>' + esc(s.phone) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
-    + '<div><div class="lbl">Bill to</div><div class="who">' + esc(c.name || '') + '</div>' + (c.contact ? '<div>Attn. ' + esc(c.contact) + '</div>' : '')
-    + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(c.phone) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '') + '</div></div>'
+    + '<div class="parties"><div><div class="who">' + esc(s.businessName || 'toka') + '</div><div>' + nl(s.address) + '</div>'
+    + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
+    + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>' + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '')
+    + '<div>' + nl(c.address) + '</div>' + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '') + '</div></div>'
     + '<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table>'
     + '<div class="tot"><div><span>Subtotal</span><span>' + money(sub) + '</span></div>'
     + (rate ? '<div><span>Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
