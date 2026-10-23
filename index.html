@@ -11632,13 +11632,13 @@ function cmpData(u) {
   d.volume = vol === 'mixed' ? 'mixed' : (cmpHas(vol) ? fmtQty(vol, 'ml') : '');
   var fl = cmpGroupVal(bs, flavourText);
   d.flavour = fl === 'mixed' ? 'mixed' : cmpLines(fl);
-  // Per litre, in g (2 decimals, spices can be small amounts).
-  function perL(g, ml) { var a = parseFloat(g), v = parseFloat(ml); return (isNaN(a) || isNaN(v) || v <= 0) ? null : Math.round(a / v * 1000 * 100) / 100; }
+  // Per litre, in g, rounded to 0.1.
+  function perL(g, ml) { var a = parseFloat(g), v = parseFloat(ml); return (isNaN(a) || isNaN(v) || v <= 0) ? null : cmpR1(a / v * 1000); }
   var sp = cmpGroupVal(bs, function (b) {
-    return (b.flavours || []).map(function (f) { var p = perL(f.g, b.volumeMl); return p == null ? '' : ((f.name ? f.name + ' ' : '') + fmtNum(p) + ' g/L'); }).filter(Boolean).join(', ');
+    return (b.flavours || []).map(function (f) { var p = perL(f.g, b.volumeMl); return p == null ? '' : ((f.name ? f.name + ' ' : '') + p.toFixed(1) + ' g/L'); }).filter(Boolean).join(', ');
   });
   d.spicesPerL = sp === 'mixed' ? 'mixed' : cmpLines(sp);
-  var spl = cmpGroupVal(bs, function (b) { var p = perL(b.sugarG, b.volumeMl); return p == null ? '' : fmtNum(p) + ' g/L'; });
+  var spl = cmpGroupVal(bs, function (b) { var p = perL(b.sugarG, b.volumeMl); return p == null ? '' : p.toFixed(1) + ' g/L'; });
   d.btlSugarPerL = spl === 'mixed' ? 'mixed' : esc(spl || '');
   var sg = cmpGroupVal(bs, function (b) { return b.sugarG; });
   d.sugarG = sg === 'mixed' ? 'mixed' : (cmpHas(sg) ? fmtQty(sg, 'g') : '');
