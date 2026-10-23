@@ -69,7 +69,7 @@
   .view-tab-group { display: -webkit-flex; display: flex; -webkit-align-items: stretch; align-items: stretch; -webkit-flex-shrink: 0; flex-shrink: 0; -webkit-flex-basis: auto; flex-basis: auto; }
   .view-tab-group > .view-tab { -webkit-flex: 1 0 auto; flex: 1 0 auto; }
   .view-tab-divider { -webkit-align-self: center; align-self: center; width: 1px; height: 34px; background: rgba(30,27,24,0.28); margin: 0 12px; -webkit-flex-shrink: 0; flex-shrink: 0; }
-  .view-tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; padding: 12px 18px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-transition: color .15s, border-color .15s; transition: color .15s, border-color .15s; }
+  .view-tab { background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; padding: 12px 14px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); -webkit-transition: color .15s, border-color .15s; transition: color .15s, border-color .15s; }
   /* Two-word names stack onto two lines; one-word names sit centred in the same height. */
   .view-tab { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center; text-align: center; line-height: 1.35; }
   .view-tab:hover { color: var(--ink); }
@@ -929,6 +929,24 @@
   .config-btn:hover { background: var(--terra); }
   .config-error { color: var(--terra); font-size: 0.72rem; margin-top: 10px; display: none; }
 
+  /* -- BOTTLE COMPARISON -- */
+  .cmp-top { padding: 0 48px 22px; display: -webkit-flex; display: flex; -webkit-align-items: flex-end; align-items: flex-end; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px 16px; }
+  .cmp-pickers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 16px; -webkit-flex: 1 1 600px; flex: 1 1 600px; max-width: 1100px; }
+  .cmp-pickers .form-group { margin-bottom: 0; }
+  #cmp-diff-btn { margin-bottom: 6px; }
+  .cmp-table { table-layout: fixed; min-width: 560px; }
+  .cmp-table col.cmp-lcol { width: 190px; }
+  .cmp-table td { white-space: normal; padding: 10px 14px; vertical-align: top; }
+  .cmp-table tr.cmp-sec td { background: var(--surface2); font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); padding: 9px 14px; border-top: 2px solid var(--border); }
+  .cmp-table tr.cmp-sec:first-child td { border-top: none; }
+  .cmp-table td.cmp-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.04em; color: var(--ink-faint); border-left: 3px solid transparent; }
+  .cmp-table td.cmp-val { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+  .cmp-table tr.cmp-diff td.cmp-label { border-left-color: var(--terra); color: var(--terra); }
+  .cmp-table tr.cmp-diff td.cmp-val { background: var(--terra-pale); }
+  .cmp-none { color: var(--ink-faint); }
+  .cmp-link { cursor: pointer; }
+  .cmp-table .src-amt-tag { margin-left: 4px; }
+  .cmp-link:hover { text-decoration: underline; }
   @media (max-width: 640px) {
     header { padding: 0 16px; flex-wrap: wrap; gap: 10px; min-height: unset; padding-top: 12px; padding-bottom: 12px; }
     header img { height: 90px !important; width: auto !important; margin-right: 8px !important; margin-bottom: 0 !important; }
@@ -946,6 +964,10 @@
     .page-eyebrow { margin-bottom: 18px; gap: 4px 20px; }
     .page-accent { margin: 20px 0 18px; }
     .table-wrap { padding: 0 20px 28px; }
+    .cmp-top { padding: 0 20px 18px; }
+    .cmp-pickers { grid-template-columns: 1fr; gap: 10px; }
+    .cmp-table col.cmp-lcol { width: 120px; }
+    .cmp-table { min-width: 0; }
     #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix, #view-sales .crm-tabs { padding-left: 20px; padding-right: 20px; }
     #view-sales .crm-nudge { margin-left: 20px; margin-right: 20px; }
     .crm-wide-drawer { width: 100%; }
@@ -1569,8 +1591,9 @@
     <button type="button" class="view-tab" data-view="bottlecalc" onclick="showView('bottlecalc')">Volume<br>converter</button>
   </div>
   <div class="view-tab-divider"></div>
-  <div class="view-tab-group" style="-webkit-flex-grow:4;flex-grow:4">
+  <div class="view-tab-group" style="-webkit-flex-grow:5;flex-grow:5">
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
+    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
     <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
     <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
@@ -1622,6 +1645,10 @@
       <div class="feature-card clickable" onclick="showView('today')">
         <div class="card-head"><span class="name">Daily operations</span></div>
         <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('compare')">
+        <div class="card-head"><span class="name">Bottle comparison</span></div>
+        <div class="desc">Two or three bottles side by side &mdash; fermentation time, SCOBY, recipe, Labo readings &amp; tasting.</div>
       </div>
       <div class="feature-card clickable" onclick="showView('inventory')">
         <div class="card-head"><span class="name">Bottle inventory</span></div>
@@ -2328,6 +2355,22 @@
     <div id="daily-checklist-list"></div>
   </div>
   <div id="today-body"></div>
+</div>
+
+<!-- ===== BOTTLE COMPARISON VIEW ===== -->
+<div id="view-compare" style="display:none;">
+  <div class="view-bar">
+    <button class="back-link" onclick="goBack()">&larr; back</button>
+  </div>
+  <div class="content-head">
+    <div class="content-title">Bottle comparison</div>
+    <div class="content-sub">Pick two or three bottles (a bottle group counts as one) to see them side by side. Rows that differ are marked in orange.</div>
+  </div>
+  <div class="cmp-top">
+    <div class="cmp-pickers" id="cmp-pickers"></div>
+    <button type="button" class="archived-fold-btn" id="cmp-diff-btn" style="display:none" onclick="cmpToggleDiff()">Only differences</button>
+  </div>
+  <div class="table-wrap" id="cmp-body"></div>
 </div>
 
 <!-- (Tasting page removed from the front end — its data stays in the sheet;
@@ -4634,6 +4677,7 @@ var PAGE_EYEBROWS = {
   'view-overview': [],
   'view-analytics': [],
   'view-today': [],
+  'view-compare': [],
   'view-production': [],
   'view-expenses': [],
   'view-sales': [],
@@ -5066,6 +5110,7 @@ function renderCurrentViewData() {
     else if (v === 'inventory') renderBottleInventory();
     else if (v === 'sales') renderSales();
     else if (v === 'spices') renderSpiceInventory();
+    else if (v === 'compare') renderCompare();
   } catch (e) {}
 }
 // Editing lock while the saved copy is on screen: swallows focus/clicks on
@@ -5123,6 +5168,7 @@ function showView(v, isBack) {
   var vsp = document.getElementById('view-spices'); if (vsp) vsp.style.display = (v === 'spices') ? 'block' : 'none';
   var vbc = document.getElementById('view-bottlecalc'); if (vbc) vbc.style.display = (v === 'bottlecalc') ? 'block' : 'none';
   var vbm = document.getElementById('view-bottlemath'); if (vbm) vbm.style.display = (v === 'bottlemath') ? 'block' : 'none';
+  var vcmp = document.getElementById('view-compare'); if (vcmp) vcmp.style.display = (v === 'compare') ? 'block' : 'none';
   if (typeof updateViewTabs === 'function') updateViewTabs(v);
   // Expenses has its own loading badge; only one badge shows at a time.
   document.body.classList.toggle('on-expenses', v === 'expenses');
@@ -5154,6 +5200,7 @@ function showView(v, isBack) {
   if (v === 'bottlemath') bmInit();
   if (v === 'sales') renderSales();
   if (v === 'spices') renderSpiceInventory();
+  if (v === 'compare') renderCompare();
   window.scrollTo(0, 0);
 }
 function goBack() {
@@ -11454,6 +11501,286 @@ function renderProduction() {
     var openCount = tasks.filter(function (t) { return !t.done; }).length;
     sub.textContent = tasks.length + ' task' + (tasks.length === 1 ? '' : 's') + (openCount ? (' \u00b7 ' + openCount + ' open') : ' \u00b7 all done');
   }
+}
+
+/* ---- Bottle comparison (Operations) ----
+   Pick 2 or 3 bottlings (a whole bottle group counts as one) and see them
+   side by side: the bottle itself, fermentation days, the first-fermentation
+   recipe behind it (incl. SCOBY), Labo readings and tasting notes. Read-only;
+   rows whose values differ are marked so the differences stand out. The
+   picks are remembered on this device. */
+var CMP_SLOTS = 3;
+var cmpOnlyDiff = false;
+function cmpUnits() {
+  var list = bottles.slice().sort(cmpBottles);
+  return clusterBottleGroups(list).map(function (cl) {
+    var bs = cl.bottles, head = bs[0];
+    return {
+      key: cl.groupUid ? ('g:' + cl.groupUid) : ('b:' + head.uid),
+      bottles: bs,
+      head: head,
+      id: bs.length > 1 ? bottleGroupRangeId(bs) : (head.bottleId || 'bottle'),
+      archived: bs.every(function (b) { return !!b.archived; })
+    };
+  });
+}
+function cmpUnitLabel(u) {
+  var parts = [u.id];
+  var ft = (u.head.flavours || []).map(function (f) { return f.name || ''; }).filter(Boolean).join(' + ');
+  if (ft) parts.push(ft);
+  if (u.head.volumeMl !== '' && u.head.volumeMl != null) parts.push(fmtQty(u.head.volumeMl, 'ml'));
+  if (u.bottles.length > 1) parts.push(u.bottles.length + ' bottles');
+  return parts.join(' · ');
+}
+function cmpGetSel() {
+  var s = [];
+  try { s = JSON.parse(lsGet('toka_cmp_sel') || '[]') || []; } catch (e) { s = []; }
+  while (s.length < CMP_SLOTS) s.push('');
+  return s.slice(0, CMP_SLOTS);
+}
+function cmpSetSlot(i, key) {
+  var s = cmpGetSel();
+  s[i] = key || '';
+  lsSet('toka_cmp_sel', JSON.stringify(s));
+  renderCompare();
+}
+function cmpToggleDiff() { cmpOnlyDiff = !cmpOnlyDiff; renderCompare(); }
+
+function cmpR1(n) { return Math.round(n * 10) / 10; }
+function cmpHas(v) { return v !== '' && v != null && !isNaN(parseFloat(v)); }
+// One value across a bottle group: the shared value, or "mixed" if they differ.
+function cmpGroupVal(bs, fn) {
+  var vals = bs.map(function (b) { var v = fn(b); return v == null ? '' : v; }), first = vals[0];
+  for (var i = 1; i < vals.length; i++) if (String(vals[i]) !== String(first)) return 'mixed';
+  return first;
+}
+function cmpJoin(vals) {
+  var out = [], seen = {};
+  vals.forEach(function (v) { v = (v == null) ? '' : String(v); if (v === '' || v === '—' || seen[v]) return; seen[v] = 1; out.push(v); });
+  return out.join(' / ');
+}
+function cmpInfusionByUid(u) { for (var i = 0; i < infusions.length; i++) if (String(infusions[i].uid) === String(u)) return infusions[i]; return null; }
+// Readings of an F1 batch up to (and on) the bottling date.
+function cmpF1ReadingsUntil(b, until) {
+  return anReadingsForBatch(b).filter(function (r) { return !until || !r.date || String(r.date) <= String(until); });
+}
+function cmpReadingText(r, field, unit) {
+  if (!r || !cmpHas(r[field])) return '';
+  return fmtQty(r[field], unit);
+}
+function cmpFmtDate(d) { return d ? esc(fmtDate(d)) : ''; }
+
+// Everything shown for one selected bottling, as { rowKey: html }.
+function cmpData(u) {
+  var bs = u.bottles, head = u.head, d = {};
+  var count = 0; bs.forEach(function (b) { var c = parseFloat(b.count); count += (isNaN(c) || c < 1) ? 1 : c; });
+  var bottleLink = '<span class="cmp-link id-cell" onclick="gotoBottle(\'' + esc(head.uid) + '\')">' + esc(u.id) + '</span>';
+  d.bottleId = bottleLink;
+  d.bottled = cmpFmtDate(head.bottlingDate);
+  var fr = cmpGroupVal(bs, function (b) { return b.fridgeDate || ''; });
+  d.fridged = fr === 'mixed' ? 'mixed' : (fr ? cmpFmtDate(fr) : 'not yet');
+  d.count = String(count);
+  var vol = cmpGroupVal(bs, function (b) { return b.volumeMl; });
+  d.volume = vol === 'mixed' ? 'mixed' : (cmpHas(vol) ? fmtQty(vol, 'ml') : '');
+  var fl = cmpGroupVal(bs, flavourText);
+  d.flavour = fl === 'mixed' ? 'mixed' : esc(fl || '');
+  var sg = cmpGroupVal(bs, function (b) { return b.sugarG; });
+  d.sugarG = sg === 'mixed' ? 'mixed' : (cmpHas(sg) ? fmtQty(sg, 'g') : '');
+  var ys = cmpGroupVal(bs, function (b) { return b.yeastMg; });
+  d.yeastMg = ys === 'mixed' ? 'mixed' : (cmpHas(ys) ? fmtQty(ys, 'mg') : '');
+  d.notes = esc(cmpJoin(bs.map(function (b) { return String(b.notes || '').trim(); })));
+
+  // Fermentation days (same rule as the Bottling table: F1 + infusion + F2).
+  var seg = bottleFermSegments(head, fermDaysOf(head));
+  d.f1Days = seg.f1d != null ? seg.f1d + ' d' : '';
+  d.infDays = seg.infd != null ? seg.infd + ' d' : '';
+  d.f2Days = seg.f2d != null ? (seg.f2d + ' d' + (head.fridgeDate ? '' : ' (so far)')) : '';
+  if (seg.f1d != null || seg.f2d != null || seg.infd != null) d.totalDays = ((seg.f1d || 0) + (seg.infd || 0) + (seg.f2d || 0)) + ' d';
+
+  // Source: F1 batches directly, or via an infusion.
+  // f1Cut[i] = when that F1 batch's own fermentation ended for this bottle:
+  // the bottling date, or the infusion start when it went through an infusion.
+  var f1s = [], f1Cut = [], infs = [];
+  sourceUids(head).forEach(function (uid) {
+    var b = batchByUid(uid);
+    if (b) { f1s.push(b); f1Cut.push(head.bottlingDate || ''); return; }
+    var inf = cmpInfusionByUid(uid);
+    if (inf) { infs.push(inf); sourceUids(inf).forEach(function (u2) { var b2 = batchByUid(u2); if (b2) { f1s.push(b2); f1Cut.push(inf.startDate || head.bottlingDate || ''); } }); }
+  });
+  d.source = sourceEntries(head).length ? bottleSourceCellHtml(head, true) : fmtText(head.relF1Id);
+
+  // First fermentation recipe (joined with " / " when a bottling blends vessels).
+  function per(fn) { return cmpJoin(f1s.map(fn)); }
+  d.f1Batch = f1s.map(function (b) { return '<span class="cmp-link id-cell" onclick="gotoBatch(\'' + esc(b.uid) + '\')">' + esc(b.id || b.vessel || 'batch') + '</span>'; }).join('<br>');
+  d.vessel = esc(per(function (b) { return b.vessel || ''; }));
+  d.brewed = per(function (b) { return b.date ? fmtDate(b.date) : ''; });
+  function f1Vol(b) { var v = (parseFloat(b.hotWater) || 0) + (parseFloat(b.coldWater) || 0) + (parseFloat(b.starter) || 0); return v > 0 ? v : null; }
+  d.f1Volume = per(function (b) { var v = f1Vol(b); return v ? fmtQty(cmpR1(v), 'L') : ''; });
+  d.scoby = per(function (b) { return cmpHas(b.starter) ? fmtQty(b.starter, 'L') : ''; });
+  d.scobyPct = per(function (b) { var v = f1Vol(b); return (v && cmpHas(b.starter)) ? (cmpR1(parseFloat(b.starter) / v * 100) + ' %') : ''; });
+  d.tea = per(function (b) { return cmpHas(b.tea) ? fmtQty(b.tea, 'g') : ''; });
+  d.teaPerL = per(function (b) { var v = f1Vol(b); return (v && cmpHas(b.tea)) ? fmtQty(cmpR1(parseFloat(b.tea) / v), 'g/L') : ''; });
+  d.teaType = esc(per(function (b) { return b.teaType || ''; }));
+  d.steep = esc(per(function (b) { return b.steep ? fmtSteep(b.steep) : ''; }));
+  d.sugar = per(function (b) { return cmpHas(b.sugar) ? fmtQty(b.sugar, 'kg') : ''; });
+  d.sugarPerL = per(function (b) { var v = f1Vol(b); return (v && cmpHas(b.sugar)) ? fmtQty(cmpR1(parseFloat(b.sugar) * 1000 / v), 'g/L') : ''; });
+  d.sugarSource = esc(per(function (b) { return b.sugarSource || ''; }));
+  d.water = esc(per(function (b) { return b.waterSource || ''; }));
+
+  // Infusion (only for bottlings sourced from one).
+  d.infId = infs.map(function (inf) { return '<span class="cmp-link id-cell" onclick="gotoInfusion(\'' + esc(inf.uid) + '\')">' + esc(inf.id || inf.vessel || 'infusion') + '</span>'; }).join('<br>');
+  d.infSpices = esc(cmpJoin(infs.map(flavourText)));
+
+  // Labo: first F1 reading, last F1 reading before bottling (or before the
+  // infusion), and the bottle's own latest reading.
+  var firstR = f1s.map(function (b, i) { return cmpF1ReadingsUntil(b, f1Cut[i])[0] || null; });
+  var lastR = f1s.map(function (b, i) { var L = cmpF1ReadingsUntil(b, f1Cut[i]); return L.length ? L[L.length - 1] : null; });
+  d.f1StartBrix = cmpJoin(firstR.map(function (r) { return cmpReadingText(r, 'brix', '%'); }));
+  d.f1StartPh = cmpJoin(firstR.map(function (r) { return cmpReadingText(r, 'ph', ''); }));
+  d.f1EndBrix = cmpJoin(lastR.map(function (r) { return cmpReadingText(r, 'brix', '%'); }));
+  d.f1EndPh = cmpJoin(lastR.map(function (r) { return cmpReadingText(r, 'ph', ''); }));
+  d.f1EndTemp = cmpJoin(lastR.map(function (r) { return cmpReadingText(r, 'temp', '°C'); }));
+  d.f1EndDate = cmpJoin(lastR.map(function (r) { return r && r.date ? fmtDate(r.date) : ''; }));
+  d.brixDrop = cmpJoin(f1s.map(function (b, i) {
+    var a = firstR[i], z = lastR[i];
+    if (!a || !z || a === z || !cmpHas(a.brix) || !cmpHas(z.brix)) return '';
+    return fmtQty(cmpR1(parseFloat(a.brix) - parseFloat(z.brix)), '%');
+  }));
+  var own = [];
+  bs.forEach(function (b) { own = own.concat(anOwnReadingsFor(b)); });
+  own.sort(anDateAsc);
+  var br = own.length ? own[own.length - 1] : null;
+  d.btlBrix = cmpReadingText(br, 'brix', '%');
+  d.btlPh = cmpReadingText(br, 'ph', '');
+  d.btlTemp = cmpReadingText(br, 'temp', '°C');
+  d.btlDate = br && br.date ? cmpFmtDate(br.date) : '';
+
+  // Tasting (from the tasting feedback saved per bottle).
+  function fb(field) { return cmpGroupVal(bs, function (b) { return fbFieldOf(b.uid, field); }); }
+  var ratings = bs.map(function (b) { return parseFloat(fbFieldOf(b.uid, 'rating')); }).filter(function (n) { return !isNaN(n); });
+  if (ratings.length) {
+    var avg = ratings.reduce(function (s, n) { return s + n; }, 0) / ratings.length;
+    d.rating = cmpR1(avg) + ' / 5' + (ratings.length < bs.length || fb('rating') === 'mixed' ? ' (avg of ' + ratings.length + ')' : '');
+  }
+  ['fizz', 'acidity', 'sweetness', 'note'].forEach(function (f) { var v = fb(f); d['fb_' + f] = esc(v); });
+  var off = fb('offflavour');
+  if (off === 'other') { var oo = fb('offother'); off = 'other' + (oo && oo !== 'mixed' ? ': ' + oo : ''); }
+  d.fb_off = esc(off);
+  d._hasInf = infs.length > 0;
+  return d;
+}
+
+var CMP_ROWS = [
+  { sec: 'Bottle' },
+  { k: 'bottleId', l: 'Bottle' },
+  { k: 'flavour', l: 'Flavour' },
+  { k: 'volume', l: 'Volume' },
+  { k: 'count', l: 'Bottles' },
+  { k: 'bottled', l: 'Bottled on' },
+  { k: 'fridged', l: 'Fridged on' },
+  { k: 'sugarG', l: 'Sugar in bottle' },
+  { k: 'yeastMg', l: 'Yeast' },
+  { k: 'source', l: 'Source' },
+  { sec: 'Fermentation time' },
+  { k: 'f1Days', l: 'First fermentation' },
+  { k: 'infDays', l: 'Infusion', inf: true },
+  { k: 'f2Days', l: 'Second fermentation' },
+  { k: 'totalDays', l: 'Total' },
+  { sec: 'First fermentation' },
+  { k: 'f1Batch', l: 'Batch' },
+  { k: 'vessel', l: 'Vessel' },
+  { k: 'brewed', l: 'Brewed on' },
+  { k: 'f1Volume', l: 'Volume' },
+  { k: 'scoby', l: 'SCOBY' },
+  { k: 'scobyPct', l: 'SCOBY share' },
+  { k: 'tea', l: 'Tea' },
+  { k: 'teaPerL', l: 'Tea per litre' },
+  { k: 'teaType', l: 'Tea type' },
+  { k: 'steep', l: 'Steep' },
+  { k: 'sugar', l: 'Sugar' },
+  { k: 'sugarPerL', l: 'Sugar per litre' },
+  { k: 'sugarSource', l: 'Sugar source' },
+  { k: 'water', l: 'Water source' },
+  { sec: 'Infusion', inf: true },
+  { k: 'infId', l: 'Infusion', inf: true },
+  { k: 'infSpices', l: 'Spices', inf: true },
+  { sec: 'Labo' },
+  { k: 'f1StartBrix', l: 'F1 start Brix' },
+  { k: 'f1StartPh', l: 'F1 start pH' },
+  { k: 'f1EndBrix', l: 'F1 end Brix' },
+  { k: 'f1EndPh', l: 'F1 end pH' },
+  { k: 'f1EndTemp', l: 'F1 end temp' },
+  { k: 'f1EndDate', l: 'F1 last reading on' },
+  { k: 'brixDrop', l: 'Brix drop in F1' },
+  { k: 'btlBrix', l: 'Bottle Brix' },
+  { k: 'btlPh', l: 'Bottle pH' },
+  { k: 'btlTemp', l: 'Bottle temp' },
+  { k: 'btlDate', l: 'Bottle reading on' },
+  { sec: 'Tasting' },
+  { k: 'rating', l: 'Rating' },
+  { k: 'fb_fizz', l: 'Fizz' },
+  { k: 'fb_acidity', l: 'Acidity' },
+  { k: 'fb_sweetness', l: 'Sweetness' },
+  { k: 'fb_off', l: 'Off-flavour' },
+  { k: 'fb_note', l: 'Tasting note' },
+  { k: 'notes', l: 'Bottling notes' }
+];
+
+function renderCompare() {
+  var pick = document.getElementById('cmp-pickers');
+  var body = document.getElementById('cmp-body');
+  if (!pick || !body) return;
+  var units = cmpUnits(), byKey = {};
+  units.forEach(function (u) { byKey[u.key] = u; });
+  var sel = cmpGetSel();
+
+  // Pickers
+  var ph = '';
+  for (var i = 0; i < CMP_SLOTS; i++) {
+    var opts = '<option value="">' + (i < 2 ? '— pick a bottle —' : '— none —') + '</option>';
+    var act = '', arc = '';
+    units.forEach(function (u) {
+      var o = '<option value="' + esc(u.key) + '"' + (sel[i] === u.key ? ' selected' : '') + '>' + esc(cmpUnitLabel(u)) + '</option>';
+      if (u.archived) arc += o; else act += o;
+    });
+    if (act) opts += '<optgroup label="Active">' + act + '</optgroup>';
+    if (arc) opts += '<optgroup label="Archived">' + arc + '</optgroup>';
+    ph += '<div class="form-group"><label>Bottle ' + (i + 1) + (i === 2 ? ' (optional)' : '') + '</label>'
+      + '<select onchange="cmpSetSlot(' + i + ', this.value)">' + opts + '</select></div>';
+  }
+  pick.innerHTML = ph;
+
+  var chosen = [];
+  sel.forEach(function (k) { if (k && byKey[k]) chosen.push(byKey[k]); });
+  var btn = document.getElementById('cmp-diff-btn');
+  if (btn) { btn.style.display = chosen.length >= 2 ? '' : 'none'; btn.classList.toggle('open', cmpOnlyDiff); btn.textContent = cmpOnlyDiff ? 'Show all rows' : 'Only differences'; }
+  if (chosen.length < 2) {
+    body.innerHTML = '<div class="table-scroll"><div class="empty">' + (bottles.length ? 'Pick at least two bottles above to compare them.' : 'No bottlings yet.') + '</div></div>';
+    return;
+  }
+
+  var data = chosen.map(cmpData);
+  var anyInf = data.some(function (d) { return d._hasInf; });
+  var h = '<div class="table-scroll"><table class="cmp-table"><colgroup><col class="cmp-lcol">';
+  chosen.forEach(function () { h += '<col>'; });
+  h += '</colgroup><tbody>';
+  var secHtml = null, secRows = '';
+  function flush() { if (secHtml != null && secRows) h += secHtml + secRows; secHtml = null; secRows = ''; }
+  CMP_ROWS.forEach(function (r) {
+    if (r.inf && !anyInf) return;
+    if (r.sec) { flush(); secHtml = '<tr class="cmp-sec"><td colspan="' + (chosen.length + 1) + '">' + esc(r.sec) + '</td></tr>'; return; }
+    var vals = data.map(function (d) { return d[r.k] || ''; });
+    if (vals.every(function (v) { return v === ''; })) return;
+    var filled = vals.filter(function (v) { return v !== ''; });
+    var diff = r.k !== 'bottleId' && r.k !== 'source' && (filled.length < vals.length || filled.some(function (v) { return v !== filled[0]; }));
+    if (cmpOnlyDiff && !diff && r.k !== 'bottleId') return;
+    secRows += '<tr' + (diff ? ' class="cmp-diff"' : '') + '><td class="cmp-label">' + esc(r.l) + '</td>'
+      + vals.map(function (v) { return '<td class="cmp-val">' + (v === '' ? '<span class="cmp-none">—</span>' : v) + '</td>'; }).join('')
+      + '</tr>';
+  });
+  flush();
+  h += '</tbody></table></div>';
+  body.innerHTML = h;
 }
 
 /* ---- tasting: group unarchived bottles by recipe difference ---- */
