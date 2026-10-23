@@ -65,7 +65,7 @@ Read this first when continuing work on the toka app.
   - **Volume converter**: default split 2/3 375 ml, 1/3 750 ml.
 - **Operations**
   - **Daily operations**: brew/infusion/fridge reminders. Fridge reminder is 5 days after bottling.
-  - **Bottle comparison** (`view-compare`, `renderCompare`): read-only. Pick 2–3 bottlings (a bottle group counts as one) and see them side by side: bottle, fermentation days, F1 recipe (SCOBY L + share, tea/sugar per litre), infusion, Labo (F1 start/end Brix & pH, Brix drop, bottle reading) and tasting feedback. Rows that differ are marked orange; "Only differences" toggle. Picks remembered per device (`toka_cmp_sel`).
+  - **Bottle comparison** (`view-compare`, `renderCompare`, rows in `CMP_ROWS`): read-only. Pick 2–3 bottlings (a bottle group counts as one). Rows in Claire's order: volume, spices, spices /100 ml, sugar, sugar /100 ml, yeast, source · F1 / INF / F2 / total days · F1 batch, volume, SCOBY, SCOBY share, tea, tea/L, sugar, sugar/L · F1 start Brix & pH, INF end Brix & pH, BOT Brix & pH. Per-100-ml values are in mg. Rows that differ are marked orange; "Only differences" toggle. Picks remembered per device (`toka_cmp_sel`).
   - **Bottle inventory**:
     - Stages: depot / atelier / filled / sold / consumed / recycled / other.
     - One "Log a bottle movement" form.

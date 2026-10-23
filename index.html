@@ -1648,7 +1648,7 @@
       </div>
       <div class="feature-card clickable" onclick="showView('compare')">
         <div class="card-head"><span class="name">Bottle comparison</span></div>
-        <div class="desc">Two or three bottles side by side &mdash; fermentation time, SCOBY, recipe, Labo readings &amp; tasting.</div>
+        <div class="desc">Two or three bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
       </div>
       <div class="feature-card clickable" onclick="showView('inventory')">
         <div class="card-head"><span class="name">Bottle inventory</span></div>
@@ -11584,6 +11584,13 @@ function cmpData(u) {
   d.volume = vol === 'mixed' ? 'mixed' : (cmpHas(vol) ? fmtQty(vol, 'ml') : '');
   var fl = cmpGroupVal(bs, flavourText);
   d.flavour = fl === 'mixed' ? 'mixed' : esc(fl || '');
+  // Per 100 ml, as mg (same convention as the Bottling table).
+  var sp = cmpGroupVal(bs, function (b) {
+    return (b.flavours || []).map(function (f) { var p = per100(parseFloat(f.g) * 1000, b.volumeMl); return p == null ? '' : ((f.name ? f.name + ' ' : '') + fmtNum(cmpR1(p)) + ' mg'); }).filter(Boolean).join(', ');
+  });
+  d.spicesPer100 = sp === 'mixed' ? 'mixed' : esc(sp || '');
+  var sp100 = cmpGroupVal(bs, function (b) { var p = per100(parseFloat(b.sugarG) * 1000, b.volumeMl); return p == null ? '' : fmtNum(cmpR1(p)) + ' mg'; });
+  d.sugarPer100 = sp100 === 'mixed' ? 'mixed' : esc(sp100 || '');
   var sg = cmpGroupVal(bs, function (b) { return b.sugarG; });
   d.sugarG = sg === 'mixed' ? 'mixed' : (cmpHas(sg) ? fmtQty(sg, 'g') : '');
   var ys = cmpGroupVal(bs, function (b) { return b.yeastMg; });
@@ -11646,6 +11653,10 @@ function cmpData(u) {
     if (!a || !z || a === z || !cmpHas(a.brix) || !cmpHas(z.brix)) return '';
     return fmtQty(cmpR1(parseFloat(a.brix) - parseFloat(z.brix)), '%');
   }));
+  // Infusion end = its last reading up to bottling.
+  var infEnd = infs.map(function (inf) { var L = anOwnReadingsFor(inf).filter(function (r) { return !head.bottlingDate || !r.date || String(r.date) <= String(head.bottlingDate); }).sort(anDateAsc); return L.length ? L[L.length - 1] : null; });
+  d.infEndBrix = cmpJoin(infEnd.map(function (r) { return cmpReadingText(r, 'brix', '%'); }));
+  d.infEndPh = cmpJoin(infEnd.map(function (r) { return cmpReadingText(r, 'ph', ''); }));
   var own = [];
   bs.forEach(function (b) { own = own.concat(anOwnReadingsFor(b)); });
   own.sort(anDateAsc);
@@ -11673,12 +11684,11 @@ function cmpData(u) {
 var CMP_ROWS = [
   { sec: 'Bottle' },
   { k: 'bottleId', l: 'Bottle' },
-  { k: 'flavour', l: 'Flavour' },
   { k: 'volume', l: 'Volume' },
-  { k: 'count', l: 'Bottles' },
-  { k: 'bottled', l: 'Bottled on' },
-  { k: 'fridged', l: 'Fridged on' },
-  { k: 'sugarG', l: 'Sugar in bottle' },
+  { k: 'flavour', l: 'Spices' },
+  { k: 'spicesPer100', l: 'Spices per 100 ml' },
+  { k: 'sugarG', l: 'Sugar' },
+  { k: 'sugarPer100', l: 'Sugar per 100 ml' },
   { k: 'yeastMg', l: 'Yeast' },
   { k: 'source', l: 'Source' },
   { sec: 'Fermentation time' },
@@ -11688,42 +11698,20 @@ var CMP_ROWS = [
   { k: 'totalDays', l: 'Total' },
   { sec: 'First fermentation' },
   { k: 'f1Batch', l: 'Batch' },
-  { k: 'vessel', l: 'Vessel' },
-  { k: 'brewed', l: 'Brewed on' },
   { k: 'f1Volume', l: 'Volume' },
   { k: 'scoby', l: 'SCOBY' },
   { k: 'scobyPct', l: 'SCOBY share' },
   { k: 'tea', l: 'Tea' },
   { k: 'teaPerL', l: 'Tea per litre' },
-  { k: 'teaType', l: 'Tea type' },
-  { k: 'steep', l: 'Steep' },
   { k: 'sugar', l: 'Sugar' },
   { k: 'sugarPerL', l: 'Sugar per litre' },
-  { k: 'sugarSource', l: 'Sugar source' },
-  { k: 'water', l: 'Water source' },
-  { sec: 'Infusion', inf: true },
-  { k: 'infId', l: 'Infusion', inf: true },
-  { k: 'infSpices', l: 'Spices', inf: true },
   { sec: 'Labo' },
   { k: 'f1StartBrix', l: 'F1 start Brix' },
   { k: 'f1StartPh', l: 'F1 start pH' },
-  { k: 'f1EndBrix', l: 'F1 end Brix' },
-  { k: 'f1EndPh', l: 'F1 end pH' },
-  { k: 'f1EndTemp', l: 'F1 end temp' },
-  { k: 'f1EndDate', l: 'F1 last reading on' },
-  { k: 'brixDrop', l: 'Brix drop in F1' },
-  { k: 'btlBrix', l: 'Bottle Brix' },
-  { k: 'btlPh', l: 'Bottle pH' },
-  { k: 'btlTemp', l: 'Bottle temp' },
-  { k: 'btlDate', l: 'Bottle reading on' },
-  { sec: 'Tasting' },
-  { k: 'rating', l: 'Rating' },
-  { k: 'fb_fizz', l: 'Fizz' },
-  { k: 'fb_acidity', l: 'Acidity' },
-  { k: 'fb_sweetness', l: 'Sweetness' },
-  { k: 'fb_off', l: 'Off-flavour' },
-  { k: 'fb_note', l: 'Tasting note' },
-  { k: 'notes', l: 'Bottling notes' }
+  { k: 'infEndBrix', l: 'INF end Brix', inf: true },
+  { k: 'infEndPh', l: 'INF end pH', inf: true },
+  { k: 'btlBrix', l: 'BOT Brix' },
+  { k: 'btlPh', l: 'BOT pH' }
 ];
 
 function renderCompare() {
