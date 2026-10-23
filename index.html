@@ -5967,9 +5967,11 @@ function cmpInfusions(a, b) {
   if (da !== db) return da < db ? 1 : -1;   // newest start date on top
   return 0;
 }
-function infusionSpicesText(inf) {
+// sep: ', ' by default (tooltips, Daily operations); '<br>' in the Infusion
+// table so each spice is on its own line.
+function infusionSpicesText(inf, sep) {
   if (!inf.flavours || !inf.flavours.length) return '—';
-  return inf.flavours.map(function (f) { return fmtText(f.name) + (f.g !== '' && f.g != null ? (' ' + fmtQty(f.g, 'g')) : ''); }).join(', ');
+  return inf.flavours.map(function (f) { return fmtText(f.name) + (f.g !== '' && f.g != null ? (' ' + fmtQty(f.g, 'g')) : ''); }).join(sep || ', ');
 }
 function infusionRowHtml(inf) {
   var u = esc(inf.uid);
@@ -5987,7 +5989,7 @@ function infusionRowHtml(inf) {
     + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
     + cellEd(esc(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
     + cellEd((inf.volumeL !== '' && inf.volumeL != null) ? fmtQty(inf.volumeL, 'L') : '—', { type: 'infusion', uid: inf.uid, field: 'volumeL', input: 'number', cls: 'num' })
-    + cellEd(infusionSpicesText(inf), { type: 'infusion', uid: inf.uid, field: 'flavours', input: 'spices', cls: 'spices-cell' })
+    + cellEd(infusionSpicesText(inf, '<br>'), { type: 'infusion', uid: inf.uid, field: 'flavours', input: 'spices', cls: 'spices-cell' })
     + cellEd('<div class="clip-inner muted">' + (inf.notes ? esc(inf.notes) : '—') + '</div>', { type: 'infusion', uid: inf.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
@@ -7332,8 +7334,8 @@ document.addEventListener('click', function (e) {
 });
 
 /* ---- render ---- */
-// Spices next to one another on a single line (like the Infusion page's
-// spice list), each with its own mg/100ml concentration tooltip.
+// One spice per line (same as the Infusion page's spice list), each with
+// its own mg/100ml concentration tooltip.
 function flavorCell(b, noTip) {
   if (!b.flavours || !b.flavours.length) return '\u2014';
   var parts = [];
@@ -7347,7 +7349,7 @@ function flavorCell(b, noTip) {
       parts.push('<span>' + label + '</span>');
     }
   }
-  return parts.join(', ');
+  return parts.join('<br>');
 }
 // Resolve a bottle's fermentation timeline into up to 3 segments: F1 (first
 // fermentation), Infusion (spice steep — only present when this bottle was
@@ -11570,6 +11572,8 @@ function cmpJoin(vals) {
   vals.forEach(function (v) { v = (v == null) ? '' : String(v); if (v === '' || v === '—' || seen[v]) return; seen[v] = 1; out.push(v); });
   return out.join(' / ');
 }
+// "Sumac 2 g, Cardamom 1 g" -> one spice per line.
+function cmpLines(t) { return String(t || '').split(', ').map(esc).join('<br>'); }
 function cmpInfusionByUid(u) { for (var i = 0; i < infusions.length; i++) if (String(infusions[i].uid) === String(u)) return infusions[i]; return null; }
 // Readings of an F1 batch up to (and on) the bottling date.
 function cmpF1ReadingsUntil(b, until) {
@@ -11594,12 +11598,12 @@ function cmpData(u) {
   var vol = cmpGroupVal(bs, function (b) { return b.volumeMl; });
   d.volume = vol === 'mixed' ? 'mixed' : (cmpHas(vol) ? fmtQty(vol, 'ml') : '');
   var fl = cmpGroupVal(bs, flavourText);
-  d.flavour = fl === 'mixed' ? 'mixed' : esc(fl || '');
+  d.flavour = fl === 'mixed' ? 'mixed' : cmpLines(fl);
   // Per 100 ml, as mg (same convention as the Bottling table).
   var sp = cmpGroupVal(bs, function (b) {
     return (b.flavours || []).map(function (f) { var p = per100(parseFloat(f.g) * 1000, b.volumeMl); return p == null ? '' : ((f.name ? f.name + ' ' : '') + fmtNum(cmpR1(p)) + ' mg'); }).filter(Boolean).join(', ');
   });
-  d.spicesPer100 = sp === 'mixed' ? 'mixed' : esc(sp || '');
+  d.spicesPer100 = sp === 'mixed' ? 'mixed' : cmpLines(sp);
   var sp100 = cmpGroupVal(bs, function (b) { var p = per100(parseFloat(b.sugarG) * 1000, b.volumeMl); return p == null ? '' : fmtNum(cmpR1(p)) + ' mg'; });
   d.sugarPer100 = sp100 === 'mixed' ? 'mixed' : esc(sp100 || '');
   var sg = cmpGroupVal(bs, function (b) { return b.sugarG; });
@@ -11647,7 +11651,7 @@ function cmpData(u) {
 
   // Infusion (only for bottlings sourced from one).
   d.infId = infs.map(function (inf) { return '<span class="cmp-link id-cell" onclick="gotoInfusion(\'' + esc(inf.uid) + '\')">' + esc(inf.id || inf.vessel || 'infusion') + '</span>'; }).join('<br>');
-  d.infSpices = esc(cmpJoin(infs.map(flavourText)));
+  d.infSpices = cmpLines(cmpJoin(infs.map(flavourText)));
 
   // Labo: first F1 reading, last F1 reading before bottling (or before the
   // infusion), and the bottle's own latest reading.
