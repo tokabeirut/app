@@ -75,7 +75,7 @@ Read this first when continuing work on the toka app.
     - Tea is matched to First fermentation by tea type name.
     - Split-off branches are not double-counted.
   - **Production timeline**: Now / Next / Later board (no Done column) + task list.
-  - **Bottle comparison** (`view-compare`, `renderCompare`, rows in `CMP_ROWS`): read-only. Pick 2–3 bottlings (a bottle group counts as one). Rows in Claire's order: volume, spices, spices /100 ml, sugar, sugar /100 ml, yeast, source · F1 / INF / F2 / total days · F1 batch, volume, SCOBY, SCOBY share, tea, tea/L, sugar, sugar/L · F1 start Brix & pH, INF end Brix & pH, BOT Brix & pH. Per-100-ml values are in mg. Rows that differ are marked orange; "Only differences" toggle. Picks remembered per device (`toka_cmp_sel`).
+  - **Bottle comparison** (`view-compare`, `renderCompare`, rows in `CMP_ROWS`): read-only. Pick 2–3 bottlings (a bottle group counts as one). Rows in Claire's order: volume, spices, spices per litre, sugar, sugar per litre, yeast, source · F1 / INF / F2 / total days · F1 batch, volume, SCOBY, SCOBY share, tea, tea/L, sugar, sugar/L · F1 start Brix & pH, INF end Brix & pH, BOT Brix & pH. Per-litre values are in g/L. Amount rows are only marked orange when their per-litre/share row differs too. Rows that differ are marked orange; "Only differences" toggle. Picks remembered per device (`toka_cmp_sel`).
 - **Business**
   - **Expenses**.
   - **Sales** (CRM):
