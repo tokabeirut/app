@@ -946,6 +946,25 @@
   .cmp-none { color: var(--ink-faint); }
   .cmp-link { cursor: pointer; }
   .cmp-table .src-amt-tag { margin-left: 4px; }
+  .cmp-pick { position: relative; }
+  .cmp-pick-btn { width: 100%; text-align: left; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 30px 9px 12px; font-family: 'Newsreader', Georgia, serif; font-size: 0.96rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a9088'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+  .cmp-pick.open .cmp-pick-btn { border-color: var(--terra); background-color: var(--surface); }
+  .cmp-pick-btn .cmp-opt-id { font-size: 0.8rem; }
+  .cmp-btn-sp { margin-left: 10px; }
+  .cmp-btn-empty { color: var(--ink-faint); }
+  .cmp-pick-menu { display: none; position: absolute; z-index: 60; top: calc(100% + 4px); left: 0; min-width: 100%; max-width: calc(100vw - 40px); max-height: 380px; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 4px 0; }
+  .cmp-pick.open .cmp-pick-menu { display: block; }
+  .cmp-pickers .form-group:last-child .cmp-pick-menu { left: auto; right: 0; }
+  .cmp-pick-menu table { width: 100%; font-size: 0.9rem; }
+  .cmp-pick-menu td { border: none; padding: 7px 12px; white-space: nowrap; }
+  .cmp-opt { cursor: pointer; }
+  .cmp-opt:hover td { background: var(--terra-pale); }
+  .cmp-opt.sel td { color: var(--terra); }
+  .cmp-opt-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; }
+  .cmp-opt-sp { width: 100%; }
+  .cmp-opt-none td { color: var(--ink-faint); }
+  .cmp-opt-grp td { font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-faint); padding: 12px 12px 4px; cursor: default; }
+  .cmp-opt-grp:hover td { background: none; }
   .cmp-link:hover { text-decoration: underline; }
   @media (max-width: 640px) {
     header { padding: 0 16px; flex-wrap: wrap; gap: 10px; min-height: unset; padding-top: 12px; padding-bottom: 12px; }
@@ -966,6 +985,9 @@
     .table-wrap { padding: 0 20px 28px; }
     .cmp-top { padding: 0 20px 18px; }
     .cmp-pickers { grid-template-columns: 1fr; gap: 10px; }
+    .cmp-pickers .form-group:last-child .cmp-pick-menu { left: 0; right: auto; }
+    .cmp-pick-menu { max-width: 100%; }
+    .cmp-pick-menu td.cmp-opt-sp { white-space: normal; }
     .cmp-table col.cmp-lcol { width: 120px; }
     .cmp-table { min-width: 0; }
     #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix, #view-sales .crm-tabs { padding-left: 20px; padding-right: 20px; }
@@ -11537,14 +11559,25 @@ function cmpUnits() {
     };
   });
 }
-function cmpUnitLabel(u) {
-  var parts = [u.id];
-  var ft = (u.head.flavours || []).map(function (f) { return f.name || ''; }).filter(Boolean).join(' + ');
-  if (ft) parts.push(ft);
-  if (u.head.volumeMl !== '' && u.head.volumeMl != null) parts.push(fmtQty(u.head.volumeMl, 'ml'));
-  if (u.bottles.length > 1) parts.push(u.bottles.length + ' bottles');
-  return parts.join(' · ');
+function cmpUnitSpices(u) {
+  return (u.head.flavours || []).map(function (f) { return f.name || ''; }).filter(Boolean).join(' + ');
 }
+// Custom picker (a native <select> can't line the spices up in a column):
+// a button that opens a list with the bottle IDs in one column and the
+// spices, after a "•", in the next.
+var cmpOpenSlot = -1;
+function cmpTogglePick(i, ev) {
+  if (ev) ev.stopPropagation();
+  cmpOpenSlot = (cmpOpenSlot === i) ? -1 : i;
+  var menus = document.querySelectorAll('#cmp-pickers .cmp-pick');
+  for (var k = 0; k < menus.length; k++) menus[k].classList.toggle('open', k === cmpOpenSlot);
+}
+function cmpPick(i, key) { cmpOpenSlot = -1; cmpSetSlot(i, key); }
+document.addEventListener('click', function (e) {
+  if (cmpOpenSlot < 0 || (e.target.closest && e.target.closest('.cmp-pick.open'))) return;
+  cmpTogglePick(cmpOpenSlot);
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && cmpOpenSlot >= 0) cmpTogglePick(cmpOpenSlot); });
 function cmpGetSel() {
   var s = [];
   try { s = JSON.parse(lsGet('toka_cmp_sel') || '[]') || []; } catch (e) { s = []; }
@@ -11741,16 +11774,24 @@ function renderCompare() {
   // Pickers
   var ph = '';
   for (var i = 0; i < CMP_SLOTS; i++) {
-    var opts = '<option value="">' + (i < 2 ? '— pick a bottle —' : '— none —') + '</option>';
-    var act = '', arc = '';
-    units.forEach(function (u) {
-      var o = '<option value="' + esc(u.key) + '"' + (sel[i] === u.key ? ' selected' : '') + '>' + esc(cmpUnitLabel(u)) + '</option>';
-      if (u.archived) arc += o; else act += o;
-    });
-    if (act) opts += '<optgroup label="Active">' + act + '</optgroup>';
-    if (arc) opts += '<optgroup label="Archived">' + arc + '</optgroup>';
+    var cur = sel[i] && byKey[sel[i]];
+    var emptyTxt = i < 2 ? '\u2014 pick a bottle \u2014' : '\u2014 none \u2014';
+    var optRow = function (key, idTxt, spTxt, extraCls) {
+      return '<tr class="cmp-opt' + (sel[i] === key ? ' sel' : '') + (extraCls || '') + '" onclick="cmpPick(' + i + ', \'' + esc(key) + '\')">'
+        + '<td class="cmp-opt-id">' + esc(idTxt) + '</td><td class="cmp-opt-sp">' + (spTxt ? '\u2022 ' + esc(spTxt) : '') + '</td></tr>';
+    };
+    var rows = optRow('', emptyTxt, '', ' cmp-opt-none'), act = '', arc = '';
+    units.forEach(function (u) { var r = optRow(u.key, u.id, cmpUnitSpices(u)); if (u.archived) arc += r; else act += r; });
+    if (act) rows += '<tr class="cmp-opt-grp"><td colspan="2">Active</td></tr>' + act;
+    if (arc) rows += '<tr class="cmp-opt-grp"><td colspan="2">Archived</td></tr>' + arc;
+    var btnTxt = cur
+      ? '<span class="cmp-opt-id">' + esc(cur.id) + '</span>' + (cmpUnitSpices(cur) ? '<span class="cmp-btn-sp">\u2022 ' + esc(cmpUnitSpices(cur)) + '</span>' : '')
+      : '<span class="cmp-btn-empty">' + emptyTxt + '</span>';
     ph += '<div class="form-group"><label>Bottle ' + (i + 1) + (i === 2 ? ' (optional)' : '') + '</label>'
-      + '<select onchange="cmpSetSlot(' + i + ', this.value)">' + opts + '</select></div>';
+      + '<div class="cmp-pick' + (cmpOpenSlot === i ? ' open' : '') + '">'
+      + '<button type="button" class="cmp-pick-btn" onclick="cmpTogglePick(' + i + ', event)">' + btnTxt + '</button>'
+      + '<div class="cmp-pick-menu"><table>' + rows + '</table></div>'
+      + '</div></div>';
   }
   pick.innerHTML = ph;
 
