@@ -1593,10 +1593,10 @@
   <div class="view-tab-divider"></div>
   <div class="view-tab-group" style="-webkit-flex-grow:5;flex-grow:5">
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
-    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
     <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
     <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
+    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
   </div>
   <div class="view-tab-divider"></div>
   <div class="view-tab-group" style="-webkit-flex-grow:3;flex-grow:3">
@@ -1646,10 +1646,6 @@
         <div class="card-head"><span class="name">Daily operations</span></div>
         <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
       </div>
-      <div class="feature-card clickable" onclick="showView('compare')">
-        <div class="card-head"><span class="name">Bottle comparison</span></div>
-        <div class="desc">Two or three bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
-      </div>
       <div class="feature-card clickable" onclick="showView('inventory')">
         <div class="card-head"><span class="name">Bottle inventory</span></div>
         <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
@@ -1661,6 +1657,10 @@
       <div class="feature-card clickable" onclick="showView('production')">
         <div class="card-head"><span class="name">Production timeline</span></div>
         <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; sorted into now, next &amp; later.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('compare')">
+        <div class="card-head"><span class="name">Bottle comparison</span></div>
+        <div class="desc">Two or three bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
       </div>
     </div>
   </div>
