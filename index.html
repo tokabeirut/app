@@ -11700,9 +11700,9 @@ var CMP_ROWS = [
   { sec: 'Bottle' },
   { k: 'bottleId', l: 'Bottle' },
   { k: 'volume', l: 'Volume' },
-  { k: 'flavour', l: 'Spices' },
+  { k: 'flavour', l: 'Spices', norm: 'spicesPer100' },
   { k: 'spicesPer100', l: 'Spices per 100 ml' },
-  { k: 'sugarG', l: 'Sugar' },
+  { k: 'sugarG', l: 'Sugar', norm: 'sugarPer100' },
   { k: 'sugarPer100', l: 'Sugar per 100 ml' },
   { k: 'yeastMg', l: 'Yeast' },
   { k: 'source', l: 'Source' },
@@ -11714,11 +11714,11 @@ var CMP_ROWS = [
   { sec: 'First fermentation' },
   { k: 'f1Batch', l: 'Batch' },
   { k: 'f1Volume', l: 'Volume' },
-  { k: 'scoby', l: 'SCOBY' },
+  { k: 'scoby', l: 'SCOBY', norm: 'scobyPct' },
   { k: 'scobyPct', l: 'SCOBY share' },
-  { k: 'tea', l: 'Tea' },
+  { k: 'tea', l: 'Tea', norm: 'teaPerL' },
   { k: 'teaPerL', l: 'Tea per litre' },
-  { k: 'sugar', l: 'Sugar' },
+  { k: 'sugar', l: 'Sugar', norm: 'sugarPerL' },
   { k: 'sugarPerL', l: 'Sugar per litre' },
   { sec: 'Labo' },
   { k: 'f1StartBrix', l: 'F1 start Brix' },
@@ -11767,6 +11767,14 @@ function renderCompare() {
   var h = '<div class="table-scroll"><table class="cmp-table"><colgroup><col class="cmp-lcol">';
   chosen.forEach(function () { h += '<col>'; });
   h += '</colgroup><tbody>';
+  // A row differs when its filled values aren't all the same. An amount row
+  // with a "norm" row (per 100 ml / per litre / share) is only marked when
+  // that normalised row differs too: same concentration = same recipe.
+  function rowDiffers(k) {
+    var vals = data.map(function (d) { return d[k] || ''; });
+    var filled = vals.filter(function (v) { return v !== ''; });
+    return filled.length < vals.length || filled.some(function (v) { return v !== filled[0]; });
+  }
   var secHtml = null, secRows = '';
   function flush() { if (secHtml != null && secRows) h += secHtml + secRows; secHtml = null; secRows = ''; }
   CMP_ROWS.forEach(function (r) {
@@ -11775,7 +11783,7 @@ function renderCompare() {
     var vals = data.map(function (d) { return d[r.k] || ''; });
     if (vals.every(function (v) { return v === ''; })) return;
     var filled = vals.filter(function (v) { return v !== ''; });
-    var diff = r.k !== 'bottleId' && r.k !== 'source' && (filled.length < vals.length || filled.some(function (v) { return v !== filled[0]; }));
+    var diff = r.k !== 'bottleId' && r.k !== 'source' && rowDiffers(r.k) && (!r.norm || rowDiffers(r.norm));
     if (cmpOnlyDiff && !diff && r.k !== 'bottleId') return;
     secRows += '<tr' + (diff ? ' class="cmp-diff"' : '') + '><td class="cmp-label">' + esc(r.l) + '</td>'
       + vals.map(function (v) { return '<td class="cmp-val">' + (v === '' ? '<span class="cmp-none">—</span>' : v) + '</td>'; }).join('')
