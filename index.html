@@ -8998,10 +8998,33 @@ function bivAddFormsHtml() {
     + '<button type="button" class="btn-primary" onclick="bivAddMovement()">+ Add</button>'
     + '</div></div></div>';
 }
+// Flavours of the bottles currently active on the Bottling page, named the
+// same way the automatic "Filled" rows name them (spices joined by a space).
+// Cardamom Sumac always comes first and is the default.
+function bivActiveFlavours() {
+  var seen = {}, out = [];
+  function add(f) { f = String(f || '').trim(); var k = f.toLowerCase(); if (f && !seen[k]) { seen[k] = 1; out.push(f); } }
+  add('Cardamom Sumac');
+  var rest = [];
+  bottles.forEach(function (b) {
+    if (b.archived) return;
+    var f = (b.flavours || []).map(function (x) { return String(x.name || '').trim(); }).filter(Boolean).join(' ');
+    if (f) rest.push(f);
+  });
+  rest.sort(function (a, c) { return a.localeCompare(c); }).forEach(add);
+  return out;
+}
 function bivMoveChanged() {
   var mv = val('biv-move');
   var needsFlavour = (mv === 'filled' || mv === 'consumed');
   document.getElementById('biv-mv-flavour-row').style.display = needsFlavour ? '' : 'none';
+  var fsel = document.getElementById('biv-mv-flavour');
+  if (fsel && needsFlavour) {
+    fsel.innerHTML = (mv === 'consumed')
+      ? bivActiveFlavours().map(function (f) { return '<option value="' + esc(f) + '">' + esc(f) + '</option>'; }).join('')
+      : bivFlavourOptionsHtml();
+    fsel.value = 'Cardamom Sumac';
+  }
   var m = BIV_MOVES.filter(function (x) { return x[0] === mv; })[0];
   if (m) document.getElementById('biv-mv-notes').placeholder = m[2];
 }
