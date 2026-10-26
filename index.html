@@ -9186,8 +9186,9 @@ function bivBottlingByKey(key, flavour) {
 }
 // <option>s to pick the batch sold or consumed — the batch also gives the
 // bottle size, so there's no separate size choice. First every bottling
-// with bottles left (plus the current pick), then "any batch" per flavour
-// and size (the oldest bottles are counted first).
+// (also the ones that look used up: bottles without a batch are counted
+// oldest-first, which is only an estimate), then "any batch" per flavour
+// and size.
 // Values: "<bottling key>||<flavour>||<size>", or "||<flavour>||<size>".
 var BIV_SIZES = ['Small (375ml)', 'Big (750ml)'];
 function bivSizeShort(sizeLabel) { var m = /(\d+)\s*ml/i.exec(String(sizeLabel || '')); return m ? m[1] + ' ml' : String(sizeLabel || ''); }
@@ -9198,8 +9199,8 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
   bivBottlings().forEach(function (g) {
     Object.keys(g.made).forEach(function (sz) {
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
-      if (left <= 0 && v !== cur) return;
-      h += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + g.flavour + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + fmtNum(Math.max(0, left)) + ' left') + '</option>';
+      if ((g.made[sz] || 0) <= 0 && v !== cur) return;
+      h += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + g.flavour + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
