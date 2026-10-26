@@ -382,6 +382,8 @@
   .biv-tri.open { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
   .biv-stat-label .biv-tri { margin-left: -16px; width: 16px; }
   .biv-stat-btlrow { padding: 2px 0; }
+  /* Light highlight on hover so a number is easy to match to its row. */
+  .biv-stat-row:not(.biv-stat-head):hover, .biv-stat-subrow:hover, .biv-stat-btlrow:hover { background: var(--terra-pale); }
   .biv-stat-btllabel { font-size: 0.72rem; color: var(--ink-faint); padding-left: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .biv-btl-date { display: inline-block; min-width: 88px; }
   .biv-btl-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; }
