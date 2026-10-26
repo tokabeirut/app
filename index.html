@@ -9131,14 +9131,12 @@ function bivFlavourRank(flavour) {
 // Lifecycle-stage rank for sorting: displayed with the most "finished"
 // stage on top — Consumed above Filled above Atelier above Depot (Other,
 // broken/lost/untracked, trails at the very bottom).
+// Top to bottom within a day: Recycled, Sold, Consumed, Filled, Atelier,
+// Other, Depot (an empty stage counts as Depot).
 function bivStageRank(stage) {
-  if (stage === 'consumed') return 0;
-  if (stage === 'sold') return 0;
-  if (stage === 'filled') return 1;
-  if (stage === 'atelier') return 2;
-  if (stage === 'recycled') return 2;
-  if (stage === 'other') return 4;
-  return 3; // depot (also the default/legacy fallback)
+  var order = ['recycled', 'sold', 'consumed', 'filled', 'atelier', 'other', 'depot'];
+  var i = order.indexOf(stage || 'depot');
+  return i < 0 ? order.length : i;
 }
 // A "bring from depot" or "fill bottles" quick-add writes two ledger rows
 // atomically (see bringFromDepot/fillBottles on the backend); the one that
@@ -9163,21 +9161,22 @@ function bivRowHtml(e) {
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
 }
-// Sort: latest date first, then (within date) small above big, then by
-// stage (Consumed above Filled above Atelier above Depot, with Other at
-// the very bottom), then (within filled) Cardamom Sumac above Sumac,
-// then alphabetically by notes.
+// Sort: latest date first, then (within a date) by stage (Recycled on top,
+// Depot at the bottom, see bivStageRank), then small above big, then by
+// flavour (Cardamom Sumac, Sumac, then the rest A–Z), then by notes.
 function bivSortedLog() {
   var list = bottleInventory.slice();
   list.sort(function (a, b) {
     var da = String(a.date || ''), db = String(b.date || '');
     if (da !== db) return da < db ? 1 : -1;
-    var sa = bivSizeRank(a.size), sb = bivSizeRank(b.size);
-    if (sa !== sb) return sa - sb;
     var ga = bivStageRank(a.stage), gb = bivStageRank(b.stage);
     if (ga !== gb) return ga - gb;
+    var sa = bivSizeRank(a.size), sb = bivSizeRank(b.size);
+    if (sa !== sb) return sa - sb;
     var fa = bivFlavourRank(a.flavour), fb = bivFlavourRank(b.flavour);
     if (fa !== fb) return fa - fb;
+    var fna = String(a.flavour || ''), fnb = String(b.flavour || '');
+    if (fna !== fnb) return fna.localeCompare(fnb);
     var na = String(a.notes || ''), nb = String(b.notes || '');
     if (na !== nb) return na < nb ? -1 : 1;
     return 0;
