@@ -9219,12 +9219,9 @@ function bivRowHtml(e, sub) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
-  // A sale is one stored row (qty -n). It reads as "+n Sold", with the
-  // bottles leaving the filled stock as its small counter line.
-  if (e.stage === 'sold' && qtyNum) {
-    qtyDisp = '+' + fmtNum(Math.abs(qtyNum));
-    sub = { stage: 'filled', qty: -Math.abs(qtyNum) };
-  }
+  // Exits (sold, consumed) take bottles out of stock: always shown as -n,
+  // on one line with no counter line.
+  if ((e.stage === 'sold' || e.stage === 'consumed') && qtyNum) qtyDisp = '-' + fmtNum(Math.abs(qtyNum));
   var autoTag = '';
   var cls = [];
   // Main movements are always in normal type, even when written
