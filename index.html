@@ -5026,6 +5026,7 @@ function markDataFresh() {
   refreshPending = false;
   lastLiveLoadAt = Date.now();
   renameBaseBrewRows();
+  try { bivSyncBottlingFlavours(); } catch (e) {}
   setDataState('fresh');
   saveSnapshot();
   // First live load of this visit, or a catch-up refresh after coming back
@@ -6099,6 +6100,7 @@ function loadBottles(cb) {
     if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
     bottles = res.bottles || [];
     renderBottles();
+    try { bivSyncBottlingFlavours(); } catch (e) {}
     if (cb) cb(null);
   });
 }
@@ -9100,7 +9102,7 @@ function bivKpisHtml() {
       netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0) - (soldBySize[sz] || 0);
     }
     var open = !!bivOpenFlavours()[fl];
-    h += bivStatSubRowHtml(fl, sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
+    h += bivStatSubRowHtml(bivFlavourDisplay(fl), sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
       'class="biv-summary-grid biv-stat-subrow biv-fold-row" onclick="bivToggleFlavour(\'' + esc(fl).replace(/'/g, "\\'") + '\')"')
       .replace('<div class="biv-stat-sublabel">', '<div class="biv-stat-sublabel"><span class="biv-tri' + (open ? ' open' : '') + '">&#9656;</span>');
     if (open) h += bivFlavourBottlingsHtml(fl, sizes);
@@ -9200,7 +9202,7 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
     Object.keys(g.made).forEach(function (sz) {
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
       if ((g.made[sz] || 0) <= 0 && v !== cur) return;
-      h += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + g.flavour + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
+      h += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + bivFlavourDisplay(g.flavour) + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
@@ -9209,7 +9211,7 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
   flavours.forEach(function (f) {
     BIV_SIZES.forEach(function (sz) {
       var v = '||' + f + '||' + sz;
-      any += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(f + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
+      any += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivFlavourDisplay(f) + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
     });
   });
   return (h ? '<optgroup label="Batch">' + h + '</optgroup>' : '') + '<optgroup label="Any batch (oldest counted first)">' + any + '</optgroup>';
@@ -9219,7 +9221,8 @@ function bivParseBatch(v) {
   return { bottling: p[0] || '', flavour: p[1] || '', size: p[2] || '' };
 }
 function bivFlavourBottlingsHtml(fl, sizes) {
-  var list = bivBottlings().filter(function (g) { return g.flavour === fl && sizes.some(function (sz) { return (g.left[sz] || 0) > 0; }); });
+  // All bottlings of this flavour, also the ones with nothing left (0).
+  var list = bivBottlings().filter(function (g) { return g.flavour === fl && sizes.some(function (sz) { return (g.made[sz] || 0) > 0; }); });
   var h = '';
   list.forEach(function (g) {
     // The bottling it came from: same ID, or one bottle of that group
@@ -9233,7 +9236,7 @@ function bivFlavourBottlingsHtml(fl, sizes) {
     h += '<div class="biv-summary-grid biv-stat-btlrow' + (bo ? ' biv-btl-link' : '') + '"'
       + (bo ? ' onclick="gotoBottle(\'' + esc(bo.uid) + '\')" title="Open ' + esc(g.ids.join(', ')) + ' on the Bottling page"' : (g.ids.length > 1 ? ' title="' + esc(g.ids.join(', ')) + '"' : ''))
       + '><div class="biv-stat-btllabel">' + lab + '</div>';
-    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + ((g.left[sizes[j]] || 0) > 0 ? fmtNum(g.left[sizes[j]]) : '') + '</div>';
+    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + ((g.made[sizes[j]] || 0) > 0 ? fmtNum(Math.max(0, g.left[sizes[j]] || 0)) : '') + '</div>';
     h += '</div>';
   });
   return h;
@@ -9397,6 +9400,93 @@ function renameBaseBrewRows() {
     apiPost({ action: 'updateBottleInvEntry', entry: JSON.parse(JSON.stringify(todo[i])) }, function () { next(i + 1); });
   })(0);
 }
+// A flavour is stored as its spices joined by spaces ("Rosemary Rose water
+// Orange blossom"). For display the spices are split again — using the
+// spice names known from Bottling and Infusion — and joined with " • ".
+function bivKnownSpices() {
+  var seen = {}, out = [];
+  function add(n) { n = String(n || '').trim(); if (n && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = 1; out.push(n); } }
+  ['Cardamom', 'Sumac'].forEach(add);
+  bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { add(f.name); }); });
+  infusions.forEach(function (x) { (x.flavours || []).forEach(function (f) { add(f.name); }); });
+  return out.sort(function (a, b) { return b.length - a.length; });   // longest first
+}
+function bivFlavourDisplay(fl) {
+  fl = String(fl || '');
+  if (!fl || fl === '(unspecified)') return fl;
+  var known = bivKnownSpices(), parts = [], rest = fl;
+  while (rest) {
+    var hit = null;
+    for (var i = 0; i < known.length; i++) {
+      var k = known[i];
+      if (rest.toLowerCase().indexOf(k.toLowerCase()) === 0 && (rest.length === k.length || rest.charAt(k.length) === ' ')) { hit = rest.slice(0, k.length); break; }
+    }
+    if (!hit) hit = rest.split(' ')[0];
+    parts.push(hit);
+    rest = rest.slice(hit.length).replace(/^\s+/, '');
+  }
+  return parts.join(' \u2022 ');
+}
+// Spices of a bottling, named the way inventory rows store a flavour.
+function bivBottleFlavourName(b) {
+  return (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Unknown';
+}
+// The bottle record behind an "Auto: bottled <ids>" note (same ID, or one
+// bottle of that group).
+function bivBottleForIds(ids) {
+  var id0 = ids[0] || '';
+  if (!id0) return null;
+  for (var i = 0; i < bottles.length; i++) {
+    var bid = String(bottles[i].bottleId || '');
+    if (bid === id0 || bid.indexOf(id0 + '-') === 0) return bottles[i];
+  }
+  return null;
+}
+// Keeps the flavour of each automatic "Filled" row in step with its
+// bottling's spices on the Bottling page (they're copied when the bottling
+// is saved, so a later correction there didn't reach Bottle inventory).
+// Sold / consumed rows that name that batch, and order lines that do, are
+// renamed with it. Runs when live data arrives and after Bottling reloads.
+function bivSyncBottlingFlavours() {
+  if (!bottleInventory.length || !bottles.length) return;
+  var todo = [], renamed = {};
+  bottleInventory.forEach(function (f) {
+    if (f.stage !== 'filled') return;
+    var m = /^Auto: bottled (.+)$/.exec(String(f.notes || ''));
+    if (!m) return;
+    var bo = bivBottleForIds(m[1].split(', '));
+    if (!bo) return;
+    var want = bivBottleFlavourName(bo);
+    if (String(f.flavour || '') === want) return;
+    renamed[(f.date || '') + '|' + m[1] + '|' + (f.flavour || '')] = want;
+    f.flavour = want; todo.push(f);
+  });
+  if (!todo.length) return;
+  bottleInventory.forEach(function (e) {
+    if ((e.stage === 'consumed' || e.stage === 'sold') && e.bottling) {
+      var want = renamed[e.bottling + '|' + (e.flavour || '')];
+      if (want) { e.flavour = want; if (e.stage === 'consumed') todo.push(e); }
+    }
+  });
+  var dirtyOrders = [];
+  (typeof orders !== 'undefined' ? orders : []).forEach(function (o) {
+    var dirty = false;
+    (o.lines || []).forEach(function (l) {
+      var want = l.bottling ? renamed[l.bottling + '|' + (l.flavour || '')] : null;
+      if (want) { l.flavour = want; dirty = true; }
+    });
+    if (dirty) dirtyOrders.push(o);
+  });
+  if (typeof renderBottleInventory === 'function' && currentView === 'inventory') renderBottleInventory();
+  (function next(i) {
+    if (i < todo.length) { apiPost({ action: 'updateBottleInvEntry', entry: JSON.parse(JSON.stringify(todo[i])) }, function () { next(i + 1); }); return; }
+    var j = i - todo.length;
+    if (j < dirtyOrders.length) {
+      var o = JSON.parse(JSON.stringify(dirtyOrders[j])); o.customerLabel = orderCustomerName(dirtyOrders[j]);
+      apiPost({ action: 'saveOrder', order: o }, function () { next(i + 1); });
+    }
+  })(0);
+}
 function bivSizeRank(size) {
   if (size === 'Small (375ml)') return 0;
   if (size === 'Big (750ml)') return 1;
@@ -9449,7 +9539,7 @@ function bivPairs() {
 // too). Sold rows come from a Sales order, so a click opens that order,
 // where the batch is changed per line. Other rows: flavour select.
 function bivFlavourCellHtml(e) {
-  var inner = esc(e.flavour || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
+  var inner = esc(bivFlavourDisplay(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
   if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Change the batch in the order">' + inner + '</td>';
