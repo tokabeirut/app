@@ -86,6 +86,7 @@ Read this first when continuing work on the toka app.
     - Optional "take bottles out of inventory".
     - Customers with an optional **alias**. The alias is shown instead of the official name in the overview; invoices use the official name.
     - "Time to reach out" cards: predicted next order from consumption rate; one order → +30 days; or "reorder every N days". WhatsApp and Call buttons.
+    - Order line prices fill in automatically (a price typed by hand is kept): B2C uses the Bottle math bundles (`b2cBottlePrice`, flavours mixed per size); B2B uses the price-list tiers in `B2B_TIERS` (per order: 750 ml $7 / $6 from 12; 375 ml $4.50 / $4 from 18; $5.50 / $3.50 once the business reaches 24 big / 36 small bottles in that calendar month, counting its other orders that month). Earlier orders aren't repriced.
     - Invoice details live in the settings tab.
     - Invoice PDF (`invoiceHtml`): A4, "Issued by" / "Invoiced to", no big title, number/date on the right.
   - **Bottle math**: prices as ranges (B2B/B2C) plus a B2C **bundle** per size (default 4 × 750 ml for $40, 6 × 375 ml for $36; shows price a bottle and what we keep), stored in the Bottle math sheet (bundle = row `pricing | <size> | bundle | qty | price`, backend v42).

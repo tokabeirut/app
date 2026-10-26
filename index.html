@@ -1841,7 +1841,7 @@
     </div>
     <div class="form-group">
       <label>Date</label>
-      <input type="date" id="o-date" />
+      <input type="date" id="o-date" onchange="applyAllLinePrices(); updateOrderTotal();" />
     </div>
     <div class="form-group">
       <label>Customer</label>
@@ -8267,11 +8267,22 @@ function b2cBottlePrice(size, n) {
     return Math.round(total / n * 100) / 100;
   } catch (e) { return 0; }
 }
-function suggestedSalePrice(channel, size) {
-  try {
-    var p = bmState.pricing[String(size) === '375' ? 'bottle375' : 'bottle750'][channel === 'B2B' ? 'wholesale' : 'retail'];
-    return Math.round(bmPriceAvg(p) * 100) / 100;
-  } catch (e) { return 0; }
+// B2B price list (Oct 2026): per order 4–11 / 12–23 big bottles and
+// 6–17 / 18–35 small bottles; the lowest price applies from 24 big / 36
+// small bottles a month, counted over all of that business's orders in the
+// calendar month. Fewer bottles than the first tier pay the first-tier price.
+var B2B_TIERS = {
+  '750': { tiers: [[0, 7], [12, 6]], monthly: [24, 5.5] },
+  '375': { tiers: [[0, 4.5], [18, 4]], monthly: [36, 3.5] }
+};
+// n = bottles of this size on this order; monthN = this business's bottles
+// of this size in the same calendar month, this order included.
+function b2bBottlePrice(size, n, monthN) {
+  var t = B2B_TIERS[String(size)] || B2B_TIERS['375'];
+  if (Math.max(n, monthN || 0) >= t.monthly[0]) return t.monthly[1];
+  var p = t.tiers[0][1];
+  t.tiers.forEach(function (x) { if (n >= x[0]) p = x[1]; });
+  return p;
 }
 
 /* ---- reorder estimate ---- */
@@ -8497,10 +8508,22 @@ function orderSizeQty(size) {
   });
   return n;
 }
+// Bottles of one size this customer already ordered in the same calendar
+// month as the order being edited (that order itself left out).
+function customerMonthQty(size) {
+  var c = customerByName(val('o-customer')), month = String(val('o-date') || '').slice(0, 7);
+  if (!c || !month) return 0;
+  var n = 0;
+  ordersOfCustomer(c).forEach(function (o) {
+    if (String(o.id) === String(editingOrderId || '') || String(o.date || '').slice(0, 7) !== month) return;
+    (o.lines || []).forEach(function (l) { if (String(l.size) === String(size)) n += parseFloat(l.qty) || 0; });
+  });
+  return n;
+}
 function applyLinePrice(row) {
   if (row.getAttribute('data-edited')) return;
-  var size = row.querySelector('.ol-size').value;
-  var p = val('o-channel') === 'B2B' ? suggestedSalePrice('B2B', size) : b2cBottlePrice(size, orderSizeQty(size));
+  var size = row.querySelector('.ol-size').value, n = orderSizeQty(size);
+  var p = val('o-channel') === 'B2B' ? b2bBottlePrice(size, n, n + customerMonthQty(size)) : b2cBottlePrice(size, n);
   row.querySelector('.ol-price').value = p ? p.toFixed(2) : '';
 }
 function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice); }
@@ -8517,6 +8540,7 @@ function onOrderChannelChange() {
 }
 function onOrderCustomerInput() {
   var c = customerByName(val('o-customer'));
+  applyAllLinePrices(); updateOrderTotal();   // B2B monthly volume depends on the customer
   var hint = document.getElementById('o-customer-hint');
   if (c) {
     if (c.type && document.getElementById('o-channel').value !== c.type) { document.getElementById('o-channel').value = c.type; onOrderChannelChange(); }
