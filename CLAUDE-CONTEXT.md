@@ -17,7 +17,7 @@ Read this first when continuing work on the toka app.
    ```
    cd ~/Documents/"1. Toka"/toka-app && git add -A && git commit -m "…" && git push
    ```
-4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `41 …`). The live version shows at the exec URL with no action.
+4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `42 …`). The live version shows at the exec URL with no action.
 - Keep replies short. Say what changed and give the git command. Claire tests on laptop + iPhone (home-screen app).
 
 ## Backend / data
@@ -86,7 +86,7 @@ Read this first when continuing work on the toka app.
     - "Time to reach out" cards: predicted next order from consumption rate; one order → +30 days; or "reorder every N days". WhatsApp and Call buttons.
     - Invoice details live in the settings tab.
     - Invoice PDF (`invoiceHtml`): A4, "Issued by" / "Invoiced to", no big title, number/date on the right.
-  - **Bottle math**: prices as ranges (B2B/B2C), stored in the Bottle math sheet.
+  - **Bottle math**: prices as ranges (B2B/B2C) plus a B2C **bundle** per size (default 4 × 750 ml for $40, 6 × 375 ml for $36; shows price a bottle and what we keep), stored in the Bottle math sheet (bundle = row `pricing | <size> | bundle | qty | price`, backend v42).
 
 ## Naming in the app
 - Flavours: "Sumac", "Cardamom Sumac" ("Base brew" was renamed to Sumac).

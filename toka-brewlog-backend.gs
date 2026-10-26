@@ -77,7 +77,7 @@ function renameLegacySheets_() {
   });
 }
 
-var VERSION = '41 (Sales CRM: customers, multi-line orders, invoices, sold stock)';
+var VERSION = '42 (Bottle math: bundle prices)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -1769,6 +1769,9 @@ function writeBottleMathSettings_(settings) {
         if (!p) return;
         rows.push(['pricing', szk, ch, bmNum_(p.low), bmNum_(p.high), '', '']);
       });
+      // Bundle price (e.g. 4 x 750 ml for $40): field1 = bottles, field2 = price.
+      var bun = (settings.pricing[szk] || {}).bundle;
+      if (bun) rows.push(['pricing', szk, 'bundle', bmNum_(bun.qty), bmNum_(bun.price), '', '']);
     }
   }
   if (settings.litresPerMonth != null) rows.push(['meta', 'litresPerMonth', '', bmNum_(settings.litresPerMonth), '', '', '']);
@@ -1806,7 +1809,8 @@ function readBottleMathSettingsObj_() {
     if (section === 'running') { out.running.push({ key: String(key), label: String(label || ''), ours: bmNum_(f1) }); return; }
     if (section === 'pricing') {
       out.pricing[key] = out.pricing[key] || {};
-      out.pricing[key][label] = { low: bmNum_(f1), high: bmNum_(f2) };
+      if (label === 'bundle') out.pricing[key].bundle = { qty: bmNum_(f1), price: bmNum_(f2) };
+      else out.pricing[key][label] = { low: bmNum_(f1), high: bmNum_(f2) };
       return;
     }
     if (section === 'meta' && key === 'litresPerMonth') { out.litresPerMonth = bmNum_(f1); return; }

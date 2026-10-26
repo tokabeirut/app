@@ -1245,6 +1245,8 @@
 #view-bottlemath .bm-price-keep { font-size: 0.8rem; color: var(--ink); text-align: right; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
 #view-bottlemath .bm-price-keep strong { color: var(--terra); font-family: 'IBM Plex Mono', monospace; }
 #view-bottlemath .bm-price-pct { color: var(--ink-faint); font-size: 0.72rem; }
+#view-bottlemath .bm-input.bm-bundle-qty { width: 4.5ch; text-align: center; }
+#view-bottlemath .bm-bundle-per { color: var(--ink-faint); font-size: 0.7rem; margin-top: 2px; }
 
 #view-bottlemath .bm-note { font-size: 0.76rem; color: var(--ink-faint); margin-top: 10px; }
 #view-bottlemath .bm-callout { background: var(--terra-pale); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 0.84rem; color: var(--ink); margin-top: 14px; }
@@ -13362,8 +13364,8 @@ function bmDefaults() {
     ],
     litresPerMonth: 750,
     pricing: {
-      bottle750: { wholesale: { low: 5.5, high: 7 }, retail: { low: 10, high: 11 } },
-      bottle375: { wholesale: { low: 3.5, high: 4.5 }, retail: { low: 6, high: 7 } }
+      bottle750: { wholesale: { low: 5.5, high: 7 }, retail: { low: 10, high: 11 }, bundle: { qty: 4, price: 40 } },
+      bottle375: { wholesale: { low: 3.5, high: 4.5 }, retail: { low: 6, high: 7 }, bundle: { qty: 6, price: 36 } }
     },
     // User-added lines on top of the fixed ingredient/packaging rows above —
     // each one is a flat per-bottle cost (buy/amount), applied to whichever
@@ -13453,6 +13455,11 @@ function bmCompute(s) {
       var keep = price - fullCost[sz.key];
       weKeep[sz.key][ch] = { price: price, keep: keep, pct: price > 0 ? (keep / price) * 100 : 0 };
     });
+    // Bundle (B2C, e.g. 4 x 750 ml for $40): per-bottle price and what we keep per bottle.
+    var bun = s.pricing[sz.key].bundle || {};
+    var bq = bmNum(bun.qty), bp = bmNum(bun.price);
+    var bPer = bq > 0 ? bp / bq : 0, bKeep = bPer - fullCost[sz.key];
+    weKeep[sz.key].bundle = { price: bPer, keep: bKeep, pct: bPer > 0 ? (bKeep / bPer) * 100 : 0, keepBundle: bKeep * bq };
   });
   // Break-even/profit use the PRODUCT-only margin per litre (price minus
   // raw product cost, not minus the overhead-loaded full cost) — the
@@ -13614,6 +13621,14 @@ function bmBuildPriceCards() {
       + '<input type="number" class="bm-input bm-input-wide bm-money-input" id="bm-price-' + sz.key + '-retail-high" min="0" step="any" oninput="bmEditPrice(\'' + sz.key + '\',\'retail\',\'high\',this)" />'
       + '</div>'
       + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-retail">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-retail"></span></div></div>'
+      + '<div class="bm-price-row"><div class="bm-price-row-label">Bundle</div>'
+      + '<div class="bm-price-range">'
+      + '<input type="number" class="bm-input bm-bundle-qty" id="bm-bundle-qty-' + sz.key + '" min="1" step="1" oninput="bmEditBundle(\'' + sz.key + '\',\'qty\',this)" />'
+      + '<span class="bm-price-range-sep">for</span>'
+      + '<input type="number" class="bm-input bm-input-wide bm-money-input" id="bm-bundle-price-' + sz.key + '" min="0" step="any" oninput="bmEditBundle(\'' + sz.key + '\',\'price\',this)" />'
+      + '</div>'
+      + '<div class="bm-price-keep">we keep <strong id="bm-out-keep-' + sz.key + '-bundle">—</strong> <span class="bm-price-pct" id="bm-out-keeppct-' + sz.key + '-bundle"></span>'
+      + '<div class="bm-bundle-per" id="bm-out-bundle-per-' + sz.key + '"></div></div></div>'
       + '</div>';
   });
   document.getElementById('bm-price-cards').innerHTML = h;
@@ -13694,6 +13709,9 @@ function bmPaintInputs() {
       var lo = document.getElementById('bm-price-' + sz.key + '-' + ch + '-low'); if (lo) lo.value = bmFmtMoneyInput(p.low);
       var hi = document.getElementById('bm-price-' + sz.key + '-' + ch + '-high'); if (hi) hi.value = bmFmtMoneyInput(p.high);
     });
+    var bun = bmState.pricing[sz.key].bundle || {};
+    var bqEl = document.getElementById('bm-bundle-qty-' + sz.key); if (bqEl) bqEl.value = bmNum(bun.qty);
+    var bpEl = document.getElementById('bm-bundle-price-' + sz.key); if (bpEl) bpEl.value = bmFmtMoneyInput(bun.price);
   });
 }
 function bmPaintComputed() {
@@ -13749,6 +13767,10 @@ function bmPaintComputed() {
       setText('bm-out-keep-' + sz.key + '-' + ch, bmMoney2(k.keep));
       setText('bm-out-keeppct-' + sz.key + '-' + ch, '· ' + Math.round(k.pct) + '%');
     });
+    var kb = r.weKeep[sz.key].bundle, bqty = bmNum((bmState.pricing[sz.key].bundle || {}).qty);
+    setText('bm-out-keep-' + sz.key + '-bundle', bmMoney2(kb.keep));
+    setText('bm-out-keeppct-' + sz.key + '-bundle', '· ' + Math.round(kb.pct) + '%');
+    setText('bm-out-bundle-per-' + sz.key, bqty > 0 ? (bmMoney2(kb.price) + ' a bottle · ' + bmMoney2(kb.keepBundle) + ' per bundle') : '');
   });
   setText('bm-out-overhead-source-note', 'The running costs behind the overhead come straight from section 04 — currently ' + bmMoneyWhole(r.runningTotal) + ' a month.');
 
@@ -13844,6 +13866,12 @@ function bmDeleteCustomRow(key) {
   bmScheduleSave();
 }
 function bmEditLitresPerMonth(el) { bmState.litresPerMonth = bmNum(el.value); bmAfterEdit(); }
+function bmEditBundle(sizeKey, field, el) {
+  var p = bmState.pricing[sizeKey];
+  if (!p.bundle) p.bundle = { qty: 0, price: 0 };
+  p.bundle[field] = bmNum(el.value);
+  bmAfterEdit();
+}
 function bmEditPrice(sizeKey, channel, bound, el) { bmState.pricing[sizeKey][channel][bound] = bmNum(el.value); bmAfterEdit(); }
 function bmAfterEdit() { bmPaintComputed(); bmScheduleSave(); }
 
@@ -13922,6 +13950,11 @@ function bmMergeDefaults(loaded) {
             d.pricing[szk][ch].high = bmNum(v);
           }
         });
+        var lb = loaded.pricing[szk].bundle;
+        if (lb && typeof lb === 'object') {
+          if (lb.qty != null) d.pricing[szk].bundle.qty = bmNum(lb.qty);
+          if (lb.price != null) d.pricing[szk].bundle.price = bmNum(lb.price);
+        }
       }
     }
   }
