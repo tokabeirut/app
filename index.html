@@ -8436,8 +8436,10 @@ function crmFlavourOptions() {
 }
 function refreshCrmDatalists() {
   var cl = document.getElementById('crm-customer-list'), fl = document.getElementById('crm-flavour-list');
+  // One entry per customer: the alias, or the name if there's none.
+  // Typing the official name still finds them (see customerByName).
   if (cl) cl.innerHTML = customers.map(function (c) {
-    return '<option value="' + esc(c.name) + '">' + esc(c.alias || '') + '</option>' + (c.alias ? '<option value="' + esc(c.alias) + '">' + esc(c.name) + '</option>' : '');
+    return '<option value="' + esc(customerDisplayName(c)) + '"></option>';
   }).join('');
   if (fl) fl.innerHTML = crmFlavourOptions().map(function (f) { return '<option value="' + esc(f) + '"></option>'; }).join('');
 }
