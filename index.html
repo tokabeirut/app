@@ -9256,15 +9256,28 @@ function bivOptionsHtml(optStr) {
   return h;
 }
 function bivSizeOptionsHtml() { return bivOptionsHtml(BIV_SIZE_OPTS); }
-// Every flavour: Cardamom Sumac and Sumac first, then all flavours from
-// Bottling (also archived bottlings) and Bottle inventory, A–Z. Returned as
-// the "value:label" options string (labels with " • " between spices).
+// Flavour choices: Cardamom Sumac and Sumac first, then A–Z every flavour
+// that's still current — on an active bottling, on one archived less than
+// 2 months ago (by its bottling date; there's no archive date), on an
+// inventory line from the last 2 months, or with filled bottles left.
+// Returned as the "value:label" options string (labels with " • ").
 function bivFlavourOptsString(current) {
-  var seen = {}, list = [];
+  var seen = {}, list = [], rest = [];
   function add(f) { f = String(f || '').trim(); if (f && f !== '(unspecified)' && !seen[f.toLowerCase()]) { seen[f.toLowerCase()] = 1; list.push(f); } }
-  var rest = [];
-  bottles.forEach(function (b) { var f = (b.flavours || []).map(function (x) { return String(x.name || '').trim(); }).filter(Boolean).join(' '); if (f) rest.push(f); });
-  bottleInventory.forEach(function (e) { if (e.flavour) rest.push(e.flavour); });
+  var d = new Date(); d.setMonth(d.getMonth() - 2);
+  var cutoff = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  bottles.forEach(function (b) {
+    if (b.archived && String(b.bottlingDate || '') < cutoff) return;
+    var f = (b.flavours || []).map(function (x) { return String(x.name || '').trim(); }).filter(Boolean).join(' ');
+    if (f) rest.push(f);
+  });
+  var stock = {};
+  bottleInventory.forEach(function (e) {
+    if (!e.flavour) return;
+    if (String(e.date || '') >= cutoff) rest.push(e.flavour);
+    if (e.stage === 'filled' || e.stage === 'sold' || e.stage === 'consumed') stock[e.flavour] = (stock[e.flavour] || 0) + (e.stage === 'filled' ? 1 : -1) * Math.abs(parseFloat(e.qty) || 0);
+  });
+  Object.keys(stock).forEach(function (f) { if (stock[f] > 0) rest.push(f); });
   ['Cardamom Sumac', 'Sumac'].forEach(add);
   rest.sort(function (a, c) { return a.localeCompare(c); }).forEach(add);
   if (current) add(current);
