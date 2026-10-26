@@ -376,6 +376,18 @@
   .biv-stat-subrow { padding: 4px 0; }
   .biv-stat-sublabel { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); padding-left: 20px; }
   .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
+  .biv-fold-row { cursor: pointer; }
+  .biv-fold-row:hover .biv-stat-label, .biv-fold-row:hover .biv-stat-sublabel { color: var(--terra); }
+  .biv-tri { display: inline-block; width: 14px; margin-left: -14px; font-size: 0.62rem; color: var(--ink-faint); font-style: normal; -webkit-transition: -webkit-transform .15s; transition: transform .15s; }
+  .biv-tri.open { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
+  .biv-stat-label .biv-tri { margin-left: -16px; width: 16px; }
+  .biv-stat-btlrow { padding: 2px 0; }
+  .biv-stat-btllabel { font-size: 0.72rem; color: var(--ink-faint); padding-left: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .biv-btl-date { display: inline-block; min-width: 88px; }
+  .biv-btl-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; }
+  .biv-btl-link { color: var(--terra); cursor: pointer; }
+  .biv-btl-link:hover { text-decoration: underline; }
+  .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
      italic so they read as a consequence of another entry rather than
@@ -9019,7 +9031,12 @@ function bivKpisHtml() {
   h += bivStatRowHtml('', sizes, {}, true);
   h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot);
   h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
-  h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet);
+  // Click "Filled bottles at atelier" to unfold every flavour's bottlings,
+  // or a single flavour to unfold just that one.
+  var allOpen = flavoursAllOpen(b);
+  h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet).replace('class="biv-summary-grid biv-stat-row"',
+    'class="biv-summary-grid biv-stat-row biv-fold-row" onclick="bivToggleAllFlavours()" title="Show the bottlings behind each flavour"')
+    .replace('<div class="biv-stat-label">', '<div class="biv-stat-label"><span class="biv-tri' + (allOpen ? ' open' : '') + '">&#9656;</span>');
   // Remaining filled stock by flavour (fills minus consumption), split into
   // the same Small/Big columns as every other row so it lines up under
   // "Filled bottles at atelier" — the row it's a breakdown of.
@@ -9034,12 +9051,69 @@ function bivKpisHtml() {
       var sz = sizes[k];
       netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0) - (soldBySize[sz] || 0);
     }
-    h += bivStatSubRowHtml(fl, sizes, netBySize);
+    var open = !!bivOpenFlavours()[fl];
+    h += bivStatSubRowHtml(fl, sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
+      'class="biv-summary-grid biv-stat-subrow biv-fold-row" onclick="bivToggleFlavour(\'' + esc(fl).replace(/'/g, "\\'") + '\')"')
+      .replace('<div class="biv-stat-sublabel">', '<div class="biv-stat-sublabel"><span class="biv-tri' + (open ? ' open' : '') + '">&#9656;</span>');
+    if (open) h += bivFlavourBottlingsHtml(fl, sizes, filledBySize, netBySize);
   }
   h += bivStatRowHtml('Sold bottles', sizes, b.sold);
   h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
   h += '</div>';
   h += '</div>';
+  return h;
+}
+/* ---- unfold a flavour into its bottlings ----
+   Each "Filled" ledger row is one bottling: automatic ones carry the bottle
+   IDs in their note ("Auto: bottled BTL-…"), hand-logged fills don't. A
+   last line takes off what was sold or consumed, so the lines add up to
+   the flavour's remaining stock. Open/closed is remembered on this device. */
+function bivOpenFlavours() {
+  try { return JSON.parse(lsGet('toka_biv_open_flavours') || '{}') || {}; } catch (e) { return {}; }
+}
+function bivSetOpenFlavours(o) { lsSet('toka_biv_open_flavours', JSON.stringify(o)); renderBottleInventory(); }
+function bivToggleFlavour(fl) { var o = bivOpenFlavours(); if (o[fl]) delete o[fl]; else o[fl] = 1; bivSetOpenFlavours(o); }
+function flavoursAllOpen(b) {
+  var o = bivOpenFlavours(), fls = Object.keys(b.filledEventsByFlavour);
+  return fls.length > 0 && fls.every(function (f) { return o[f]; });
+}
+function bivToggleAllFlavours() {
+  var b = bivBalances(), o = {};
+  if (!flavoursAllOpen(b)) Object.keys(b.filledEventsByFlavour).forEach(function (f) { o[f] = 1; });
+  bivSetOpenFlavours(o);
+}
+function bivFlavourBottlingsHtml(fl, sizes, filledBySize, netBySize) {
+  var groups = {}, order = [];
+  bottleInventory.forEach(function (e) {
+    if ((e.stage || '') !== 'filled' || (e.flavour || '(unspecified)') !== fl) return;
+    var m = /^Auto: bottled (.+)$/.exec(String(e.notes || ''));
+    var label = m ? m[1] : 'Filled by hand';
+    var key = (e.date || '') + '|' + label;
+    if (!groups[key]) { groups[key] = { date: e.date || '', label: label, ids: m ? m[1].split(', ') : [], qty: {} }; order.push(key); }
+    var sz = e.size || '(unspecified)';
+    groups[key].qty[sz] = (groups[key].qty[sz] || 0) + (parseFloat(e.qty) || 0);
+  });
+  order.sort(function (a, c) { return String(groups[c].date).localeCompare(String(groups[a].date)); });
+  var h = '';
+  order.forEach(function (k) {
+    var g = groups[k];
+    var bo = null;
+    if (g.ids.length) for (var i = 0; i < bottles.length; i++) { if (String(bottles[i].bottleId) === g.ids[0]) { bo = bottles[i]; break; } }
+    var name = g.ids.length > 1 ? g.ids[0] + ' +' + (g.ids.length - 1) : g.label;
+    var lab = '<span class="biv-btl-date">' + esc(fmtDate(g.date)) + '</span>'
+      + (bo ? '<span class="biv-btl-id biv-btl-link" onclick="event.stopPropagation(); gotoBottle(\'' + esc(bo.uid) + '\')">' + esc(name) + '</span>'
+            : '<span class="biv-btl-id">' + esc(name) + '</span>');
+    h += '<div class="biv-summary-grid biv-stat-btlrow"><div class="biv-stat-btllabel"' + (g.ids.length > 1 ? ' title="' + esc(g.ids.join(', ')) + '"' : '') + '>' + lab + '</div>';
+    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + (g.qty[sizes[j]] ? '+' + fmtNum(g.qty[sizes[j]]) : '') + '</div>';
+    h += '</div>';
+  });
+  var outBySize = {}, anyOut = false;
+  sizes.forEach(function (sz) { outBySize[sz] = (filledBySize[sz] || 0) - (netBySize[sz] || 0); if (outBySize[sz]) anyOut = true; });
+  if (anyOut) {
+    h += '<div class="biv-summary-grid biv-stat-btlrow"><div class="biv-stat-btllabel"><span class="biv-btl-id">Sold &amp; consumed</span></div>';
+    for (var k2 = 0; k2 < sizes.length; k2++) h += '<div class="biv-stat-btlval">' + (outBySize[sizes[k2]] ? '-' + fmtNum(outBySize[sizes[k2]]) : '') + '</div>';
+    h += '</div>';
+  }
   return h;
 }
 // Fixed vocabularies for the bottle_inventory ledger's categorical fields —
