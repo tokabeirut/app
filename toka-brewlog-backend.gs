@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '43 (cleanup: old migrations removed)';
+var VERSION = '44 (no automatic "Brought from depot" note)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -1593,7 +1593,7 @@ function handleAction_(body) {
     var bfncols = bfsh.getLastColumn();
     var bfdate = bf.date || '';
     var bfqty = parseFloat(bf.qty) || 0;
-    var bfnotes = bf.notes || 'Brought from depot';
+    var bfnotes = bf.notes || '';
     bfsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'depot', date: bfdate, size: bf.size || '',
       qty: -bfqty, notes: bfnotes, auto: true

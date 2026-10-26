@@ -17,7 +17,7 @@ Read this first when continuing work on the toka app.
    ```
    cd ~/Documents/"1. Toka"/toka-app && git add -A && git commit -m "…" && git push
    ```
-4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `43 …`). The live version shows at the exec URL with no action.
+4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `44 …`). The live version shows at the exec URL with no action.
 - Whenever the .gs changes, also send Claire the .gs file (file card) so she can paste it.
 - Keep replies short. Say what changed and give the git command. Claire tests on laptop + iPhone (home-screen app).
 

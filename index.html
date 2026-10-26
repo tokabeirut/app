@@ -382,6 +382,8 @@
      their "parent" row (the log sorts by stage), so the distinction lives
      on the row itself rather than in its border/spacing. */
   .biv-table tr.biv-auto-row td { font-size: 0.86em; font-style: italic; color: var(--ink-faint); }
+  .biv-table tr.biv-has-sub td { border-bottom: none; padding-bottom: 2px; }
+  .biv-table tr.biv-sub-row td { padding-top: 0; padding-bottom: 12px; font-size: 0.74rem; font-style: italic; color: var(--ink-faint); }
   .biv-auto-tag { display: inline-block; font-style: normal; font-family: 'IBM Plex Mono', monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; margin-right: 7px; vertical-align: middle; }
   .biv-has-tip { cursor: default; }
   .biv-forms { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px; margin-top: 10px; }
@@ -7130,7 +7132,13 @@ function commitInline(type, uidv, field, value) {
     : (String(oldV == null ? '' : oldV) === String(value));
   if (unchanged) { rerenderType(type); return; }
   var oldInfusionSnapshot = (type === 'infusion') ? JSON.parse(JSON.stringify(rec)) : null;
+  // Bottle inventory: the automatic counterpart line follows its main row.
+  var bivSub = (type === 'bottleinv' && (field === 'date' || field === 'size' || field === 'qty')) ? bivPairs().autoOf[rec.id] : null;
   rec[field] = value;                 // optimistic
+  if (bivSub) {
+    bivSub[field] = (field === 'qty') ? -Math.abs(parseFloat(value) || 0) : value;
+    apiPost({ action: 'updateBottleInvEntry', entry: JSON.parse(JSON.stringify(bivSub)) }, function () {});
+  }
   // Editing a bottle's volume straight in the table (not just via the
   // drawer) can change how much of an infused spice it should contain —
   // recompute those amounts in the same save. Only rows that match the
@@ -9090,7 +9098,7 @@ function bivAddMovement() {
   if (mv === 'depot') body = { action: 'createBottleInvEntry', entry: { stage: 'depot', date: date, size: size, qty: qty, notes: notes } };
   // A transfer, not new stock: moves bottles out of the depot pool into the
   // atelier pool (both rows written together by bringFromDepot).
-  else if (mv === 'atelier') body = { action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes || 'Brought from depot' } };
+  else if (mv === 'atelier') body = { action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes } };
   else if (mv === 'filled') body = { action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } };
   else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } };
   else body = { action: 'createBottleInvEntry', entry: { stage: 'recycled', size: size, date: date, qty: qty, notes: notes } };
@@ -9179,20 +9187,43 @@ function bivStageRank(stage) {
   var i = order.indexOf(stage || 'depot');
   return i < 0 ? order.length : i;
 }
-// A "bring from depot" or "fill bottles" quick-add writes two ledger rows
-// atomically (see bringFromDepot/fillBottles on the backend); the one that
-// directly reflects the quantity the user typed is the "real" entry, and
-// its counterpart (the automatic debit from the source stage) is flagged
-// auto:true. Since the movement log sorts by stage, the two rows usually
-// land far apart rather than next to each other — so the auto row is
-// marked on its own (dimmer, smaller, italic, tagged) rather than by
-// trying to visually attach it to a neighboring row.
-function bivRowHtml(e) {
+// "Bring from depot" and "fill bottles" write two ledger rows at once (see
+// bringFromDepot/fillBottles on the backend): the movement Claire typed
+// (+N at the atelier / filled) and its automatic counterpart (-N at the
+// depot / atelier, flagged auto). In the log the automatic row is shown as
+// a small italic line under its partner instead of a row of its own.
+// Sold rows (from Sales) are not paired: they stand on their own.
+function bivIsPair(a, p) {
+  var qa = parseFloat(a.qty) || 0, qp = parseFloat(p.qty) || 0;
+  if (!a.auto || qa >= 0 || qp <= 0 || qa !== -qp) return false;
+  if (String(a.date) !== String(p.date) || String(a.size) !== String(p.size)) return false;
+  return (a.stage === 'depot' && p.stage === 'atelier') || (a.stage === 'atelier' && p.stage === 'filled');
+}
+// { autoOf: {partnerId: autoRow}, partnerOf: {autoId: partnerRow} }.
+// Rows written together sit next to each other in the sheet, so a direct
+// neighbour is preferred; otherwise the first matching row is used.
+function bivPairs() {
+  var autoOf = {}, partnerOf = {}, list = bottleInventory;
+  function free(r) { return r && !autoOf[r.id] && !partnerOf[r.id]; }
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    if (!a.auto || !(a.stage === 'depot' || a.stage === 'atelier') || (parseFloat(a.qty) || 0) >= 0) continue;
+    var p = null;
+    [list[i + 1], list[i - 1]].forEach(function (c) { if (!p && free(c) && c !== a && bivIsPair(a, c)) p = c; });
+    if (!p) for (var j = 0; j < list.length; j++) { if (free(list[j]) && list[j] !== a && bivIsPair(a, list[j])) { p = list[j]; break; } }
+    if (p) { autoOf[p.id] = a; partnerOf[a.id] = p; }
+  }
+  return { autoOf: autoOf, partnerOf: partnerOf };
+}
+function bivRowHtml(e, sub) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
   var autoTag = '';
-  return '<tr' + (e.auto ? ' class="biv-auto-row"' : '') + '>'
+  var cls = [];
+  if (e.auto) cls.push('biv-auto-row');
+  if (sub) cls.push('biv-has-sub');
+  var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
@@ -9201,6 +9232,13 @@ function bivRowHtml(e) {
     + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
+  if (sub) {
+    // Read-only line for the automatic counterpart; edits to the main row
+    // (date, size, quantity) and deleting it carry over to this one.
+    h += '<tr class="biv-sub-row"><td></td><td>' + esc(bivStageLabel(sub.stage)) + '</td><td></td><td></td>'
+      + '<td class="num">' + fmtNum(parseFloat(sub.qty) || 0) + '</td><td></td><td></td></tr>';
+  }
+  return h;
 }
 // Sort: latest date first, then (within a date) by stage (Recycled on top,
 // Depot at the bottom, see bivStageRank), then small above big, then by
@@ -9365,8 +9403,15 @@ function bivFilterThHtml(field, label) {
 }
 function bivLogTableHtml() {
   var list = bivFilteredSortedLog();
+  var pairs = bivPairs(), shown = {};
+  list.forEach(function (e) { shown[e.id] = true; });
   var rows = '';
-  for (var i = 0; i < list.length; i++) rows += bivRowHtml(list[i]);
+  for (var i = 0; i < list.length; i++) {
+    var e = list[i], partner = pairs.partnerOf[e.id];
+    if (partner && shown[partner.id]) continue;          // drawn under its partner
+    var sub = pairs.autoOf[e.id];
+    rows += bivRowHtml(e, sub || null);
+  }
   if (!rows) {
     rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px 0;">'
       + (bivActiveFilterCount() ? 'No movements match the current filters. <span class="pt-filter-clear-link" onclick="bivClearFilters()">Clear filters</span>' : 'No movements logged yet.')
@@ -9384,13 +9429,17 @@ function renderBottleInventory() {
   body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml();
 }
 function deleteBottleInvEntry(id) {
-  if (!confirm('Delete this entry?')) return;
+  var sub = bivPairs().autoOf[id];
+  if (!confirm(sub ? 'Delete this entry? Its automatic ' + fmtNum(parseFloat(sub.qty) || 0) + ' ' + bivStageLabel(sub.stage) + ' line goes too.' : 'Delete this entry?')) return;
   setSyncStatus('saving', 'deleting…');
-  apiPost({ action: 'deleteBottleInvEntry', id: id }, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'delete failed'); alert('Could not delete. Check your connection and try again.'); return; }
-    loadBottleInventory();
-    setSyncStatus('live', 'connected · google sheets');
-  });
+  var ids = sub ? [id, sub.id] : [id];
+  (function next(i) {
+    if (i >= ids.length) { loadBottleInventory(); setSyncStatus('live', 'connected · google sheets'); return; }
+    apiPost({ action: 'deleteBottleInvEntry', id: ids[i] }, function (err, res) {
+      if (err || !res || !res.ok) { setSyncStatus('error', 'delete failed'); alert('Could not delete. Check your connection and try again.'); loadBottleInventory(); return; }
+      next(i + 1);
+    });
+  })(0);
 }
 function loadProductionTasks(cb) {
   api({ action: 'getProductionTasks' }, function (err, res) {
