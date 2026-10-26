@@ -1833,6 +1833,10 @@
   </div>
   <div class="drawer-body">
     <div class="hint" id="o-invoice-hint" style="margin-bottom:12px;"></div>
+    <div class="form-group" id="o-invoice-group" style="display:none">
+      <label>Invoice number</label>
+      <input type="text" id="o-invoice" autocomplete="off" />
+    </div>
     <div class="form-group">
       <label>Date</label>
       <input type="date" id="o-date" />
@@ -8514,7 +8518,12 @@ function openOrderDrawer(id) {
   document.getElementById('o-paid').checked = o ? !!o.paid : true;
   document.getElementById('o-deduct').checked = o ? !!o.deductStock : true;
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
-  document.getElementById('o-invoice-hint').textContent = o ? ('Invoice ' + (o.invoiceNo || '—')) : 'The invoice number is given automatically when you save.';
+  // New orders get their number automatically; an existing order's number
+  // can be changed here (its lines and "sold" inventory rows follow on save).
+  document.getElementById('o-invoice-hint').textContent = o ? '' : 'The invoice number is given automatically when you save.';
+  document.getElementById('o-invoice-hint').style.display = o ? 'none' : '';
+  document.getElementById('o-invoice-group').style.display = o ? '' : 'none';
+  document.getElementById('o-invoice').value = o ? (o.invoiceNo || '') : '';
   document.getElementById('o-customer-hint').textContent = '';
   document.getElementById('o-lines').innerHTML = '';
   if (o && o.lines && o.lines.length) o.lines.forEach(function (l) { addOrderLine({ flavour: l.flavour, size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
@@ -8562,9 +8571,13 @@ function saveOrder() {
     c = newCustomer;
   }
   var prev = editingOrderId ? findOrder(editingOrderId) : null;
+  var invNo = prev ? (val('o-invoice').trim() || prev.invoiceNo) : '';
+  if (prev && invNo !== prev.invoiceNo && orders.some(function (x) { return String(x.id) !== String(prev.id) && String(x.invoiceNo).toLowerCase() === invNo.toLowerCase(); })) {
+    alert('Invoice number ' + invNo + ' is already used by another order.'); return;
+  }
   var o = {
     id: prev ? prev.id : crmId('ord'),
-    invoiceNo: prev ? prev.invoiceNo : '',
+    invoiceNo: invNo,
     date: date, customerId: c.id, customerName: c.name,
     channel: val('o-channel'),
     paid: document.getElementById('o-paid').checked,
