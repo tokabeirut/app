@@ -30,7 +30,7 @@ Read this first when continuing work on the toka app.
   - Rows 5–13 hold the invoice details.
   - Columns D:G hold the expense deposits.
 - Missing columns are added automatically. Legacy columns are removed via `LEGACY_COLUMNS` (e.g. `scoby_g`). First fermentation uses `scoby_l` (SCOBY litres).
-- Customers have `alias` and `area` (neighbourhood, city) columns. `address` holds street/building/apt/floor.
+- Customers have `alias` and `area` (neighbourhood, city) columns. `address` holds street/building/floor.
 
 ## Data loading
 - Data loads **once per visit** (no background refresh; Claire wants it that way).
