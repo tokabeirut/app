@@ -266,6 +266,7 @@
   .infusion-table th:nth-child(8), .infusion-table td:nth-child(8) { width: 116px; }
   /* Second fermentation: separate rows bottled on different dates */
   #view-bottling tbody tr.date-start td { border-top: 2px solid var(--terra-light); }
+  .biv-table tbody tr.date-start td { border-top: 2px solid var(--terra-light); }
   #view-f1 .clip-inner { -webkit-line-clamp: 1; }
   .ellip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .tip-val { border-bottom: 1px dotted var(--border); }
@@ -9239,7 +9240,7 @@ function bivPairs() {
   }
   return { autoOf: autoOf, partnerOf: partnerOf };
 }
-function bivRowHtml(e, sub) {
+function bivRowHtml(e, sub, newDate) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
@@ -9253,6 +9254,7 @@ function bivRowHtml(e, sub) {
   // that ends up on its own (e.g. when filtering on Depot) is small italic.
   if (e.auto && (e.stage === 'depot' || e.stage === 'atelier') && qtyNum < 0) cls.push('biv-auto-row');
   if (sub) cls.push('biv-has-sub');
+  if (newDate) cls.push('date-start');   // orange line between dates, as on Bottling
   var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
@@ -9435,12 +9437,13 @@ function bivLogTableHtml() {
   var list = bivFilteredSortedLog();
   var pairs = bivPairs(), shown = {};
   list.forEach(function (e) { shown[e.id] = true; });
-  var rows = '';
+  var rows = '', prevDate = null;
   for (var i = 0; i < list.length; i++) {
     var e = list[i], partner = pairs.partnerOf[e.id];
     if (partner && shown[partner.id]) continue;          // drawn under its partner
     var sub = pairs.autoOf[e.id];
-    rows += bivRowHtml(e, sub || null);
+    rows += bivRowHtml(e, sub || null, prevDate !== null && String(e.date) !== prevDate);
+    prevDate = String(e.date);
   }
   if (!rows) {
     rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px 0;">'
