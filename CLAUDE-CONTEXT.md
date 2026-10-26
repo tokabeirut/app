@@ -73,7 +73,7 @@ Read this first when continuing work on the toka app.
     - Recycled bottles count into "Empty bottles at atelier".
     - Sold rows come automatically from Sales and lower "Filled bottles at atelier".
     - Movement log: a transfer's automatic counter row (depot→atelier, atelier→filled) is drawn as a small italic line under its main row (`bivPairs`); sold/consumed are one −n line; orange line between dates.
-    - "Filled bottles at atelier" and each flavour row unfold (`bivToggleFlavour`, remembered per device) into the bottlings behind it (from "Auto: bottled BTL-…" notes; "Filled by hand" otherwise) plus a "Sold & consumed" line, so the lines add up to the stock.
+    - "Filled bottles at atelier" and each flavour row unfold (`bivToggleFlavour`, remembered per device) into the bottlings behind it (from "Auto: bottled BTL-…" notes; "Filled by hand" otherwise), showing how many of each are LEFT: sold/consumed are taken from the oldest bottlings first (FIFO, per size); empty bottlings are hidden.
   - **Spice inventory**:
     - Purchases minus usage, editable inline.
     - Tea is matched to First fermentation by tea type name.

@@ -385,8 +385,10 @@
   .biv-stat-btllabel { font-size: 0.72rem; color: var(--ink-faint); padding-left: 40px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .biv-btl-date { display: inline-block; min-width: 88px; }
   .biv-btl-id { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; }
-  .biv-btl-link { color: var(--terra); cursor: pointer; }
-  .biv-btl-link:hover { text-decoration: underline; }
+  .biv-fold-row, .biv-stat-btlrow { -webkit-user-select: none; user-select: none; }
+  .biv-stat-btlrow.biv-btl-link { cursor: pointer; }
+  .biv-stat-btlrow.biv-btl-link .biv-btl-id { color: var(--terra); }
+  .biv-stat-btlrow.biv-btl-link:hover .biv-btl-id { text-decoration: underline; }
   .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
@@ -9065,9 +9067,9 @@ function bivKpisHtml() {
 }
 /* ---- unfold a flavour into its bottlings ----
    Each "Filled" ledger row is one bottling: automatic ones carry the bottle
-   IDs in their note ("Auto: bottled BTL-…"), hand-logged fills don't. A
-   last line takes off what was sold or consumed, so the lines add up to
-   the flavour's remaining stock. Open/closed is remembered on this device. */
+   IDs in their note ("Auto: bottled BTL-…"), hand-logged fills don't. Each
+   line shows how many of that bottling are left (oldest sold first), so the
+   lines add up to the flavour's stock. Open/closed is remembered here. */
 function bivOpenFlavours() {
   try { return JSON.parse(lsGet('toka_biv_open_flavours') || '{}') || {}; } catch (e) { return {}; }
 }
@@ -9093,27 +9095,37 @@ function bivFlavourBottlingsHtml(fl, sizes, filledBySize, netBySize) {
     var sz = e.size || '(unspecified)';
     groups[key].qty[sz] = (groups[key].qty[sz] || 0) + (parseFloat(e.qty) || 0);
   });
-  order.sort(function (a, c) { return String(groups[c].date).localeCompare(String(groups[a].date)); });
+  // What's left per bottling. Sales and consumed bottles aren't tied to a
+  // bottling, so they're taken from the oldest bottlings first (first in,
+  // first out), per size; bottlings with nothing left aren't shown.
+  order.sort(function (a, c) { return String(groups[a].date).localeCompare(String(groups[c].date)); });
+  sizes.forEach(function (sz) {
+    var out = (filledBySize[sz] || 0) - (netBySize[sz] || 0);
+    order.forEach(function (k) {
+      var q = groups[k].qty[sz] || 0, take = Math.max(0, Math.min(q, out));
+      groups[k].qty[sz] = q - take; out -= take;
+    });
+  });
+  order = order.filter(function (k) { return sizes.some(function (sz) { return (groups[k].qty[sz] || 0) > 0; }); });
+  order.reverse();   // newest on top
   var h = '';
   order.forEach(function (k) {
     var g = groups[k];
-    var bo = null;
-    if (g.ids.length) for (var i = 0; i < bottles.length; i++) { if (String(bottles[i].bottleId) === g.ids[0]) { bo = bottles[i]; break; } }
-    var name = g.ids.length > 1 ? g.ids[0] + ' +' + (g.ids.length - 1) : g.label;
-    var lab = '<span class="biv-btl-date">' + esc(fmtDate(g.date)) + '</span>'
-      + (bo ? '<span class="biv-btl-id biv-btl-link" onclick="event.stopPropagation(); gotoBottle(\'' + esc(bo.uid) + '\')">' + esc(name) + '</span>'
-            : '<span class="biv-btl-id">' + esc(name) + '</span>');
-    h += '<div class="biv-summary-grid biv-stat-btlrow"><div class="biv-stat-btllabel"' + (g.ids.length > 1 ? ' title="' + esc(g.ids.join(', ')) + '"' : '') + '>' + lab + '</div>';
-    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + (g.qty[sizes[j]] ? '+' + fmtNum(g.qty[sizes[j]]) : '') + '</div>';
+    // The bottling it came from: same ID, or one bottle of that group
+    // (BTL-…-CS is the group of BTL-…-CS-01, -02, …).
+    var bo = null, id0 = g.ids[0] || '';
+    if (id0) for (var i = 0; i < bottles.length; i++) {
+      var bid = String(bottles[i].bottleId || '');
+      if (bid === id0 || bid.indexOf(id0 + '-') === 0) { bo = bottles[i]; break; }
+    }
+    var name = g.ids.length > 1 ? id0 + ' +' + (g.ids.length - 1) : g.label;
+    var lab = '<span class="biv-btl-date">' + esc(fmtDate(g.date)) + '</span><span class="biv-btl-id">' + esc(name) + '</span>';
+    h += '<div class="biv-summary-grid biv-stat-btlrow' + (bo ? ' biv-btl-link' : '') + '"'
+      + (bo ? ' onclick="gotoBottle(\'' + esc(bo.uid) + '\')" title="Open ' + esc(g.ids.join(', ')) + ' on the Bottling page"' : (g.ids.length > 1 ? ' title="' + esc(g.ids.join(', ')) + '"' : ''))
+      + '><div class="biv-stat-btllabel">' + lab + '</div>';
+    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + (g.qty[sizes[j]] > 0 ? fmtNum(g.qty[sizes[j]]) : '') + '</div>';
     h += '</div>';
   });
-  var outBySize = {}, anyOut = false;
-  sizes.forEach(function (sz) { outBySize[sz] = (filledBySize[sz] || 0) - (netBySize[sz] || 0); if (outBySize[sz]) anyOut = true; });
-  if (anyOut) {
-    h += '<div class="biv-summary-grid biv-stat-btlrow"><div class="biv-stat-btllabel"><span class="biv-btl-id">Sold &amp; consumed</span></div>';
-    for (var k2 = 0; k2 < sizes.length; k2++) h += '<div class="biv-stat-btlval">' + (outBySize[sizes[k2]] ? '-' + fmtNum(outBySize[sizes[k2]]) : '') + '</div>';
-    h += '</div>';
-  }
   return h;
 }
 // Fixed vocabularies for the bottle_inventory ledger's categorical fields —
