@@ -8245,6 +8245,20 @@ function ordersForPeriod(period) {
 }
 function setSalesPeriod(p) { salesPeriod = p; renderSales(); }
 function setSalesTab(t) { salesTab = t; renderSales(); }
+// B2C price per bottle for n bottles of one size on an order: as many
+// bundles as fit (Bottle math bundle, e.g. 4 × 750 ml for $40), the rest at
+// the single-bottle price (top of the B2C range). Flavours can be mixed in
+// a bundle, so n is the order's total for that size.
+function b2cBottlePrice(size, n) {
+  try {
+    var pr = bmState.pricing[String(size) === '375' ? 'bottle375' : 'bottle750'];
+    var single = bmNum(pr.retail.high), bun = pr.bundle || {}, bq = bmNum(bun.qty), bp = bmNum(bun.price);
+    n = parseFloat(n) || 0;
+    if (n <= 0 || bq <= 0 || bp <= 0 || n < bq) return single;
+    var nb = Math.floor(n / bq), total = nb * bp + (n - nb * bq) * single;
+    return Math.round(total / n * 100) / 100;
+  } catch (e) { return 0; }
+}
 function suggestedSalePrice(channel, size) {
   try {
     var p = bmState.pricing[String(size) === '375' ? 'bottle375' : 'bottle750'][channel === 'B2B' ? 'wholesale' : 'retail'];
@@ -8466,18 +8480,30 @@ function addOrderLine(l) {
   if (!l || l.unitPrice == null || l.unitPrice === '') applyLinePrice(row);
   updateOrderTotal();
 }
-function removeOrderLine(btn) { var r = btn.closest('.ol-row'); if (r) r.remove(); updateOrderTotal(); }
+function removeOrderLine(btn) { var r = btn.closest('.ol-row'); if (r) r.remove(); applyAllLinePrices(); updateOrderTotal(); }
+// Total bottles of one size across the order's lines (for B2C bundles).
+function orderSizeQty(size) {
+  var n = 0;
+  [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
+    if (r.querySelector('.ol-size').value === String(size)) n += parseFloat(r.querySelector('.ol-qty').value) || 0;
+  });
+  return n;
+}
 function applyLinePrice(row) {
   if (row.getAttribute('data-edited')) return;
-  var p = suggestedSalePrice(val('o-channel'), row.querySelector('.ol-size').value);
+  var size = row.querySelector('.ol-size').value;
+  var p = val('o-channel') === 'B2B' ? suggestedSalePrice('B2B', size) : b2cBottlePrice(size, orderSizeQty(size));
   row.querySelector('.ol-price').value = p ? p.toFixed(2) : '';
 }
+function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice); }
 function onOrderLineChange(el, sizeChanged) {
-  if (sizeChanged) applyLinePrice(el.closest('.ol-row'));
+  // Quantities and sizes change which bundles apply, so reprice every
+  // line that hasn't been given a price by hand.
+  if (!el.classList.contains('ol-price')) applyAllLinePrices();
   updateOrderTotal();
 }
 function onOrderChannelChange() {
-  [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice);
+  applyAllLinePrices();
   if (!editingOrderId) document.getElementById('o-paid').checked = val('o-channel') !== 'B2B';
   updateOrderTotal();
 }
