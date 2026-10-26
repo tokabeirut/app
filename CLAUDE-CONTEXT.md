@@ -17,19 +17,21 @@ Read this first when continuing work on the toka app.
    ```
    cd ~/Documents/"1. Toka"/toka-app && git add -A && git commit -m "…" && git push
    ```
-4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `42 …`). The live version shows at the exec URL with no action.
+4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `43 …`). The live version shows at the exec URL with no action.
+- Whenever the .gs changes, also send Claire the .gs file (file card) so she can paste it.
 - Keep replies short. Say what changed and give the git command. Claire tests on laptop + iPhone (home-screen app).
 
 ## Backend / data
 - Apps Script URL is baked into index.html as `DEFAULT_API_URL`.
 - Reads: `getAll` (one combined call). Writes: `apiPost({action,…})`, routed via GET payload (small) or POST (large) → `handleAction_`.
-- Sheet tabs are named after the app pages. Old technical names are auto-renamed by `renameLegacySheets_`:
+- Sheet tabs are named after the app pages:
   - First fermentation, Infusion, Bottling, Labo, Daily operations, Bottle inventory, Spice inventory, Production timeline, Expenses, Sales, Sales lines, Customers, Bottle math, settings.
 - **settings** tab:
   - A:B rows 1–3 hold the exchange rate, faucet rate and expense notes.
   - Rows 5–13 hold the invoice details.
   - Columns D:G hold the expense deposits.
-- Missing columns are added automatically. Legacy columns are removed via `LEGACY_COLUMNS` (e.g. `scoby_g`). First fermentation uses `scoby_l` (SCOBY litres).
+- Every tab goes through `ensureSheet_(name, headers)`: created with headers if missing, missing columns appended. All one-time migrations (old tab/column names, old Sales layout, old settings layout, Bottle math C1 JSON) were removed in v43 — the live sheet is already migrated.
+- First fermentation uses `scoby_l` (SCOBY litres).
 - Customers have `alias` and `area` (neighbourhood, city) columns. `address` holds street/building/floor.
 
 ## Data loading

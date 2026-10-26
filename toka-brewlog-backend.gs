@@ -1,83 +1,32 @@
 /**
  * toka-brewlog-backend.gs
- * Backend for the toka. brew log (first fermentation).
- *
- * Stores every batch as a row in a sheet called "batches" inside the
- * spreadsheet this script is bound to (the one you named "brewlog").
+ * Backend for the toka brewlog app: a Google Apps Script web app over the
+ * spreadsheet it is bound to. Every app page has its own tab, named after
+ * the page (First fermentation, Bottling, Labo, Sales, ...).
  *
  * Setup:
- *   1. Open the brewlog spreadsheet → Extensions → Apps Script.
+ *   1. Open the spreadsheet → Extensions → Apps Script.
  *   2. Delete any existing code, paste this file, Save.
  *   3. Deploy → New deployment → Web app → Execute as: Me →
  *      Who has access: Anyone → Deploy. Copy the /exec URL.
- *   4. Paste that URL into the app's connect screen.
+ *   4. Paste that URL into the app (DEFAULT_API_URL in index.html).
  *
  * Re-deploying after an update: Deploy → Manage deployments → edit
  * (pencil) → Version: NEW VERSION → Deploy. The URL stays the same.
  *
- * Units: sugar is stored in kilograms; hot water, cold water and
- * starter liquid are stored in litres. SCOBY keeps its own value+unit.
- * On the first request after updating, this script migrates an older
- * sheet: it converts any gram/millilitre values to kg/L and removes the
- * now-unused unit columns (and a legacy "created_at" column if present).
- * It also renames a handful of primary/foreign-key columns to a
- * clearer *_pk / *_fk naming scheme (batches.uid → batch_pk, etc.) —
- * existing data is preserved, only the header cell text changes.
- *
- * Rows are returned newest-first: primary sort by date (descending),
- * tie-broken by vessel order (later vessel on top — Tank 2 above Tank 1).
+ * Units: sugar in kg; hot water, cold water and SCOBY in litres.
+ * A tab is created with its headers the first time it's needed, and any
+ * missing column is added automatically (see ensureSheet_).
  */
 
 var SHEET_NAME = 'First fermentation';
 var BOTTLES_SHEET = 'Bottling';
 var INFUSIONS_SHEET = 'Infusion';
-// Renamed from 'readings' to match the Labo page. getReadingsSheet_() below
-// renames an existing 'readings' tab in place the first time it runs, so
-// all the data stays put.
 var READINGS_SHEET = 'Labo';
-var READINGS_SHEET_OLD = 'readings';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-// Sheet tabs are named after the app's pages. Tabs that still carry their old
-// technical name are renamed in place (data untouched) on the first request
-// after redeploying — see renameLegacySheets_().
-var LEGACY_SHEET_NAMES_ = [
-  ['batches', 'First fermentation'],
-  ['infusions', 'Infusion'],
-  ['bottles', 'Bottling'],
-  ['labo', 'Labo'],
-  ['readings', 'Labo'],
-  ['daily_operations', 'Daily operations'],
-  ['bottle_inventory', 'Bottle inventory'],
-  ['ingredient_purchases', 'Spice inventory'],
-  ['production_tasks', 'Production timeline'],
-  ['expenses', 'Expenses'],
-  ['sales', 'Sales'],
-  ['bottle_math', 'Bottle math']
-];
-var legacySheetsChecked_ = false;
-function renameLegacySheets_() {
-  if (legacySheetsChecked_) return;
-  legacySheetsChecked_ = true;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var names = {};   // exact tab names currently in the spreadsheet
-  ss.getSheets().forEach(function (sh) { names[sh.getName()] = sh; });
-  LEGACY_SHEET_NAMES_.forEach(function (pair) {
-    var oldSh = names[pair[0]];
-    if (!oldSh || names[pair[1]]) return;   // nothing to rename, or new name already exists
-    // Sheet names are case-insensitive, so only a case-change of the SAME
-    // tab ('labo' -> 'Labo') may reuse a name that's "taken" in lowercase.
-    var clash = Object.keys(names).some(function (n) { return n !== pair[0] && n.toLowerCase() === pair[1].toLowerCase(); });
-    if (clash) return;
-    try {
-      oldSh.setName(pair[1]);
-      delete names[pair[0]]; names[pair[1]] = oldSh;
-    } catch (err) { Logger.log('renameLegacySheets_ ' + pair[0] + ': ' + err); }
-  });
-}
-
-var VERSION = '42 (Bottle math: bundle prices)';
+var VERSION = '43 (cleanup: old migrations removed)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -91,41 +40,14 @@ var HEADERS = [
   'parent_f1_pk', 'split_date', 'split_l'
 ];
 
-// Columns that may exist on older sheets and are no longer used.
-var LEGACY_COLUMNS = ['created_at', 'scoby_g'];   // scoby_g: SCOBY weight no longer tracked (only the SCOBY liquid, scoby_l)
-
-// Unit columns to convert-then-drop: [value, unit, smallUnit].
-// Values tagged with smallUnit are divided by 1000 (g→kg, ml→L).
-var UNIT_MIGRATIONS = [
-  ['sugar_value', 'sugar_unit', 'g'],
-  ['hot_value', 'hot_unit', 'ml'],
-  ['cold_value', 'cold_unit', 'ml'],
-  ['starter_value', 'starter_unit', 'ml']
-];
-
-// Column renames applied after unit conversion: [old, new].
-var RENAME_MIGRATIONS = [
-  ['sugar_value', 'sugar_kg'],
-  ['hot_value', 'hot_l'],
-  ['cold_value', 'cold_l'],
-  ['starter_value', 'starter_l'],
-  ['starter_l', 'scoby_l'],
-  ['scoby_value', 'scoby_g'],
-  ['uid', 'batch_pk'],
-  ['id', 'batch_id'],
-  ['date', 'batch_date'],
-  ['batch_date', 'creation_date']
-];
-
 // Vessel display order. Used as the same-date tie-breaker.
 var VESSEL_ORDER = [
   'TANK 1', 'TANK 2', 'TANK 3',
   'JAR 1', 'JAR 2', 'JAR 3', 'JAR 4', 'JAR 5', 'JAR 6', 'JAR 7', 'JAR 8'
 ];
 
-// Columns for the bottling (second fermentation) sheet.
-// batch_date_ref was dropped (redundant — the batch's date is looked up
-// live from batch_pk_fk instead of being duplicated into its own column).
+// Columns for the bottling (second fermentation) sheet. The source batch's
+// date is looked up live from batch_pk_fk (see batchDatesByUid_).
 var BOTTLE_HEADERS = [
   'bottle_pk', 'bottle_id', 'batch_pk_fk', 'batch_id_ref',
   'bottling_date', 'fridge_date', 'volume_ml',
@@ -136,120 +58,33 @@ var BOTTLE_HEADERS = [
 ];
 var MAX_FLAVORS = 4;
 
-// Column renames applied to an existing bottles sheet: [old, new].
-var BOTTLE_RENAME_MIGRATIONS = [
-  ['uid', 'bottle_pk'],
-  ['rel_f1_uid', 'batch_pk_fk'],
-  ['rel_f1_id', 'batch_id_ref']
-];
-
 /* ---------- sheet helpers ---------- */
 
-function migrateDropUnit_(sh, valueName, unitName, smallUnit) {
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  var ui = hdr.indexOf(unitName);
-  if (ui === -1) return;            // already migrated / never existed
-  var vi = hdr.indexOf(valueName);
-  var lastRow = sh.getLastRow();
-  if (lastRow >= 2 && vi !== -1) {
-    var n = lastRow - 1;
-    var vals = sh.getRange(2, vi + 1, n, 1).getValues();
-    var units = sh.getRange(2, ui + 1, n, 1).getValues();
-    for (var i = 0; i < n; i++) {
-      var u = String(units[i][0]).toLowerCase().trim();
-      var raw = vals[i][0];
-      if (u === smallUnit && raw !== '' && raw != null) {
-        var num = parseFloat(raw);
-        if (!isNaN(num)) vals[i][0] = String(num / 1000);
-      }
-    }
-    sh.getRange(2, vi + 1, n, 1).setValues(vals);
-  }
-  sh.deleteColumn(ui + 1);
-}
-
-// SCOBY is now stored in grams. Convert any kg-tagged values up (x1000),
-// then drop scoby_unit. (scoby_value is renamed to scoby_g afterwards.)
-function migrateScobyToGrams_(sh) {
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  var ui = hdr.indexOf('scoby_unit');
-  if (ui === -1) return;            // already migrated / never existed
-  var vi = hdr.indexOf('scoby_value');
-  var lastRow = sh.getLastRow();
-  if (lastRow >= 2 && vi !== -1) {
-    var n = lastRow - 1;
-    var vals = sh.getRange(2, vi + 1, n, 1).getValues();
-    var units = sh.getRange(2, ui + 1, n, 1).getValues();
-    for (var i = 0; i < n; i++) {
-      var u = String(units[i][0]).toLowerCase().trim();
-      var raw = vals[i][0];
-      if (u === 'kg' && raw !== '' && raw != null) {
-        var num = parseFloat(raw);
-        if (!isNaN(num)) vals[i][0] = String(num * 1000);
-      }
-    }
-    sh.getRange(2, vi + 1, n, 1).setValues(vals);
-  }
-  sh.deleteColumn(ui + 1);
-}
-
-function migrateRename_(sh, oldName, newName) {
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  var oi = hdr.indexOf(oldName);
-  if (oi === -1) return;                  // nothing to rename
-  if (hdr.indexOf(newName) !== -1) return; // target already present
-  sh.getRange(1, oi + 1).setNumberFormat('@').setValue(newName);
-}
-
-function getSheet_() {
+// Returns the tab, creating it with its headers if needed, and adds any
+// missing header column at the end (existing data is never moved).
+function ensureSheet_(name, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) sh = ss.insertSheet(SHEET_NAME);
-
+  var sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
   if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
     sh.setFrozenRows(1);
     return sh;
   }
-
-  // Convert g/ml values to kg/L, then drop the unit columns.
-  for (var m = 0; m < UNIT_MIGRATIONS.length; m++) {
-    migrateDropUnit_(sh, UNIT_MIGRATIONS[m][0], UNIT_MIGRATIONS[m][1], UNIT_MIGRATIONS[m][2]);
-  }
-
-  // Convert SCOBY to grams, then drop its unit column.
-  migrateScobyToGrams_(sh);
-
-  // Rename *_value columns to unit-suffixed names (sugar_kg, hot_l, ...),
-  // and rename the primary-key / id / date columns to their new names.
-  for (var rn = 0; rn < RENAME_MIGRATIONS.length; rn++) {
-    migrateRename_(sh, RENAME_MIGRATIONS[rn][0], RENAME_MIGRATIONS[rn][1]);
-  }
-
   var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-
-  // Remove any legacy columns (e.g. created_at).
-  for (var L = 0; L < LEGACY_COLUMNS.length; L++) {
-    var li = hdr.indexOf(LEGACY_COLUMNS[L]);
-    if (li !== -1) {
-      sh.deleteColumn(li + 1);
-      hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-    }
-  }
-
-  // Append any missing current columns (e.g. archived).
-  for (var h = 0; h < HEADERS.length; h++) {
-    if (hdr.indexOf(HEADERS[h]) === -1) {
+  for (var h = 0; h < headers.length; h++) {
+    if (hdr.indexOf(headers[h]) === -1) {
       var c = sh.getLastColumn() + 1;
       sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(HEADERS[h]);
-      hdr.push(HEADERS[h]);
+      sh.getRange(1, c).setValue(headers[h]);
+      hdr.push(headers[h]);
     }
   }
-
   return sh;
 }
+
+function getSheet_() { return ensureSheet_(SHEET_NAME, HEADERS); }
 
 function headerMap_(sh) {
   var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
@@ -275,13 +110,11 @@ function truthy_(v) {
   return v === true || String(v).toLowerCase() === 'yes' || String(v).toLowerCase() === 'true';
 }
 
-// Accept either a plain scalar or a legacy {v,u} object.
+// Accepts a plain value, or a {v: value} object.
 function plain_(x) {
   if (x && typeof x === 'object' && 'v' in x) return (x.v == null ? '' : x.v);
   return (x == null ? '' : x);
 }
-function amtV_(a) { return (a && typeof a === 'object' && a.v != null) ? a.v : ''; }
-function amtU_(a) { return (a && typeof a === 'object' && a.u != null) ? a.u : ''; }
 
 /* ---------- row <-> object ---------- */
 
@@ -384,35 +217,7 @@ function findRowByKey_(sh, map, keyCol, val) {
 
 /* ---------- bottles (second fermentation) ---------- */
 
-function getBottlesSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(BOTTLES_SHEET);
-  if (!sh) sh = ss.insertSheet(BOTTLES_SHEET);
-
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), BOTTLE_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, BOTTLE_HEADERS.length).setValues([BOTTLE_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-
-  // Rename the primary/foreign-key columns to their new names.
-  for (var brn = 0; brn < BOTTLE_RENAME_MIGRATIONS.length; brn++) {
-    migrateRename_(sh, BOTTLE_RENAME_MIGRATIONS[brn][0], BOTTLE_RENAME_MIGRATIONS[brn][1]);
-  }
-
-  // Ensure any newly added columns exist (forward-compatible).
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < BOTTLE_HEADERS.length; h++) {
-    if (hdr.indexOf(BOTTLE_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(BOTTLE_HEADERS[h]);
-      hdr.push(BOTTLE_HEADERS[h]);
-    }
-  }
-  return sh;
-}
+function getBottlesSheet_() { return ensureSheet_(BOTTLES_SHEET, BOTTLE_HEADERS); }
 
 function buildBottleRow_(b, ncols, map) {
   b = b || {};
@@ -494,11 +299,8 @@ function readAllBottles_() {
 
 /* ---------- infusions (spice steep between F1 and bottling) ---------- */
 
-// batch_date_ref was dropped here too (redundant/duplicated column) — the
-// batch's date is now looked up live from batch_pk_fk instead.
-// end_date was dropped too — straining and bottling happen back to back,
-// so the frontend now derives an infusion's strain date from whichever
-// bottle ended up sourced from it, instead of tracking it separately here.
+// The source batch's date is looked up live from batch_pk_fk; the strain
+// date isn't stored — the app takes it from the bottling sourced from it.
 var INFUSION_HEADERS = [
   'infusion_pk', 'infusion_id', 'batch_pk_fk', 'batch_id_ref',
   'vessel', 'volume_l', 'infusion_date',
@@ -507,39 +309,7 @@ var INFUSION_HEADERS = [
   'notes', 'archived'
 ];
 
-// Column renames applied to an existing infusions sheet: [old, new].
-var INFUSION_RENAME_MIGRATIONS = [
-  ['start_date', 'infusion_date']
-];
-
-function getInfusionsSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(INFUSIONS_SHEET);
-  if (!sh) sh = ss.insertSheet(INFUSIONS_SHEET);
-
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), INFUSION_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, INFUSION_HEADERS.length).setValues([INFUSION_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-
-  for (var irn = 0; irn < INFUSION_RENAME_MIGRATIONS.length; irn++) {
-    migrateRename_(sh, INFUSION_RENAME_MIGRATIONS[irn][0], INFUSION_RENAME_MIGRATIONS[irn][1]);
-  }
-
-  // Ensure any newly added columns exist (forward-compatible).
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < INFUSION_HEADERS.length; h++) {
-    if (hdr.indexOf(INFUSION_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(INFUSION_HEADERS[h]);
-      hdr.push(INFUSION_HEADERS[h]);
-    }
-  }
-  return sh;
-}
+function getInfusionsSheet_() { return ensureSheet_(INFUSIONS_SHEET, INFUSION_HEADERS); }
 
 function buildInfusionRow_(b, ncols, map) {
   b = b || {};
@@ -617,47 +387,7 @@ var READING_HEADERS = [
   'reading_pk', 'vessel_fk', 'vessel_id', 'test_date', 'brix', 'ph', 'temp', 'notes'
 ];
 
-// Column renames applied to an existing readings sheet: [old, new].
-var READING_RENAME_MIGRATIONS = [
-  ['uid', 'reading_pk'],
-  ['batch_uid', 'batch_bottle_fk'],
-  ['date', 'test_date'],
-  ['batch_bottle_fk', 'vessel_fk'],
-  ['batch_id', 'vessel_id']
-];
-
-function getReadingsSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(READINGS_SHEET);
-  if (!sh) {
-    var old = ss.getSheetByName(READINGS_SHEET_OLD);
-    if (old) { old.setName(READINGS_SHEET); sh = old; }
-  }
-  if (!sh) sh = ss.insertSheet(READINGS_SHEET);
-
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), READING_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, READING_HEADERS.length).setValues([READING_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-
-  // Rename the primary/foreign-key/date columns to their new names.
-  for (var rrn = 0; rrn < READING_RENAME_MIGRATIONS.length; rrn++) {
-    migrateRename_(sh, READING_RENAME_MIGRATIONS[rrn][0], READING_RENAME_MIGRATIONS[rrn][1]);
-  }
-
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < READING_HEADERS.length; h++) {
-    if (hdr.indexOf(READING_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(READING_HEADERS[h]);
-      hdr.push(READING_HEADERS[h]);
-    }
-  }
-  return sh;
-}
+function getReadingsSheet_() { return ensureSheet_(READINGS_SHEET, READING_HEADERS); }
 
 function buildReadingRow_(r, ncols, map) {
   r = r || {};
@@ -726,28 +456,7 @@ var DAILY_OPS_HEADERS = [
   'linked_infusion_pk'
 ];
 
-function getDailyOpsSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(DAILY_OPS_SHEET);
-  if (!sh) sh = ss.insertSheet(DAILY_OPS_SHEET);
-
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), DAILY_OPS_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, DAILY_OPS_HEADERS.length).setValues([DAILY_OPS_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < DAILY_OPS_HEADERS.length; h++) {
-    if (hdr.indexOf(DAILY_OPS_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(DAILY_OPS_HEADERS[h]);
-      hdr.push(DAILY_OPS_HEADERS[h]);
-    }
-  }
-  return sh;
-}
+function getDailyOpsSheet_() { return ensureSheet_(DAILY_OPS_SHEET, DAILY_OPS_HEADERS); }
 
 /* ---- checklist rows (kind = 'checklist') ---- */
 function buildChecklistRow_(it, ncols, map) {
@@ -762,9 +471,7 @@ function buildChecklistRow_(it, ncols, map) {
   return row;
 }
 
-// No explicit sort — row order is append order, same as the old
-// localStorage array's push order, so items stay in the order they were
-// added.
+// No explicit sort — items stay in the order they were added.
 function readAllChecklist_() {
   var sh = getDailyOpsSheet_();
   var map = headerMap_(sh);
@@ -899,17 +606,6 @@ function readAllPlannedBrews_() {
   return out;
 }
 
-/* ---------- bottle inventory (Inventory > Bottle count) ----------
-   Two linked pools tracked as one signed ledger: empty bottles by size
-   (category = 'Big (750ml)' / 'Small (375ml)') and filled bottles by
-   flavour (category = free text, e.g. 'Sumac', 'Cardamom Sumac').
-   `kind` tells the two apart; `qty` is signed (+ received/filled,
-   - used/broken/opened), so the running stock for any category is just
-   the sum of its rows. "Fill bottles" in the UI (see the fillBottles
-   action below) writes one row of each kind at once — empty -qty, filled
-   +qty — so the two pools can't drift out of sync, but afterward each row
-   is just a plain, independently editable/deletable ledger entry. */
-
 /* ---------- ingredient purchases (Operations > Spice inventory) ----------
    One row per purchase of an ingredient (tea, sugar, a spice, yeast, ...):
    date, ingredient name, amount + unit as bought, notes. What's LEFT is
@@ -918,27 +614,7 @@ function readAllPlannedBrews_() {
 var INGREDIENT_SHEET = 'Spice inventory';
 var INGREDIENT_HEADERS = ['purchase_pk', 'purchase_date', 'ingredient', 'amount', 'unit', 'notes'];
 
-function getIngredientSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(INGREDIENT_SHEET);
-  if (!sh) sh = ss.insertSheet(INGREDIENT_SHEET);
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), INGREDIENT_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, INGREDIENT_HEADERS.length).setValues([INGREDIENT_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < INGREDIENT_HEADERS.length; h++) {
-    if (hdr.indexOf(INGREDIENT_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(INGREDIENT_HEADERS[h]);
-      hdr.push(INGREDIENT_HEADERS[h]);
-    }
-  }
-  return sh;
-}
+function getIngredientSheet_() { return ensureSheet_(INGREDIENT_SHEET, INGREDIENT_HEADERS); }
 
 function buildIngredientRow_(e, ncols, map) {
   e = e || {};
@@ -986,39 +662,14 @@ function readAllIngredientPurchases_() {
                     price per bottle), linked to its order by order_fk.
    Saving an order replaces its lines and its automatic "sold" rows in
    Bottle inventory in one go, so the three never drift apart. Invoice
-   numbers are TOKA-<year>-<NNN>, restarting at 001 each year.
-   The previous one-row-per-sale "Sales" tab is converted automatically the
-   first time (kept as "Sales (old)" as a backup). */
+   numbers are TOKA-<year>-<NNN>, restarting at 001 each year. */
 var SALES_SHEET = 'Sales';
-var SALES_OLD_SHEET = 'Sales (old)';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
 var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes'];
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price'];
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
 
-// Creates the tab with its headers, or adds any missing header columns.
-function ensureSheet_(name, headers) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(name);
-  if (!sh) sh = ss.insertSheet(name);
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < headers.length; h++) {
-    if (hdr.indexOf(headers[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(headers[h]);
-      hdr.push(headers[h]);
-    }
-  }
-  return sh;
-}
 function rowFrom_(obj, ncols, map) {
   var row = [];
   for (var i = 0; i < ncols; i++) row.push('');
@@ -1051,10 +702,7 @@ function deleteRowsWhere_(sh, col, val) {
 
 function getCustomersSheet_() { return ensureSheet_(CUSTOMERS_SHEET, CUSTOMER_HEADERS); }
 function getSalesLinesSheet_() { return ensureSheet_(SALES_LINES_SHEET, LINE_HEADERS); }
-function getOrdersSheet_() {
-  migrateOldSales_();
-  return ensureSheet_(SALES_SHEET, ORDER_HEADERS);
-}
+function getOrdersSheet_() { return ensureSheet_(SALES_SHEET, ORDER_HEADERS); }
 
 function nextInvoiceNo_(dateIso, existing) {
   var year = String(dateIso || ymd_(new Date())).slice(0, 4);
@@ -1063,52 +711,6 @@ function nextInvoiceNo_(dateIso, existing) {
   var n = String(max + 1);
   while (n.length < 3) n = '0' + n;
   return 'TOKA-' + year + '-' + n;
-}
-
-// Old layout: "Sales" with sale_pk/customer/size/... one row per sale.
-function migrateOldSales_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var old = ss.getSheetByName(SALES_SHEET);
-  if (!old || old.getLastColumn() === 0) return;
-  var hdr = old.getRange(1, 1, 1, old.getLastColumn()).getValues()[0];
-  if (hdr.indexOf('sale_pk') === -1 || hdr.indexOf('order_pk') !== -1) return;
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    old = ss.getSheetByName(SALES_SHEET);
-    hdr = old.getRange(1, 1, 1, old.getLastColumn()).getValues()[0];
-    if (hdr.indexOf('sale_pk') === -1) return;   // another request already did it
-    var rows = readSheetObjects_(old, 'sale_pk');
-    old.setName(SALES_OLD_SHEET);
-    var osh = ensureSheet_(SALES_SHEET, ORDER_HEADERS), lsh = getSalesLinesSheet_(), csh = getCustomersSheet_();
-    var omap = headerMap_(osh), lmap = headerMap_(lsh), cmap = headerMap_(csh);
-    var custByName = {};
-    readSheetObjects_(csh, 'customer_pk').forEach(function (c) { custByName[String(c.name).trim().toLowerCase()] = c.customer_pk; });
-    rows.sort(function (a, b) { return String(ymd_(a.sale_date)).localeCompare(String(ymd_(b.sale_date))); });
-    var invoices = [], oRows = [], lRows = [], cRows = [];
-    rows.forEach(function (r) {
-      var name = String(r.customer || '').trim();
-      var key = name.toLowerCase(), cid = '';
-      if (name) {
-        cid = custByName[key];
-        if (!cid) {
-          cid = Utilities.getUuid(); custByName[key] = cid;
-          cRows.push(rowFrom_({ customer_pk: cid, name: name, type: r.channel || 'B2C', created_date: ymd_(r.sale_date) }, csh.getLastColumn(), cmap));
-        }
-      }
-      var date = ymd_(r.sale_date);
-      var inv = nextInvoiceNo_(date, invoices); invoices.push(inv);
-      var oid = String(r.sale_pk);
-      oRows.push(rowFrom_({ order_pk: oid, invoice_no: inv, order_date: date, customer_fk: cid, customer_name: name, channel: r.channel || 'B2C',
-        paid: truthy_(r.paid) ? 'yes' : '', deduct_stock: '', notes: r.notes || '' }, osh.getLastColumn(), omap));
-      lRows.push(rowFrom_({ line_pk: Utilities.getUuid(), order_fk: oid, size: r.size || '', flavour: r.flavour || '', qty: r.qty, unit_price: r.unit_price }, lsh.getLastColumn(), lmap));
-    });
-    if (cRows.length) csh.getRange(csh.getLastRow() + 1, 1, cRows.length, cRows[0].length).setValues(cRows);
-    if (oRows.length) osh.getRange(osh.getLastRow() + 1, 1, oRows.length, oRows[0].length).setValues(oRows);
-    if (lRows.length) lsh.getRange(lsh.getLastRow() + 1, 1, lRows.length, lRows[0].length).setValues(lRows);
-  } finally {
-    lock.releaseLock();
-  }
 }
 
 function readAllCustomers_() {
@@ -1200,80 +802,17 @@ function deleteOrder_(id) {
   deleteRowsWhere_(getBottleInvSheet_(), 'order_fk', id);
 }
 
+/* ---------- bottle inventory (Operations > Bottle inventory) ----------
+   One signed ledger. Each row has a stage (depot / atelier / filled / sold /
+   consumed / recycled / other), a size, a flavour for filled stock, and a
+   signed qty, so any stock count is the sum of its rows. bringFromDepot and
+   fillBottles write their two matching rows in one request, and saving a
+   Sales order writes its "sold" rows (linked by order_fk). */
 var BOTTLE_INV_SHEET = 'Bottle inventory';
 
 var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto', 'order_fk'];   // order_fk: the Sales order an automatic 'sold' row belongs to
 
-function getBottleInvSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(BOTTLE_INV_SHEET);
-  if (!sh) sh = ss.insertSheet(BOTTLE_INV_SHEET);
-
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), BOTTLE_INV_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, BOTTLE_INV_HEADERS.length).setValues([BOTTLE_INV_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < BOTTLE_INV_HEADERS.length; h++) {
-    if (hdr.indexOf(BOTTLE_INV_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(BOTTLE_INV_HEADERS[h]);
-      hdr.push(BOTTLE_INV_HEADERS[h]);
-    }
-  }
-  return sh;
-}
-
-/**
- * One-time migration: fills in the new 'stage' column for any existing
- * bottle_inventory rows that were written before this schema change, by
- * combining their old filled_empty + location values. Until this runs,
- * every such row reads back with an empty stage, which readAllBottleInv_/
- * bivBalances default to 'depot' — that's why everything on the Bottle
- * count page showed up as Depot. Run this once from the Apps Script
- * editor (select it in the Run dropdown, then Run) after deploying this
- * version. Safe to run more than once — it only fills rows where 'stage'
- * is still blank. Run oneTimeCleanupRedundantColumns() afterward to
- * delete the now-unused filled_empty/location columns.
- */
-function migrateBottleInvToStage_() {
-  var sh = getBottleInvSheet_();
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  var fei = hdr.indexOf('filled_empty');
-  var loi = hdr.indexOf('location');
-  var sti = hdr.indexOf('stage');
-  if (sti === -1) { Logger.log('No stage column found.'); return; }
-  if (fei === -1 && loi === -1) { Logger.log('No legacy filled_empty/location columns found — nothing to migrate.'); return; }
-  var lastRow = sh.getLastRow();
-  if (lastRow < 2) { Logger.log('No data rows.'); return; }
-  var n = lastRow - 1;
-  var feVals = fei === -1 ? null : sh.getRange(2, fei + 1, n, 1).getValues();
-  var loVals = loi === -1 ? null : sh.getRange(2, loi + 1, n, 1).getValues();
-  var stVals = sh.getRange(2, sti + 1, n, 1).getValues();
-  var migrated = 0;
-  for (var i = 0; i < n; i++) {
-    if (stVals[i][0]) continue; // already has a stage value, leave it alone
-    var fe = feVals ? String(feVals[i][0] || '').trim() : '';
-    var lo = loVals ? String(loVals[i][0] || '').trim() : '';
-    var stage;
-    if (fe === 'filled') {
-      stage = (lo === 'consumed') ? 'consumed' : 'filled';
-    } else if (lo === 'atelier') {
-      stage = 'atelier';
-    } else if (lo === 'other') {
-      stage = 'other';
-    } else {
-      stage = 'depot';
-    }
-    stVals[i][0] = stage;
-    migrated++;
-  }
-  sh.getRange(2, sti + 1, n, 1).setValues(stVals);
-  Logger.log('Migrated ' + migrated + ' row(s) to the new stage column.');
-}
+function getBottleInvSheet_() { return ensureSheet_(BOTTLE_INV_SHEET, BOTTLE_INV_HEADERS); }
 
 function buildBottleInvRow_(e, ncols, map) {
   e = e || {};
@@ -1316,78 +855,6 @@ function readAllBottleInv_() {
   return out;
 }
 
-/**
- * One-time seed of the historical bottle counts Claire provided in chat.
- * Safe to run once from the Apps Script editor (select this function in
- * the function dropdown, then Run) after this version is deployed —
- * running it twice duplicates rows. Delete this function afterward if
- * you'd rather not keep a one-off seed script sitting in the file;
- * nothing else depends on it.
- *
- * Data model: every row carries a single 'stage' field describing where the
- * bottle sits in its lifecycle — 'depot', 'atelier' (empty, at the atelier),
- * 'filled' (at the atelier), or 'consumed'. "Receive empty bottles" is the
- * one true lifetime total (always logged at 'depot', and never decreases
- * even as stock moves out) — the 2112/4352 initial batch. Everything else
- * Claire described as "brought back from Karl's depot" is a TRANSFER out of
- * that same total, not new stock: each transfer is two rows, a negative at
- * 'depot' and a matching positive at 'atelier'. Filling consumes atelier
- * (not depot) empty stock.
- *
- * Every historical event here uses today's date as a placeholder except
- * the 19 Aug 2026 bottle run-back, which Claire gave an exact date for —
- * edit any of these dates directly in the Bottle count log afterward,
- * same as editing any other cell in this app.
- */
-function seedBottleInventoryHistory_() {
-  var sh = getBottleInvSheet_();
-  var map = headerMap_(sh);
-  var ncols = sh.getLastColumn();
-  var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  var BIG = 'Big (750ml)', SMALL = 'Small (375ml)';
-  var rows = [
-    // -- lifetime total received (always at the depot) --
-    { stage: 'depot', date: today, size: BIG, qty: 2112, notes: 'Initial empty stock' },
-    // Note: 1 sample bottle (750ml) was also received but is deliberately
-    // NOT logged here — it's excluded from the countable stock per Claire's
-    // request, since it's a sample rather than usable inventory.
-    { stage: 'depot', date: today, size: SMALL, qty: 4352, notes: 'Initial empty stock' },
-    // -- transfers: depot -> atelier (each a matched depot-out / atelier-in pair) --
-    { stage: 'depot', date: today, size: SMALL, qty: -1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { stage: 'atelier', date: today, size: SMALL, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { stage: 'depot', date: today, size: BIG, qty: -1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { stage: 'atelier', date: today, size: BIG, qty: 1, notes: 'Brought back by Patrick from Karl’s depot' },
-    { stage: 'depot', date: today, size: SMALL, qty: -24, notes: 'Brought back to test corrugated boxes' },
-    { stage: 'atelier', date: today, size: SMALL, qty: 24, notes: 'Brought back to test corrugated boxes' },
-    { stage: 'depot', date: today, size: BIG, qty: -12, notes: 'Brought back to test corrugated boxes' },
-    { stage: 'atelier', date: today, size: BIG, qty: 12, notes: 'Brought back to test corrugated boxes' },
-    { stage: 'depot', date: '2026-08-19', size: SMALL, qty: -196, notes: 'Brought back by Claude, Elie and Claire' },
-    { stage: 'atelier', date: '2026-08-19', size: SMALL, qty: 196, notes: 'Brought back by Claude, Elie and Claire' },
-    { stage: 'atelier', date: '2026-08-19', size: SMALL, qty: -1, notes: 'Broke after arriving at the atelier' },
-    { stage: 'depot', date: '2026-08-19', size: BIG, qty: -12, notes: 'Brought back by Claude, Elie and Claire' },
-    { stage: 'atelier', date: '2026-08-19', size: BIG, qty: 12, notes: 'Brought back by Claude, Elie and Claire' },
-    // -- filling (consumes atelier empty small stock, creates filled stock) --
-    { stage: 'atelier', date: today, size: SMALL, qty: -93, notes: 'Filled: Sumac' },
-    { stage: 'atelier', date: today, size: SMALL, qty: -103, notes: 'Filled: Cardamom Sumac' },
-    { stage: 'filled', size: SMALL, date: today, flavour: 'Sumac', qty: 93, notes: 'Filled, ready in the fridge' },
-    { stage: 'filled', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: 103, notes: 'Filled, ready in the fridge' },
-    // -- opened / given away / used (consumed — leaves the "filled at atelier" pool for good) --
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -1, notes: 'Opened to try' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Opened to try' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -1, notes: 'Gave to Kevin' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Gave to Kevin' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -4, notes: 'Brought to Mykonos' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -4, notes: 'Brought to Mykonos' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Sumac', qty: -1, notes: 'Left at the house' },
-    { stage: 'consumed', size: SMALL, date: today, flavour: 'Cardamom Sumac', qty: -1, notes: 'Left at the house' }
-  ];
-  for (var i = 0; i < rows.length; i++) {
-    rows[i].id = Utilities.getUuid();
-    sh.appendRow(buildBottleInvRow_(rows[i], ncols, map));
-  }
-  Logger.log('Seeded ' + rows.length + ' bottle_inventory entries.');
-}
-
 /* ---------- production timeline (non-brewing tasks: logistics, labelling,
    procurement, etc. — a single best-case and worst-case milestone date each,
    optionally depending on any other task, picked manually) ---------- */
@@ -1398,30 +865,7 @@ var PRODUCTION_HEADERS = [
   'done', 'sort_order'
 ];
 
-function getProductionSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(PRODUCTION_SHEET);
-  if (!sh) sh = ss.insertSheet(PRODUCTION_SHEET);
-
-  if (sh.getLastRow() === 0) {
-    sh.getRange(1, 1, sh.getMaxRows(), PRODUCTION_HEADERS.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, PRODUCTION_HEADERS.length).setValues([PRODUCTION_HEADERS]);
-    sh.setFrozenRows(1);
-    return sh;
-  }
-
-  // Ensure any newly added columns exist (forward-compatible).
-  var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-  for (var h = 0; h < PRODUCTION_HEADERS.length; h++) {
-    if (hdr.indexOf(PRODUCTION_HEADERS[h]) === -1) {
-      var c = sh.getLastColumn() + 1;
-      sh.getRange(1, c, sh.getMaxRows(), 1).setNumberFormat('@');
-      sh.getRange(1, c).setValue(PRODUCTION_HEADERS[h]);
-      hdr.push(PRODUCTION_HEADERS[h]);
-    }
-  }
-  return sh;
-}
+function getProductionSheet_() { return ensureSheet_(PRODUCTION_SHEET, PRODUCTION_HEADERS); }
 
 function buildProductionRow_(t, ncols, map) {
   t = t || {};
@@ -1488,7 +932,6 @@ function readAllProductionTasks_() {
    existing batch actions ('create'/'update'/'delete') below. */
 var EXPENSES_SHEET = 'Expenses';
 var EXPENSES_SETTINGS_SHEET = 'settings';
-var EXPENSES_DEPOSITS_SHEET_OLD = ['Expenses deposits', 'deposits'];
 var EXPENSES_DRIVE_FOLDER = 'toka-receipts';
 
 function getExpensesSheet_() {
@@ -1505,21 +948,7 @@ function getExpensesSheet_() {
     sheet.setFrozenRows(1);
     sheet.getRange(1, 1, 1, 17).setFontWeight('bold');
   }
-  ensureExpenseColumns_(sheet, ['linkedTo', 'autoNote']);
   return sheet;
-}
-
-// Migrates older 'expenses' sheets to include columns added after the
-// sheet was first created (mirrors the pattern getProductionSheet_ uses).
-function ensureExpenseColumns_(sheet, names) {
-  for (var i = 0; i < names.length; i++) {
-    var name = names[i];
-    var lastCol = Math.max(sheet.getLastColumn(), 1);
-    var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-    if (headers.indexOf(name) === -1) {
-      sheet.getRange(1, lastCol + 1).setValue(name).setFontWeight('bold');
-    }
-  }
 }
 
 function getOrCreateExpenseFolder_(name) {
@@ -1565,8 +994,14 @@ var DEPOSIT_COL_ = 4;   // column D
 
 function getSettingsSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sh = ss.getSheetByName(EXPENSES_SETTINGS_SHEET) || ss.insertSheet(EXPENSES_SETTINGS_SHEET);
-  migrateSettingsSheet_(sh);
+  var sh = ss.getSheetByName(EXPENSES_SETTINGS_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(EXPENSES_SETTINGS_SHEET);
+    sh.getRange(1, 1, 3, 1).setValues(SETTINGS_LABELS_.map(function (l) { return [l]; })).setFontWeight('bold');
+    sh.getRange(3, 2).setNumberFormat('@');
+    sh.getRange(1, DEPOSIT_COL_, 1, DEPOSIT_HEADERS_.length).setValues([DEPOSIT_HEADERS_]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
   return sh;
 }
 function getSetting_(key) {
@@ -1578,52 +1013,11 @@ function setSetting_(key, value, asText) {
   r.setValue(value);
 }
 
-// Old layout: A1 rate, B1 faucet, C1 (old Bottle Math JSON), D1 notes, and
-// deposits in their own tab. Converts it in place, once (A1 then holds the
-// label), and moves the deposits over before deleting the old deposits tab.
-function migrateSettingsSheet_(sh) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var oldDep = null;
-  EXPENSES_DEPOSITS_SHEET_OLD.forEach(function (n) { if (!oldDep) oldDep = ss.getSheetByName(n); });
-  if (String(sh.getRange('A1').getValue()) === SETTINGS_LABELS_[0] && !oldDep) return;
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
-    oldDep = null;
-    EXPENSES_DEPOSITS_SHEET_OLD.forEach(function (n) { if (!oldDep) oldDep = ss.getSheetByName(n); });
-    if (String(sh.getRange('A1').getValue()) !== SETTINGS_LABELS_[0]) {
-      var old = sh.getRange(1, 1, 1, 4).getValues()[0];
-      try { readOrMigrateBottleMathSettings_(); } catch (e) {}   // last chance for the old C1 JSON
-      sh.clear();
-      sh.getRange(1, 1, 3, 1).setValues(SETTINGS_LABELS_.map(function (l) { return [l]; })).setFontWeight('bold');
-      sh.getRange(3, 2).setNumberFormat('@');
-      sh.getRange(1, 2, 3, 1).setValues([[old[0]], [old[1]], [String(old[3] || '')]]);
-      sh.getRange(1, DEPOSIT_COL_, 1, DEPOSIT_HEADERS_.length).setValues([DEPOSIT_HEADERS_]).setFontWeight('bold');
-      sh.setFrozenRows(1);
-    }
-    if (oldDep) {
-      var data = oldDep.getDataRange().getValues();
-      if (data.length > 1) {
-        var hdr = data[0].map(String);
-        var rows = data.slice(1).filter(function (r) { return r.join('') !== ''; }).map(function (r) {
-          return DEPOSIT_HEADERS_.map(function (h) { var i = hdr.indexOf(h); return i === -1 ? '' : r[i]; });
-        });
-        if (rows.length) {
-          var start = depositsLastRow_(sh) + 1;
-          sh.getRange(start, DEPOSIT_COL_, rows.length, DEPOSIT_HEADERS_.length).setValues(rows);
-        }
-      }
-      ss.deleteSheet(oldDep);
-    }
-  } finally {
-    lock.releaseLock();
-  }
-}
 // Invoice details (Sales > invoice PDF): one labelled row each in A:B,
 // below the three settings above. Labels are written the first time.
 var INVOICE_FIELDS_ = [
   ['businessName', 'Invoice: business name'],
-  ['address', 'Invoice: street, building, apartment, floor'],
+  ['address', 'Invoice: street, building, floor'],
   ['phone', 'Invoice: phone'],
   ['email', 'Invoice: email'],
   ['taxId', 'Invoice: registration / tax no.'],
@@ -1698,21 +1092,12 @@ function deleteExpenseDeposit_(data) {
   return json_({ ok: false, error: 'deposit not found' });
 }
 
-/* ---------- Bottle Math: real sheet instead of one JSON cell ----------
-   Was a single JSON string in the shared settings sheet (cell C1) — every
-   number lived inside one blob, unreadable/uneditable directly in Sheets.
-   Now each figure is its own row/cell in its own sheet, in a flat
-   section|key|label|field1..field4 shape general enough to cover every kind
-   of line item Bottle Math has (a single fixed number, a buy/amount pair, a
-   user-added row with a unit and per-size applicability, a label/price pair,
-   or a low/high price range) without a different schema per section.
-   Editing still happens in the app (per the settings sheet UI, not here) —
-   this only changes where the numbers are stored, not how they're changed.
-   The wire format to/from the frontend is UNCHANGED: getBottleMathSettings
-   and getAll still return a JSON string under `settings` that
-   bmApplyLoadedSettings() JSON.parses exactly as before, and
-   setBottleMathSettings still receives the same bmState-shaped object it
-   always has — only the translation to/from sheet rows is new. */
+/* ---------- Bottle Math ----------
+   Each figure is its own row in the "Bottle math" tab, in a flat
+   section|key|label|field1..field4 shape (a single number, a buy/amount
+   pair, a user-added row, a label/price pair, a low/high price range, or a
+   bundle). The app sends and receives the whole bmState object; it travels
+   as a JSON string under `settings` / `bottleMathSettings`. */
 var BOTTLE_MATH_SHEET = 'Bottle math';
 var BOTTLE_MATH_HEADERS = ['section', 'key', 'label', 'field1', 'field2', 'field3', 'field4'];
 
@@ -1782,9 +1167,8 @@ function writeBottleMathSettings_(settings) {
   if (rows.length) sh.getRange(2, 1, rows.length, BOTTLE_MATH_HEADERS.length).setValues(rows);
 }
 
-// Reconstructs the same bmState-shaped object the frontend already sends —
-// returns null when the sheet has no data rows yet (mirrors the old empty-
-// cell case) so callers can fall back to '' on the wire, same as before.
+// Rebuilds the bmState-shaped object the app sends; null when the tab has
+// no data rows yet (the app then uses its defaults).
 function readBottleMathSettingsObj_() {
   var sh = getBottleMathSheet_();
   var lastRow = sh.getLastRow();
@@ -1818,29 +1202,10 @@ function readBottleMathSettingsObj_() {
   return out;
 }
 
-// One-time migration path: if the new sheet is still empty but the old
-// single-cell JSON blob (settings!C1) has data from before this change,
-// parse it, write it into the new sheet so it becomes the source of truth
-// going forward, and return it — so switching storage doesn't drop whatever
-// was already saved live.
-function readOrMigrateBottleMathSettings_() {
-  var obj = readBottleMathSettingsObj_();
-  if (obj) return obj;
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var oldSheet = ss.getSheetByName(EXPENSES_SETTINGS_SHEET);
-  var oldVal = oldSheet ? oldSheet.getRange('C1').getValue() : '';
-  if (!oldVal) return null;
-  var parsed;
-  try { parsed = JSON.parse(String(oldVal)); } catch (e) { return null; }
-  if (!parsed || typeof parsed !== 'object') return null;
-  writeBottleMathSettings_(parsed);
-  return readBottleMathSettingsObj_();
-}
 
 /* ---------- web app entry points ---------- */
 
 function doGet(e) {
-  renameLegacySheets_();
   // Writes tunneled through GET so the response is readable cross-origin
   // (see the comment on handleAction_ above).
   if (e && e.parameter && e.parameter.payload) {
@@ -1893,11 +1258,7 @@ function doGet(e) {
     var erVal = getSetting_('rate');
     return json_({ ok: true, rate: erVal || 89550 });
   }
-  // Faucet timer's flow rate lives in the same "settings" sheet as the
-  // expense exchange rate above, just a different cell (B1 instead of A1)
-  // so the two unrelated numbers don't collide.
-  // Expenses page notes (free text under the stats) — cell D1 of the same
-  // shared settings sheet.
+  // Expense notes and the faucet rate live in the settings tab too (B3, B2).
   if (action === 'getExpenseNotes') {
     return json_({ ok: true, notes: String(getSetting_('notes') || '') });
   }
@@ -1905,27 +1266,17 @@ function doGet(e) {
     var frVal = getSetting_('faucet');
     return json_({ ok: true, rate: frVal || 13.32 });
   }
-  // Bottle Math (Business > Volume to bottle converter's cost/pricing
-  // sibling page) has ~50 individually-editable figures, now stored one per
-  // cell in its own sheet (BOTTLE_MATH_SHEET) instead of a single JSON blob
-  // — see the block above doGet for the row shape and the read/write
-  // helpers. The wire contract here is unchanged: still a JSON string under
-  // `settings`, so the frontend's existing JSON.parse keeps working as-is.
   if (action === 'getBottleMathSettings') {
-    var bmObj = readOrMigrateBottleMathSettings_();
+    var bmObj = readBottleMathSettingsObj_();
     return json_({ ok: true, settings: bmObj ? JSON.stringify(bmObj) : '' });
   }
   if (action === 'getExpenseDeposits') {
     return getExpenseDeposits_();
   }
-  // Combined read used by pages that need several sheets at once (Labo, To
-  // Do, Lineage, Tasting, Analytics) — one request/one script invocation
-  // instead of the frontend firing up to five separate ones, since each
-  // invocation pays its own fixed startup cost on top of the actual sheet
-  // read. The frontend falls back to the individual actions above if this
-  // one isn't available yet, so redeploying is safe at any time.
+  // Combined read: the app loads everything in one request at startup.
+  // The single-sheet actions above are used to reload one page after a save.
   if (action === 'getAll') {
-    var gaBmObj = readOrMigrateBottleMathSettings_();
+    var gaBmObj = readBottleMathSettingsObj_();
     return json_({
       ok: true,
       batches: readAll_(),
@@ -1944,11 +1295,10 @@ function doGet(e) {
       bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : ''
     });
   }
-  return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION, supportsArchive: true });
+  return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION });
 }
 
 function doPost(e) {
-  renameLegacySheets_();
   var body = {};
   try {
     body = JSON.parse(e.postData.contents);
@@ -2421,53 +1771,4 @@ function handleAction_(body) {
   }
 
   return json_({ ok: false, error: 'unknown action' });
-}
-
-/**
- * One-time cleanup: deletes columns that are no longer part of the schema
- * and aren't read or written anywhere in this file —
- *   infusions: batch_date_ref (there were two), legacy rel_f1_date,
- *              end_date (the strain date is now derived from whichever
- *              bottle got sourced from the infusion, since straining and
- *              bottling happen back to back — see infusionEndDate() on
- *              the frontend)
- *   bottles:   batch_date_ref, legacy rel_f1_date, feedback (leftover from
- *              an older layout)
- *   bottle_inventory: filled_empty, location (collapsed into a single
- *              'stage' column — see BOTTLE_INV_HEADERS), plus 'kind' and
- *              'category' — both leftover from even earlier versions of
- *              this schema (kind -> filled_empty, category -> split into
- *              size + flavour) that were renamed in code but never
- *              cleaned up on the live sheet
- * The batch's date is looked up live from batch_pk_fk now (see
- * batchDatesByUid_), so none of the *_date_ref copies are needed going
- * forward either.
- *
- * Run this once from the Apps Script editor (select it in the Run
- * dropdown at the top, then click Run) after deploying this version —
- * it's safe to run more than once, it just no-ops if nothing matches.
- * Delete this function afterward if you'd rather not keep one-off cleanup
- * scripts sitting in the file — it has no ongoing purpose once it's run.
- */
-function oneTimeCleanupRedundantColumns() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var toRemove = {
-  };
-  toRemove[INFUSIONS_SHEET] = ['batch_date_ref', 'rel_f1_date', 'end_date'];
-  toRemove[BOTTLES_SHEET] = ['batch_date_ref', 'rel_f1_date', 'feedback'];
-  toRemove[BOTTLE_INV_SHEET] = ['filled_empty', 'location', 'kind', 'category'];
-  var removed = [];
-  Object.keys(toRemove).forEach(function (sheetName) {
-    var sh = ss.getSheetByName(sheetName);
-    if (!sh || sh.getLastColumn() === 0) return;
-    var hdr = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-    var names = toRemove[sheetName];
-    for (var c = hdr.length - 1; c >= 0; c--) {
-      if (names.indexOf(String(hdr[c]).trim()) !== -1) {
-        sh.deleteColumn(c + 1);
-        removed.push(sheetName + '!' + hdr[c]);
-      }
-    }
-  });
-  Logger.log('Removed columns: ' + (removed.length ? removed.join(', ') : 'none found'));
 }

@@ -1893,12 +1893,12 @@
     <div class="pt-field-row">
       <div class="form-group">
         <label>Type</label>
-        <select id="c-type">
+        <select id="c-type" onchange="syncCustomerContactField()">
           <option value="B2C">B2C &mdash; direct</option>
           <option value="B2B">B2B &mdash; shop / caf&eacute;</option>
         </select>
       </div>
-      <div class="form-group">
+      <div class="form-group" id="c-contact-group">
         <label>Contact person</label>
         <input type="text" id="c-contact" placeholder="optional" />
       </div>
@@ -8607,6 +8607,12 @@ function deleteOrder(id) {
 }
 
 /* ---- customer drawer ---- */
+// "Contact person" only matters for B2B (the person at the shop/café);
+// for B2C the name already is the person, so the box is hidden.
+function syncCustomerContactField() {
+  var g = document.getElementById('c-contact-group');
+  if (g) g.style.display = (val('c-type') === 'B2B') ? '' : 'none';
+}
 function openCustomerDrawer(id) {
   var c = id ? findCustomer(id) : null;
   editingCustomerId = c ? c.id : null;
@@ -8616,6 +8622,7 @@ function openCustomerDrawer(id) {
   document.getElementById('c-alias').value = c ? (c.alias || '') : '';
   document.getElementById('c-type').value = c ? (c.type || 'B2C') : 'B2C';
   document.getElementById('c-contact').value = c ? (c.contact || '') : '';
+  syncCustomerContactField();
   document.getElementById('c-phone').value = c ? (c.phone || '') : '';
   document.getElementById('c-email').value = c ? (c.email || '') : '';
   document.getElementById('c-address').value = c ? (c.address || '') : '';
@@ -8659,7 +8666,7 @@ function saveCustomer() {
   if (aliasClash && String(aliasClash.id) !== String(editingCustomerId)) { alert('“' + val('c-alias').trim() + '” is already used by ' + aliasClash.name + '.'); return; }
   var prev = editingCustomerId ? findCustomer(editingCustomerId) : null;
   var c = {
-    id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-contact').trim(),
+    id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-type') === 'B2B' ? val('c-contact').trim() : '',
     phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(), area: val('c-area').trim(),
     reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO()
   };
