@@ -9219,9 +9219,18 @@ function bivRowHtml(e, sub) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
+  // A sale is one stored row (qty -n). It reads as "+n Sold", with the
+  // bottles leaving the filled stock as its small counter line.
+  if (e.stage === 'sold' && qtyNum) {
+    qtyDisp = '+' + fmtNum(Math.abs(qtyNum));
+    sub = { stage: 'filled', qty: -Math.abs(qtyNum) };
+  }
   var autoTag = '';
   var cls = [];
-  if (e.auto) cls.push('biv-auto-row');
+  // Main movements are always in normal type, even when written
+  // automatically (e.g. a bottling's "Filled" line). Only a counter line
+  // that ends up on its own (e.g. when filtering on Depot) is small italic.
+  if (e.auto && (e.stage === 'depot' || e.stage === 'atelier') && qtyNum < 0) cls.push('biv-auto-row');
   if (sub) cls.push('biv-has-sub');
   var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
