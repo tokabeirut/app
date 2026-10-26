@@ -391,6 +391,7 @@
   .biv-stat-btlrow.biv-btl-link { cursor: pointer; }
   .biv-stat-btlrow.biv-btl-link .biv-btl-id { color: var(--terra); }
   .biv-stat-btlrow.biv-btl-link:hover .biv-btl-id { text-decoration: underline; }
+  .biv-sold-batch { cursor: pointer; }
   .biv-batch-ref { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); margin-top: 2px; }
   .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
@@ -7280,6 +7281,7 @@ function startInline(td) {
   if (!rec) return;
   editingCell = true; hideCellTip();
   if (input === 'spices') { startSpicesInline(td, type, uidv, field, rec); return; }
+  if (input === 'batch') { startBatchInline(td, rec); return; }
   // The editor is laid over the cell (see mountCellEditor) so the cell's
   // width and height stay exactly as they were while editing.
   var cur = (field === 'steep') ? steepToMin(rec.steep) : rec[field];
@@ -7317,6 +7319,33 @@ function startInline(td) {
   });
   el.addEventListener('blur', function () { finish(true); });
   if (input === 'select') el.addEventListener('change', function () { finish(true); });
+}
+// Bottle inventory: change the batch of a consumed row. The pick sets the
+// row's batch, flavour and size together (same list as the movement form).
+function startBatchInline(td, rec) {
+  var el = document.createElement('select'); el.className = 'cell-edit';
+  el.innerHTML = bivBatchOptionsHtml(rec.bottling || '', rec.flavour || '', rec.size || '');
+  var curV = el.value;
+  mountCellEditor(td, el);
+  var done = false;
+  function finish(save) {
+    if (done) return; done = true; editingCell = false;
+    if (!save || el.value === curV) { renderBottleInventory(); return; }
+    var pb = bivParseBatch(el.value);
+    rec.bottling = pb.bottling; rec.flavour = pb.flavour; if (pb.size) rec.size = pb.size;
+    renderBottleInventory();
+    setSyncStatus('saving', 'saving\u2026');
+    apiPost({ action: 'updateBottleInvEntry', entry: JSON.parse(JSON.stringify(rec)) }, function (err, res) {
+      if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); loadBottleInventory(); return; }
+      setSyncStatus('live', 'connected \u00b7 google sheets');
+    });
+  }
+  el.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+  el.addEventListener('blur', function () { finish(true); });
+  el.addEventListener('change', function () { finish(true); });
 }
 // Inline editor for a structured "spices" list cell (name+grams pairs, up to
 // BOTTLE_MAX_FLAVORS) — reuses the same .flavor-row markup/styling as the
@@ -9415,6 +9444,16 @@ function bivPairs() {
   }
   return { autoOf: autoOf, partnerOf: partnerOf };
 }
+// Flavour cell. Consumed rows: click to pick the batch (sets flavour + size
+// too). Sold rows come from a Sales order, so a click opens that order,
+// where the batch is changed per line. Other rows: flavour select.
+function bivFlavourCellHtml(e) {
+  var inner = esc(e.flavour || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
+    : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
+  if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
+  if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Change the batch in the order">' + inner + '</td>';
+  return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS });
+}
 function bivRowHtml(e, sub, newDate) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
@@ -9434,7 +9473,7 @@ function bivRowHtml(e, sub, newDate) {
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
-    + cellEd(esc(e.flavour || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>' : ''), { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS })
+    + bivFlavourCellHtml(e)
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
     + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
