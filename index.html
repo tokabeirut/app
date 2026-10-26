@@ -9256,7 +9256,22 @@ function bivOptionsHtml(optStr) {
   return h;
 }
 function bivSizeOptionsHtml() { return bivOptionsHtml(BIV_SIZE_OPTS); }
-function bivFlavourOptionsHtml() { return bivOptionsHtml(BIV_FLAVOUR_OPTS); }
+// Every flavour: Cardamom Sumac and Sumac first, then all flavours from
+// Bottling (also archived bottlings) and Bottle inventory, A–Z. Returned as
+// the "value:label" options string (labels with " • " between spices).
+function bivFlavourOptsString(current) {
+  var seen = {}, list = [];
+  function add(f) { f = String(f || '').trim(); if (f && f !== '(unspecified)' && !seen[f.toLowerCase()]) { seen[f.toLowerCase()] = 1; list.push(f); } }
+  var rest = [];
+  bottles.forEach(function (b) { var f = (b.flavours || []).map(function (x) { return String(x.name || '').trim(); }).filter(Boolean).join(' '); if (f) rest.push(f); });
+  bottleInventory.forEach(function (e) { if (e.flavour) rest.push(e.flavour); });
+  ['Cardamom Sumac', 'Sumac'].forEach(add);
+  rest.sort(function (a, c) { return a.localeCompare(c); }).forEach(add);
+  if (current) add(current);
+  return list.filter(function (f) { return f.indexOf(',') === -1 && f.indexOf(':') === -1; })
+    .map(function (f) { return f + ':' + bivFlavourDisplay(f); }).join(',');
+}
+function bivFlavourOptionsHtml() { return bivOptionsHtml(bivFlavourOptsString()); }
 // One form for every kind of movement: the Movement picker decides what the
 // entry does (and whether a flavour is needed), so there's a single place to
 // log anything instead of a separate box per stage.
@@ -9543,7 +9558,7 @@ function bivFlavourCellHtml(e) {
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
   if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Change the batch in the order">' + inner + '</td>';
-  return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS });
+  return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
 }
 function bivRowHtml(e, sub, newDate) {
   var id = esc(e.id);
