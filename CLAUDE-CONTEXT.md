@@ -17,7 +17,7 @@ Read this first when continuing work on the toka app.
    ```
    cd ~/Documents/"1. Toka"/toka-app && git add -A && git commit -m "…" && git push
    ```
-4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `44 …`). The live version shows at the exec URL with no action.
+4. If the backend changed: tell Claire to redeploy Apps Script. Paste the .gs, then Deploy → Manage deployments → edit → **New version**. Bump `var VERSION` in the .gs (current: `45 …`). The live version shows at the exec URL with no action.
 - Whenever the .gs changes, also send Claire the .gs file (file card) so she can paste it.
 - Keep replies short. Say what changed and give the git command. Claire tests on laptop + iPhone (home-screen app).
 
@@ -72,6 +72,7 @@ Read this first when continuing work on the toka app.
     - One "Log a bottle movement" form.
     - Recycled bottles count into "Empty bottles at atelier".
     - Sold rows come automatically from Sales and lower "Filled bottles at atelier".
+    - Batches: a bottling's key is `"<date>|<label>"` (label = the bottle IDs from its "Auto: bottled …" note, or "Filled by hand"); `bivBottlings()` gives every bottling with bottles left per size. Consumed (movement form) and Sales order lines pick a batch (`bivBatchOptionsHtml`, value `"<key>||<flavour>"`, or `"||<flavour>"` = any batch, default Cardamom Sumac). Stored in the `bottling` column of Bottle inventory and Sales lines (backend v45); sold/consumed with a batch come off that bottling, the rest oldest-first.
     - Movement log: a transfer's automatic counter row (depot→atelier, atelier→filled) is drawn as a small italic line under its main row (`bivPairs`); sold/consumed are one −n line; orange line between dates.
     - "Filled bottles at atelier" and each flavour row unfold (`bivToggleFlavour`, remembered per device) into the bottlings behind it (from "Auto: bottled BTL-…" notes; "Filled by hand" otherwise), showing how many of each are LEFT: sold/consumed are taken from the oldest bottlings first (FIFO, per size); empty bottlings are hidden.
   - **Spice inventory**:

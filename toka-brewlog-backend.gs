@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '44 (no automatic "Brought from depot" note)';
+var VERSION = '45 (batch on sold / consumed bottles)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -667,7 +667,7 @@ var SALES_SHEET = 'Sales';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
 var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes'];
-var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price'];
+var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
 
 function rowFrom_(obj, ncols, map) {
@@ -728,7 +728,7 @@ function readAllOrders_() {
   var lines = {};
   readSheetObjects_(getSalesLinesSheet_(), 'line_pk').forEach(function (l) {
     var k = String(l.order_fk);
-    (lines[k] = lines[k] || []).push({ id: String(l.line_pk), size: String(l.size || ''), flavour: String(l.flavour || ''), qty: l.qty, unitPrice: l.unit_price });
+    (lines[k] = lines[k] || []).push({ id: String(l.line_pk), size: String(l.size || ''), flavour: String(l.flavour || ''), qty: l.qty, unitPrice: l.unit_price, bottling: String(l.bottling || '') });
   });
   return readSheetObjects_(osh, 'order_pk').map(function (o) {
     return {
@@ -778,7 +778,7 @@ function saveOrder_(o, customer) {
     var lsh = getSalesLinesSheet_(), lmap = headerMap_(lsh), ln = lsh.getLastColumn();
     deleteRowsWhere_(lsh, 'order_fk', o.id);
     var lrows = (o.lines || []).map(function (l) {
-      return rowFrom_({ line_pk: l.id || Utilities.getUuid(), order_fk: o.id, size: l.size || '', flavour: l.flavour || '', qty: l.qty, unit_price: l.unitPrice }, ln, lmap);
+      return rowFrom_({ line_pk: l.id || Utilities.getUuid(), order_fk: o.id, size: l.size || '', flavour: l.flavour || '', qty: l.qty, unit_price: l.unitPrice, bottling: l.bottling || '' }, ln, lmap);
     });
     if (lrows.length) lsh.getRange(lsh.getLastRow() + 1, 1, lrows.length, ln).setValues(lrows);
 
@@ -787,7 +787,7 @@ function saveOrder_(o, customer) {
     if (o.deductStock) {
       var irows = (o.lines || []).filter(function (l) { return parseFloat(l.qty) > 0; }).map(function (l) {
         return buildBottleInvRow_({ id: Utilities.getUuid(), stage: 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
-          qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'Sold: ' + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
+          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'Sold: ' + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
       });
       if (irows.length) ish.getRange(ish.getLastRow() + 1, 1, irows.length, inN).setValues(irows);
     }
@@ -810,7 +810,7 @@ function deleteOrder_(id) {
    Sales order writes its "sold" rows (linked by order_fk). */
 var BOTTLE_INV_SHEET = 'Bottle inventory';
 
-var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto', 'order_fk'];   // order_fk: the Sales order an automatic 'sold' row belongs to
+var BOTTLE_INV_HEADERS = ['entry_pk', 'stage', 'entry_date', 'size', 'flavour', 'qty', 'notes', 'auto', 'order_fk', 'bottling'];   // bottling: for sold/consumed, the batch they came from   // order_fk: the Sales order an automatic 'sold' row belongs to
 
 function getBottleInvSheet_() { return ensureSheet_(BOTTLE_INV_SHEET, BOTTLE_INV_HEADERS); }
 
@@ -828,6 +828,7 @@ function buildBottleInvRow_(e, ncols, map) {
   set('notes', e.notes || '');
   set('auto', e.auto ? 'yes' : '');
   set('order_fk', e.orderId || '');
+  set('bottling', e.bottling || '');
   return row;
 }
 
@@ -849,7 +850,8 @@ function readAllBottleInv_() {
       qty: g(r, 'qty'),
       notes: g(r, 'notes'),
       auto: truthy_(g(r, 'auto')),
-      orderId: String(g(r, 'order_fk') || '')
+      orderId: String(g(r, 'order_fk') || ''),
+      bottling: String(g(r, 'bottling') || '')
     });
   }
   return out;

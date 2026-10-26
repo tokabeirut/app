@@ -391,6 +391,7 @@
   .biv-stat-btlrow.biv-btl-link { cursor: pointer; }
   .biv-stat-btlrow.biv-btl-link .biv-btl-id { color: var(--terra); }
   .biv-stat-btlrow.biv-btl-link:hover .biv-btl-id { text-decoration: underline; }
+  .biv-batch-ref { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); margin-top: 2px; }
   .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
@@ -8502,7 +8503,7 @@ function orderLineRowHtml(l) {
   l = l || {};
   var size = String(l.size || '375');
   return '<div class="ol-row"' + (l.priceEdited ? ' data-edited="1"' : '') + '>'
-    + '<input type="text" class="ol-flavour" list="crm-flavour-list" placeholder="flavour" value="' + esc(l.flavour || '') + '" />'
+    + '<select class="ol-flavour">' + bivBatchOptionsHtml(bottleInvSizeLabel(size), l.bottling || '', l.flavour || '') + '</select>'
     + '<select class="ol-size" onchange="onOrderLineChange(this, true)"><option value="375"' + (size === '375' ? ' selected' : '') + '>375 ml</option><option value="750"' + (size === '750' ? ' selected' : '') + '>750 ml</option></select>'
     + '<input type="number" class="ol-qty" min="0" step="1" placeholder="bottles" value="' + esc(l.qty == null ? '' : l.qty) + '" oninput="onOrderLineChange(this)" />'
     + '<input type="number" class="ol-price" min="0" step="0.01" placeholder="$ / bottle" value="' + esc(l.unitPrice == null ? '' : l.unitPrice) + '" oninput="this.closest(\'.ol-row\').setAttribute(\'data-edited\',\'1\'); onOrderLineChange(this)" />'
@@ -8546,6 +8547,11 @@ function applyLinePrice(row) {
 }
 function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice); }
 function onOrderLineChange(el, sizeChanged) {
+  if (sizeChanged) {
+    // The batch list depends on the size: keep the flavour, drop a batch of the other size.
+    var row = el.closest('.ol-row'), fs = row.querySelector('.ol-flavour'), cur = bivParseBatch(fs.value);
+    fs.innerHTML = bivBatchOptionsHtml(bottleInvSizeLabel(row.querySelector('.ol-size').value), '', cur.flavour);
+  }
   // Quantities and sizes change which bundles apply, so reprice every
   // line that hasn't been given a price by hand.
   if (!el.classList.contains('ol-price')) applyAllLinePrices();
@@ -8569,9 +8575,10 @@ function onOrderCustomerInput() {
 }
 function readOrderLines() {
   return [].map.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
-    return { flavour: r.querySelector('.ol-flavour').value.trim(), size: r.querySelector('.ol-size').value,
+    var pb = bivParseBatch(r.querySelector('.ol-flavour').value);
+    return { flavour: pb.flavour, bottling: pb.bottling, size: r.querySelector('.ol-size').value,
       qty: parseFloat(r.querySelector('.ol-qty').value) || 0, unitPrice: parseFloat(r.querySelector('.ol-price').value) || 0 };
-  }).filter(function (l) { return l.qty > 0 || l.flavour; });
+  }).filter(function (l) { return l.qty > 0; });
 }
 function updateOrderTotal() {
   var tot = 0;
@@ -8602,7 +8609,7 @@ function openOrderDrawer(id) {
   document.getElementById('o-invoice').value = o ? (o.invoiceNo || '') : '';
   document.getElementById('o-customer-hint').textContent = '';
   document.getElementById('o-lines').innerHTML = '';
-  if (o && o.lines && o.lines.length) o.lines.forEach(function (l) { addOrderLine({ flavour: l.flavour, size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
+  if (o && o.lines && o.lines.length) o.lines.forEach(function (l) { addOrderLine({ flavour: l.flavour, bottling: l.bottling || '', size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
   else addOrderLine();
   if (o) onOrderCustomerInput();
   updateOrderTotal();
@@ -9059,7 +9066,7 @@ function bivKpisHtml() {
     h += bivStatSubRowHtml(fl, sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
       'class="biv-summary-grid biv-stat-subrow biv-fold-row" onclick="bivToggleFlavour(\'' + esc(fl).replace(/'/g, "\\'") + '\')"')
       .replace('<div class="biv-stat-sublabel">', '<div class="biv-stat-sublabel"><span class="biv-tri' + (open ? ' open' : '') + '">&#9656;</span>');
-    if (open) h += bivFlavourBottlingsHtml(fl, sizes, filledBySize, netBySize);
+    if (open) h += bivFlavourBottlingsHtml(fl, sizes);
   }
   h += bivStatRowHtml('Sold bottles', sizes, b.sold);
   h += bivStatRowHtml('Consumed bottles', sizes, b.consumed);
@@ -9070,7 +9077,7 @@ function bivKpisHtml() {
 /* ---- unfold a flavour into its bottlings ----
    Each "Filled" ledger row is one bottling: automatic ones carry the bottle
    IDs in their note ("Auto: bottled BTL-…"), hand-logged fills don't. Each
-   line shows how many of that bottling are left (oldest sold first), so the
+   line shows how many of that bottling are left (see bivBottlings), so the
    lines add up to the flavour's stock. Open/closed is remembered here. */
 function bivOpenFlavours() {
   try { return JSON.parse(lsGet('toka_biv_open_flavours') || '{}') || {}; } catch (e) { return {}; }
@@ -9086,33 +9093,89 @@ function bivToggleAllFlavours() {
   if (!flavoursAllOpen(b)) Object.keys(b.filledEventsByFlavour).forEach(function (f) { o[f] = 1; });
   bivSetOpenFlavours(o);
 }
-function bivFlavourBottlingsHtml(fl, sizes, filledBySize, netBySize) {
+// Every bottling ("Filled" row, or several written on the same day with the
+// same note) with how many bottles are left per size. A sold or consumed
+// row that names its bottling (e.bottling = the bottling's key) comes off
+// that bottling; the rest come off the oldest bottlings of that flavour
+// first (first in, first out). Newest bottling first.
+function bivBottlings() {
   var groups = {}, order = [];
   bottleInventory.forEach(function (e) {
-    if ((e.stage || '') !== 'filled' || (e.flavour || '(unspecified)') !== fl) return;
+    if ((e.stage || '') !== 'filled') return;
     var m = /^Auto: bottled (.+)$/.exec(String(e.notes || ''));
     var label = m ? m[1] : 'Filled by hand';
+    var fl = e.flavour || '(unspecified)';
     var key = (e.date || '') + '|' + label;
-    if (!groups[key]) { groups[key] = { date: e.date || '', label: label, ids: m ? m[1].split(', ') : [], qty: {} }; order.push(key); }
-    var sz = e.size || '(unspecified)';
-    groups[key].qty[sz] = (groups[key].qty[sz] || 0) + (parseFloat(e.qty) || 0);
+    var gk = key + '|' + fl;
+    if (!groups[gk]) { groups[gk] = { key: key, date: e.date || '', label: label, ids: m ? m[1].split(', ') : [], flavour: fl, made: {}, left: {} }; order.push(gk); }
+    var sz = e.size || '(unspecified)', q = parseFloat(e.qty) || 0;
+    groups[gk].made[sz] = (groups[gk].made[sz] || 0) + q;
+    groups[gk].left[sz] = (groups[gk].left[sz] || 0) + q;
   });
-  // What's left per bottling. Sales and consumed bottles aren't tied to a
-  // bottling, so they're taken from the oldest bottlings first (first in,
-  // first out), per size; bottlings with nothing left aren't shown.
-  order.sort(function (a, c) { return String(groups[a].date).localeCompare(String(groups[c].date)); });
-  sizes.forEach(function (sz) {
-    var out = (filledBySize[sz] || 0) - (netBySize[sz] || 0);
-    order.forEach(function (k) {
-      var q = groups[k].qty[sz] || 0, take = Math.max(0, Math.min(q, out));
-      groups[k].qty[sz] = q - take; out -= take;
+  var list = order.map(function (k) { return groups[k]; });
+  list.sort(function (a, c) { return String(a.date).localeCompare(String(c.date)); });   // oldest first for FIFO
+  var pool = {};   // flavour|size -> bottles out without (a known) bottling
+  bottleInventory.forEach(function (e) {
+    if (e.stage !== 'sold' && e.stage !== 'consumed') return;
+    var fl = e.flavour || '(unspecified)', sz = e.size || '(unspecified)', q = Math.abs(parseFloat(e.qty) || 0);
+    var g = null;
+    if (e.bottling) for (var i = 0; i < list.length; i++) { if (list[i].key === e.bottling && list[i].flavour === fl) { g = list[i]; break; } }
+    if (g) { var take = Math.min(q, Math.max(0, g.left[sz] || 0)); g.left[sz] = (g.left[sz] || 0) - take; q -= take; }
+    if (q > 0) pool[fl + '|' + sz] = (pool[fl + '|' + sz] || 0) + q;
+  });
+  list.forEach(function (g) {
+    Object.keys(g.left).forEach(function (sz) {
+      var pk = g.flavour + '|' + sz, out = pool[pk] || 0;
+      var take = Math.min(out, Math.max(0, g.left[sz]));
+      g.left[sz] -= take; pool[pk] = out - take;
     });
   });
-  order = order.filter(function (k) { return sizes.some(function (sz) { return (groups[k].qty[sz] || 0) > 0; }); });
-  order.reverse();   // newest on top
+  return list.reverse();
+}
+// "2026-10-20|BTL-…-CS" -> "BTL-…-CS" (for a stored bottling key).
+function bivBottlingRefName(key) {
+  var label = String(key || '').split('|').slice(1).join('|');
+  var ids = /^BTL/.test(label) ? label.split(', ') : [];
+  return bivBottlingName({ ids: ids }) + (ids.length ? '' : ' ' + fmtDate(String(key).split('|')[0]));
+}
+function bivBottlingName(g) {
+  if (!g.ids.length) return 'Filled by hand';
+  return g.ids.length > 1 ? g.ids[0] + ' +' + (g.ids.length - 1) : g.ids[0];
+}
+function bivBottlingByKey(key, flavour) {
+  var l = bivBottlings();
+  for (var i = 0; i < l.length; i++) if (l[i].key === key && (!flavour || l[i].flavour === flavour)) return l[i];
+  return null;
+}
+// <option>s to pick the batch sold or consumed: bottlings that still have
+// bottles of this size (plus the current pick), then "any batch" per
+// flavour for when it doesn't matter (oldest bottles are counted first).
+// Values: "<bottling key>||<flavour>" or "||<flavour>".
+function bivBatchOptionsHtml(sizeLabel, selBottling, selFlavour) {
+  if (!selBottling && !selFlavour) selFlavour = 'Cardamom Sumac';   // default: Cardamom Sumac, any batch
+  var cur = (selBottling || '') + '||' + (selFlavour || '');
+  var h = '', seenFl = {}, flavours = bivActiveFlavours().slice();
+  bivBottlings().forEach(function (g) {
+    var left = g.left[sizeLabel] || 0, v = g.key + '||' + g.flavour;
+    if (left <= 0 && v !== cur) return;
+    h += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + g.flavour + ' · ' + fmtDate(g.date) + ' · ' + fmtNum(Math.max(0, left)) + ' left') + '</option>';
+    if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
+  });
+  if (selFlavour && flavours.indexOf(selFlavour) === -1) flavours.push(selFlavour);
+  var any = flavours.map(function (f) {
+    var v = '||' + f;
+    return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(f + ' — any batch') + '</option>';
+  }).join('');
+  return (h ? '<optgroup label="Batch">' + h + '</optgroup>' : '') + '<optgroup label="Any batch (oldest counted first)">' + any + '</optgroup>';
+}
+function bivParseBatch(v) {
+  var i = String(v || '').indexOf('||');
+  return i < 0 ? { bottling: '', flavour: String(v || '') } : { bottling: v.slice(0, i), flavour: v.slice(i + 2) };
+}
+function bivFlavourBottlingsHtml(fl, sizes) {
+  var list = bivBottlings().filter(function (g) { return g.flavour === fl && sizes.some(function (sz) { return (g.left[sz] || 0) > 0; }); });
   var h = '';
-  order.forEach(function (k) {
-    var g = groups[k];
+  list.forEach(function (g) {
     // The bottling it came from: same ID, or one bottle of that group
     // (BTL-…-CS is the group of BTL-…-CS-01, -02, …).
     var bo = null, id0 = g.ids[0] || '';
@@ -9120,12 +9183,11 @@ function bivFlavourBottlingsHtml(fl, sizes, filledBySize, netBySize) {
       var bid = String(bottles[i].bottleId || '');
       if (bid === id0 || bid.indexOf(id0 + '-') === 0) { bo = bottles[i]; break; }
     }
-    var name = g.ids.length > 1 ? id0 + ' +' + (g.ids.length - 1) : g.label;
-    var lab = '<span class="biv-btl-date">' + esc(fmtDate(g.date)) + '</span><span class="biv-btl-id">' + esc(name) + '</span>';
+    var lab = '<span class="biv-btl-date">' + esc(fmtDate(g.date)) + '</span><span class="biv-btl-id">' + esc(bivBottlingName(g)) + '</span>';
     h += '<div class="biv-summary-grid biv-stat-btlrow' + (bo ? ' biv-btl-link' : '') + '"'
       + (bo ? ' onclick="gotoBottle(\'' + esc(bo.uid) + '\')" title="Open ' + esc(g.ids.join(', ')) + ' on the Bottling page"' : (g.ids.length > 1 ? ' title="' + esc(g.ids.join(', ')) + '"' : ''))
       + '><div class="biv-stat-btllabel">' + lab + '</div>';
-    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + (g.qty[sizes[j]] > 0 ? fmtNum(g.qty[sizes[j]]) : '') + '</div>';
+    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + ((g.left[sizes[j]] || 0) > 0 ? fmtNum(g.left[sizes[j]]) : '') + '</div>';
     h += '</div>';
   });
   return h;
@@ -9163,7 +9225,7 @@ function bivAddFormsHtml() {
     + '<div class="biv-form biv-form-single">'
     + '<div class="plan-field-row"><label class="plan-field-label">Movement</label><div class="plan-field-input"><select id="biv-move" onchange="bivMoveChanged()">' + moveOpts + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-mv-date" value="' + today + '" /></div></div>'
-    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-mv-size">' + bivSizeOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-mv-size" onchange="bivMoveChanged()">' + bivSizeOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row" id="biv-mv-flavour-row" style="display:none"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-mv-flavour">' + bivFlavourOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-mv-qty" placeholder="e.g. 24" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-mv-notes" placeholder="' + esc(BIV_MOVES[0][2]) + '" /></div></div>'
@@ -9190,12 +9252,17 @@ function bivMoveChanged() {
   var mv = val('biv-move');
   var needsFlavour = (mv === 'filled' || mv === 'consumed');
   document.getElementById('biv-mv-flavour-row').style.display = needsFlavour ? '' : 'none';
+  var lab = document.querySelector('#biv-mv-flavour-row .plan-field-label');
+  if (lab) lab.textContent = (mv === 'consumed') ? 'Batch' : 'Flavour';
   var fsel = document.getElementById('biv-mv-flavour');
   if (fsel && needsFlavour) {
-    fsel.innerHTML = (mv === 'consumed')
-      ? bivActiveFlavours().map(function (f) { return '<option value="' + esc(f) + '">' + esc(f) + '</option>'; }).join('')
-      : bivFlavourOptionsHtml();
-    fsel.value = 'Cardamom Sumac';
+    if (mv === 'consumed') {
+      // Which batch: a bottling with bottles left of this size, or any batch of a flavour.
+      fsel.innerHTML = bivBatchOptionsHtml(val('biv-mv-size'), '', '');
+    } else {
+      fsel.innerHTML = bivFlavourOptionsHtml();
+      fsel.value = 'Cardamom Sumac';
+    }
   }
   var m = BIV_MOVES.filter(function (x) { return x[0] === mv; })[0];
   if (m) document.getElementById('biv-mv-notes').placeholder = m[2];
@@ -9203,7 +9270,8 @@ function bivMoveChanged() {
 function bivAddMovement() {
   var mv = val('biv-move');
   var size = val('biv-mv-size');
-  var flavour = val('biv-mv-flavour').trim();
+  var flavour = val('biv-mv-flavour').trim(), bottling = '';
+  if (mv === 'consumed') { var pb = bivParseBatch(flavour); flavour = pb.flavour; bottling = pb.bottling; }
   var qty = parseFloat(val('biv-mv-qty'));
   var date = val('biv-mv-date') || todayISO();
   var notes = val('biv-mv-notes').trim();
@@ -9214,7 +9282,7 @@ function bivAddMovement() {
   // atelier pool (both rows written together by bringFromDepot).
   else if (mv === 'atelier') body = { action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes } };
   else if (mv === 'filled') body = { action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } };
-  else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } };
+  else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, bottling: bottling, qty: -qty, notes: notes } };
   else body = { action: 'createBottleInvEntry', entry: { stage: 'recycled', size: size, date: date, qty: qty, notes: notes } };
   setSyncStatus('saving', 'saving…');
   apiPost(body, function (err, res) {
@@ -9348,7 +9416,7 @@ function bivRowHtml(e, sub, newDate) {
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
-    + cellEd(esc(e.flavour || '—'), { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS })
+    + cellEd(esc(e.flavour || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>' : ''), { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: BIV_FLAVOUR_OPTS })
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
     + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
