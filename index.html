@@ -8260,12 +8260,24 @@ function crmId(prefix) { return prefix + '-' + Date.now().toString(36) + Math.ra
 function lineTotal(l) { return (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0); }
 function orderTotal(o) { return (o.lines || []).reduce(function (a, l) { return a + lineTotal(l); }, 0); }
 function orderBottles(o) { return (o.lines || []).reduce(function (a, l) { return a + (parseFloat(l.qty) || 0); }, 0); }
+// An order's lines with the batch left out: lines with the same flavour,
+// size and price are added together (the batch is only for Claire's own
+// stock count, not for the customer). Used for invoices and order lists.
+function mergedOrderLines(o) {
+  var out = [], idx = {};
+  (o.lines || []).forEach(function (l) {
+    var k = (l.flavour || '') + '|' + (l.size || '') + '|' + (parseFloat(l.unitPrice) || 0);
+    if (idx[k] == null) { idx[k] = out.length; out.push({ flavour: l.flavour, size: l.size, unitPrice: l.unitPrice, qty: 0 }); }
+    out[idx[k]].qty += parseFloat(l.qty) || 0;
+  });
+  return out;
+}
 function orderItemsText(o) {
-  return (o.lines || []).map(function (l) { return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : ''); }).join(' · ');
+  return mergedOrderLines(o).map(function (l) { return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : ''); }).join(' · ');
 }
 // One product per line (orders table, customer history).
 function orderItemsHtml(o) {
-  return (o.lines || []).map(function (l) {
+  return mergedOrderLines(o).map(function (l) {
     return '<div class="crm-item">' + esc(fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '')) + '</div>';
   }).join('');
 }
@@ -8871,7 +8883,7 @@ function invoiceHtml(o) {
   var sub = orderTotal(o), rate = parseFloat(s.taxRate) || 0, tax = Math.round(sub * rate) / 100, total = sub + tax;
   function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
   function money(n) { return '$ ' + fmtUSD(n); }
-  var rows = (o.lines || []).map(function (l) {
+  var rows = mergedOrderLines(o).map(function (l) {
     return '<tr><td>' + esc(l.flavour || 'Kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
       + '<td class="r">' + fmtNum(parseFloat(l.qty) || 0) + '</td><td class="r">' + money(parseFloat(l.unitPrice) || 0) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>';
   }).join('');
