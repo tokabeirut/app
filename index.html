@@ -731,9 +731,9 @@
   .pt-filter-th:hover, .pt-filter-th.pt-filter-active { color: var(--terra); }
   .pt-filter-chevron { font-size: 0.6rem; opacity: 0.7; }
   .pt-filter-badge { display: inline-block; min-width: 13px; height: 13px; line-height: 13px; padding: 0 3px; border-radius: 20px; background: var(--terra); color: #fff; font-size: 0.58rem; text-align: center; margin-left: 3px; vertical-align: 1px; }
-  #pt-filter-menu, #biv-filter-menu { position: absolute; z-index: 9999; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 8px 28px rgba(30, 27, 24, 0.18); padding: 6px; font-size: 0.8rem; max-height: 300px; min-width: 170px; }
+  #pt-filter-menu, #biv-filter-menu, #bf-filter-menu { position: absolute; z-index: 9999; display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-sm); box-shadow: 0 8px 28px rgba(30, 27, 24, 0.18); padding: 6px; font-size: 0.8rem; max-height: 300px; min-width: 170px; }
   .pt-filter-menu-opts { overflow-y: auto; }
-  #biv-filter-menu .pt-filter-menu-opts { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-height: 0; }
+  #biv-filter-menu .pt-filter-menu-opts, #bf-filter-menu .pt-filter-menu-opts { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-height: 0; }
   .pt-filter-opt { display: block; padding: 5px 6px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
   .pt-filter-opt:hover { background: var(--accent-soft, rgba(0,0,0,0.06)); }
   .pt-filter-opt input { -webkit-flex-shrink: 0; flex-shrink: 0; width: auto !important; margin-right: 7px; vertical-align: -2px; }
@@ -1797,9 +1797,9 @@
       <table class="bottling-table">
         <thead>
           <tr>
-            <th>Bottle ID</th><th>Batch ID</th><th>Bottled on</th><th>Fridged</th>
-            <th>Volume</th>
-            <th>Sugar</th><th>Yeast</th><th>Spices</th><th>Qty</th><th>Notes</th><th></th>
+            <th>Bottle ID</th><th class="pt-filter-th" data-bf="source" onclick="toggleBfMenu(event,'source')">Batch ID</th><th class="pt-filter-th" data-bf="date" onclick="toggleBfMenu(event,'date')">Bottled on</th><th class="pt-filter-th" data-bf="fridge" onclick="toggleBfMenu(event,'fridge')">Fridged</th>
+            <th class="pt-filter-th" data-bf="volume" onclick="toggleBfMenu(event,'volume')">Volume</th>
+            <th class="pt-filter-th" data-bf="sugar" onclick="toggleBfMenu(event,'sugar')">Sugar</th><th class="pt-filter-th" data-bf="yeast" onclick="toggleBfMenu(event,'yeast')">Yeast</th><th class="pt-filter-th" data-bf="spices" onclick="toggleBfMenu(event,'spices')">Spices</th><th>Qty</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody id="b-tbody"></tbody>
@@ -1817,9 +1817,9 @@
         <table class="bottling-table">
           <thead>
             <tr>
-              <th>Bottle ID</th><th>Batch ID</th><th>Bottled on</th><th>Fridged</th>
-              <th>Volume</th>
-              <th>Sugar</th><th>Yeast</th><th>Spices</th><th>Qty</th><th>Notes</th><th></th>
+              <th>Bottle ID</th><th class="pt-filter-th" data-bf="source" onclick="toggleBfMenu(event,'source')">Batch ID</th><th class="pt-filter-th" data-bf="date" onclick="toggleBfMenu(event,'date')">Bottled on</th><th class="pt-filter-th" data-bf="fridge" onclick="toggleBfMenu(event,'fridge')">Fridged</th>
+              <th class="pt-filter-th" data-bf="volume" onclick="toggleBfMenu(event,'volume')">Volume</th>
+              <th class="pt-filter-th" data-bf="sugar" onclick="toggleBfMenu(event,'sugar')">Sugar</th><th class="pt-filter-th" data-bf="yeast" onclick="toggleBfMenu(event,'yeast')">Yeast</th><th class="pt-filter-th" data-bf="spices" onclick="toggleBfMenu(event,'spices')">Spices</th><th>Qty</th><th>Notes</th><th></th>
             </tr>
           </thead>
           <tbody id="b-archived-tbody"></tbody>
@@ -7727,6 +7727,84 @@ function cmpBottles(a, b) {
   if (da !== db) return da < db ? 1 : -1;                                       // newest bottled date first
   return bottleLastNum(b.bottleId) - bottleLastNum(a.bottleId);                 // then bottle number, descending
 }
+/* ---- Bottling table filters ----
+   Click a column header (Batch ID, Bottled on, Fridged, Volume, Sugar,
+   Yeast, Spices) to tick the values to show. Applies to the active and the
+   archived table; a bottle group shows when one of its bottles matches.
+   Same popover as the Bottle inventory movement log. */
+var bfFilters = { source: [], date: [], fridge: [], volume: [], sugar: [], yeast: [], spices: [] };
+var bfMenuEl = null, bfMenuField = null, bfMenuAnchor = null, bfDraft = [];
+function bfValue(b, field) {
+  if (field === 'source') { var ids = sourceEntries(b).map(function (e) { return e.id || e.uid; }).filter(Boolean); return ids.length ? ids.join(', ') : (b.relF1Id || '\u2014'); }
+  if (field === 'date') return b.bottlingDate ? fmtDate(b.bottlingDate) : '\u2014';
+  if (field === 'fridge') return b.fridgeDate ? fmtDate(b.fridgeDate) : 'not fridged yet';
+  if (field === 'volume') return (b.volumeMl !== '' && b.volumeMl != null) ? fmtQty(b.volumeMl, 'ml') : '\u2014';
+  if (field === 'sugar') return (b.sugarG !== '' && b.sugarG != null) ? fmtQty(b.sugarG, 'g') : '\u2014';
+  if (field === 'yeast') return (b.yeastMg !== '' && b.yeastMg != null) ? fmtQty(b.yeastMg, 'mg') : '\u2014';
+  if (field === 'spices') { var f = (b.flavours || []).map(function (x) { return String(x.name || '').trim(); }).filter(Boolean).join(' '); return f ? bivFlavourDisplay(f) : '\u2014'; }
+  return '';
+}
+function bfActiveCount() { var n = 0; for (var k in bfFilters) if (bfFilters[k].length) n++; return n; }
+function bfMatches(b) {
+  for (var f in bfFilters) { var a = bfFilters[f]; if (a.length && a.indexOf(bfValue(b, f)) === -1) return false; }
+  return true;
+}
+// Keeps whole groups together: a group stays when any of its bottles matches.
+function bfFilterList(list) {
+  var keep = {};
+  list.forEach(function (b) { if (bfMatches(b)) keep[bottleGroupKey(b) || ('u:' + b.uid)] = 1; });
+  return list.filter(function (b) { return keep[bottleGroupKey(b) || ('u:' + b.uid)]; });
+}
+function bfUpdateHeads() {
+  [].forEach.call(document.querySelectorAll('#view-bottling th[data-bf]'), function (th) {
+    var f = th.getAttribute('data-bf'), n = bfFilters[f].length;
+    if (!th.getAttribute('data-label')) th.setAttribute('data-label', th.textContent.trim());
+    th.classList.toggle('pt-filter-active', n > 0);
+    th.innerHTML = esc(th.getAttribute('data-label')) + ' <span class="pt-filter-chevron">\u25BE</span>' + (n ? '<span class="pt-filter-badge">' + n + '</span>' : '');
+  });
+}
+function toggleBfMenu(e, field) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  if (bfMenuField === field && bfMenuEl && bfMenuEl.style.display !== 'none') { hideBfMenu(); return; }
+  bfMenuField = field; bfMenuAnchor = (e && (e.currentTarget || e.target)) || null; bfDraft = bfFilters[field].slice();
+  if (!bfMenuEl) { bfMenuEl = document.createElement('div'); bfMenuEl.id = 'bf-filter-menu'; document.body.appendChild(bfMenuEl); }
+  var seen = {}, values = [];
+  bottles.slice().sort(cmpBottles).forEach(function (b) { var v = bfValue(b, field); if (!seen[v]) { seen[v] = 1; values.push(v); } });
+  if (field === 'volume' || field === 'sugar' || field === 'yeast') values.sort(function (a, c) { return (parseFloat(a) || 0) - (parseFloat(c) || 0); });
+  if (field === 'source' || field === 'spices') values.sort(function (a, c) { return a.localeCompare(c); });
+  bfMenuEl.innerHTML = '<div class="pt-filter-menu-opts">' + values.map(function (v, i) {
+      return '<label class="pt-filter-opt"><input type="checkbox" class="task-check" data-i="' + i + '"' + (bfDraft.indexOf(v) !== -1 ? ' checked' : '') + ' /> ' + esc(v) + '</label>';
+    }).join('') + '</div>'
+    + '<div class="pt-filter-menu-foot"><button type="button" class="pt-filter-clear-link" onclick="bfClearColumn()">Clear</button>'
+    + '<button type="button" class="btn-primary pt-filter-apply-btn" onclick="bfApply()">Apply</button></div>';
+  [].forEach.call(bfMenuEl.querySelectorAll('input[data-i]'), function (cb) {
+    cb.addEventListener('change', function () {
+      var v = values[+cb.getAttribute('data-i')], k = bfDraft.indexOf(v);
+      if (cb.checked && k === -1) bfDraft.push(v); else if (!cb.checked && k !== -1) bfDraft.splice(k, 1);
+    });
+  });
+  bfMenuEl.style.display = 'flex';
+  if (bfMenuAnchor) {
+    // Below the header, or above it when there's no room below.
+    var m = bfMenuEl, r = bfMenuAnchor.getBoundingClientRect();
+    m.style.maxHeight = '300px';
+    var h = Math.min(m.offsetHeight, 300), below = window.innerHeight - r.bottom - 12, above = r.top - 12;
+    var up = h > below && above > below, room = Math.max(120, Math.min(300, up ? above : below));
+    m.style.maxHeight = room + 'px'; h = Math.min(h, room);
+    m.style.left = Math.min(window.pageXOffset + r.left, window.pageXOffset + window.innerWidth - m.offsetWidth - 8) + 'px';
+    m.style.top = (window.pageYOffset + (up ? r.top - 4 - h : r.bottom + 4)) + 'px';
+  }
+}
+function hideBfMenu() { if (bfMenuEl) bfMenuEl.style.display = 'none'; bfMenuField = null; bfMenuAnchor = null; bfDraft = []; }
+function bfApply() { if (!bfMenuField) return; bfFilters[bfMenuField] = bfDraft.slice(); hideBfMenu(); renderBottles(); }
+function bfClearColumn() { if (!bfMenuField) return; bfFilters[bfMenuField] = []; hideBfMenu(); renderBottles(); }
+function bfClearFilters() { for (var k in bfFilters) bfFilters[k] = []; hideBfMenu(); renderBottles(); }
+document.addEventListener('click', function (e) {
+  if (!bfMenuField) return;
+  var t = e.target;
+  if (t.closest && (t.closest('#bf-filter-menu') || t.closest('#view-bottling th[data-bf]'))) return;
+  hideBfMenu();
+});
 function renderBottles() {
   var tb = document.getElementById('b-tbody');
   if (!tb) return;
@@ -7734,11 +7812,14 @@ function renderBottles() {
   for (var i = 0; i < bottles.length; i++) { (bottles[i].archived ? archived : active).push(bottles[i]); }
   active.sort(cmpBottles);
   archived.sort(cmpBottles);
+  var nActive = active.length, nArchived = archived.length, filtering = bfActiveCount() > 0;
+  if (filtering) { active = bfFilterList(active); archived = bfFilterList(archived); }
+  bfUpdateHeads();
 
   var countEl = document.getElementById('b-count');
   if (!active.length) {
-    tb.innerHTML = '<tr><td colspan="12" class="empty">No bottlings yet. Click \u201c+ add bottling\u201d to start.</td></tr>';
-    if (countEl) countEl.textContent = 'No active bottlings.';
+    tb.innerHTML = '<tr><td colspan="12" class="empty">' + (filtering && nActive ? 'No bottlings match the filters. <span class="pt-filter-clear-link" onclick="bfClearFilters()">Clear filters</span>' : 'No bottlings yet. Click \u201c+ add bottling\u201d to start.') + '</td></tr>';
+    if (countEl) countEl.textContent = filtering && nActive ? 'No bottlings match the filters.' : 'No active bottlings.';
   } else {
     var clusters = clusterBottleGroups(active);
     var rows = '', prevD = null;
@@ -7750,7 +7831,10 @@ function renderBottles() {
       prevD = da;
     }
     tb.innerHTML = rows;
-    if (countEl) countEl.textContent = active.length + (active.length === 1 ? ' bottling' : ' bottlings') + ', newest first.';
+    if (countEl) {
+      if (filtering) countEl.innerHTML = esc(active.length + ' of ' + nActive + ' bottlings shown (filtered).') + ' <span class="pt-filter-clear-link" onclick="bfClearFilters()">Clear filters</span>';
+      else countEl.textContent = active.length + (active.length === 1 ? ' bottling' : ' bottlings') + ', newest first.';
+    }
   }
 
   var sec = document.getElementById('b-archived-section');
@@ -7767,7 +7851,7 @@ function renderBottles() {
       prevAD = ad;
     }
     atb.innerHTML = arows;
-    if (acountEl) acountEl.textContent = archived.length + (archived.length === 1 ? ' bottling' : ' bottlings') + ', newest first.';
+    if (acountEl) acountEl.textContent = filtering ? (archived.length + ' of ' + nArchived + ' bottlings shown (filtered).') : (archived.length + (archived.length === 1 ? ' bottling' : ' bottlings') + ', newest first.');
     sec.style.display = '';
   } else {
     atb.innerHTML = '';

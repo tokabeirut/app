@@ -62,6 +62,7 @@ Read this first when continuing work on the toka app.
     - Bottle IDs are `BTL-<date>-<size ml>-<spice initials>-<n>` (e.g. `BTL-20261020-750-CS-05`; size added Oct 2026, older IDs have no size). `bottleNumberFromId` skips the size via `BOTTLE_ID_SIZES`.
     - Saving a 375/750 ml bottling auto-adds a "Filled" + "Atelier" pair to Bottle inventory. Both have the note "Auto: bottled BTL-…". Flavour = spices in order, or "Unknown" if none.
     - 1000 ml bottles are not counted.
+    - Column filters (Batch ID, Bottled on, Fridged, Volume, Sugar, Yeast, Spices) like the Bottle inventory log (`bfFilters`, `toggleBfMenu`); a bottle group stays when one of its bottles matches.
   - **Labo** (readings).
   - **Faucet timer**.
   - **Volume converter**: default split 2/3 375 ml, 1/3 750 ml.
