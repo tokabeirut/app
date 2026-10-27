@@ -13763,8 +13763,8 @@ function bcRecalcFromAnchor() {
    cell, loaded via the same combined getAll() the rest of the app already
    eager-loads at boot, saved back (debounced) via setBottleMathSettings. */
 var BM_SIZES = [
-  { key: 'bottle750', litres: 0.75, labelKey: 'label750', boxKey: 'box750', boxCapacity: 12 },
-  { key: 'bottle375', litres: 0.375, labelKey: 'label375', boxKey: 'box375', boxCapacity: 24 }
+  { key: 'bottle750', litres: 0.75, labelKey: 'label750', boxKey: 'box750', boxCapacity: 4 },
+  { key: 'bottle375', litres: 0.375, labelKey: 'label375', boxKey: 'box375', boxCapacity: 6 }
 ];
 // Break-even is also split by what fraction of the litres sold are the big
 // vs. the small bottle — three fixed mixes, used to build the extra columns
@@ -13792,8 +13792,8 @@ var BM_ROW_DEFS = [
   { group: 'packaging', key: 'cap', label: 'Cap', unit: 'caps', applies: ['bottle750', 'bottle375'] },
   { group: 'packaging', key: 'label750', label: 'Label, 750ml (front + back)', unit: 'labels', applies: ['bottle750'] },
   { group: 'packaging', key: 'label375', label: 'Label, 375ml (front + back)', unit: 'labels', applies: ['bottle375'] },
-  { group: 'packaging', key: 'box750', label: 'Box, 750 ml (12 bottles)', unit: 'boxes', applies: ['bottle750'] },
-  { group: 'packaging', key: 'box375', label: 'Box, 375 ml (24 bottles)', unit: 'boxes', applies: ['bottle375'] }
+  { group: 'packaging', key: 'box750', label: 'Carrier box, 750 ml (4 bottles)', unit: 'boxes', applies: ['bottle750'] },
+  { group: 'packaging', key: 'box375', label: 'Carrier box, 375 ml (6 bottles)', unit: 'boxes', applies: ['bottle375'] }
 ];
 function bmDefaults() {
   return {
@@ -13883,7 +13883,7 @@ function bmCompute(s) {
     var prow = s.packaging[pk];
     pkgUnit[pk] = prow.amount > 0 ? prow.buy / prow.amount : 0;
   }
-  var boxCapacity = { box750: 12, box375: 24 };
+  var boxCapacity = { box750: 4, box375: 6 };   // carrier boxes
   var productCost = {};
   BM_SIZES.forEach(function (sz) {
     var ingSum = 0;
