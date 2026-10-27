@@ -9317,8 +9317,8 @@ function bivParseBatch(v) {
   return { bottling: p[0] || '', flavour: p[1] || '', size: p[2] || '' };
 }
 function bivFlavourBottlingsHtml(fl, sizes) {
-  // All bottlings of this flavour, also the ones with nothing left (0).
-  var list = bivBottlings().filter(function (g) { return g.flavour === fl && sizes.some(function (sz) { return (g.made[sz] || 0) > 0; }); });
+  // Only bottlings of this flavour that still have bottles left.
+  var list = bivBottlings().filter(function (g) { return g.flavour === fl && sizes.some(function (sz) { return (g.left[sz] || 0) > 0; }); });
   var h = '';
   list.forEach(function (g) {
     // The bottling it came from: same ID, or one bottle of that group
@@ -9332,7 +9332,7 @@ function bivFlavourBottlingsHtml(fl, sizes) {
     h += '<div class="biv-summary-grid biv-stat-btlrow' + (bo ? ' biv-btl-link' : '') + '"'
       + (bo ? ' onclick="gotoBottle(\'' + esc(bo.uid) + '\')" title="Open ' + esc(g.ids.join(', ')) + ' on the Bottling page"' : (g.ids.length > 1 ? ' title="' + esc(g.ids.join(', ')) + '"' : ''))
       + '><div class="biv-stat-btllabel">' + lab + '</div>';
-    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + ((g.made[sizes[j]] || 0) > 0 ? fmtNum(Math.max(0, g.left[sizes[j]] || 0)) : '') + '</div>';
+    for (var j = 0; j < sizes.length; j++) h += '<div class="biv-stat-btlval">' + ((g.left[sizes[j]] || 0) > 0 ? fmtNum(g.left[sizes[j]]) : '') + '</div>';
     h += '</div>';
   });
   return h;
