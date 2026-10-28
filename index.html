@@ -888,6 +888,13 @@
   .ol-row .ol-flavour { grid-column: 1 / -1; }
   .ol-row .ol-size { display: none; }   /* the batch gives the size */
   .ol-row input, .ol-row select { min-width: 0; width: 100%; }
+  .o-discount { margin: 12px 0 4px; padding: 12px 14px; background: var(--terra-pale); border-radius: var(--radius-sm); }
+  .o-discount-head { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--terra); margin-bottom: 6px; }
+  .o-discount .hint { margin-bottom: 8px; }
+  .o-rebate-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; gap: 10px; font-size: 0.9rem; }
+  .o-rebate-input { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+  .o-rebate-input input { width: 90px; text-align: right; }
+  .crm-item-rebate { color: var(--terra); font-size: 0.85em; }
   .ol-total { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); text-align: right; white-space: nowrap; }
   .crm-hist-stats { display: -webkit-flex; display: flex; gap: 16px; -webkit-flex-wrap: wrap; flex-wrap: wrap; font-size: 0.86rem; margin-bottom: 8px; }
   .crm-hist-list { margin-top: 12px; border-top: 1px solid var(--border); }
@@ -1880,7 +1887,13 @@
       <div class="form-section-title">Products</div>
       <div id="o-lines"></div>
       <button type="button" class="btn-ghost btn-add-flavour" onclick="addOrderLine()">+ add product</button>
-      <div class="hint">Prices are pre-filled from Bottle math (average of the channel&rsquo;s range) and can be changed.</div>
+      <div class="hint">Prices fill in by themselves: B2C with the bundles from Bottle math, B2B with the wholesale price for all bottles ordered within 30 days. You can type over any price.</div>
+      <div id="o-discount" class="o-discount" style="display:none">
+        <div class="o-discount-head">30-day volume discount</div>
+        <div class="hint" id="o-discount-info"></div>
+        <label class="sale-paid-label" id="o-exception-row" style="display:none"><input type="checkbox" id="o-exception" class="task-check" onchange="document.getElementById('o-rebate').removeAttribute('data-edited'); applyAllLinePrices(); updateOrderTotal();" /> <span id="o-exception-label"></span></label>
+        <div class="o-rebate-row"><span>Rebate on the earlier orders</span><span class="o-rebate-input">&minus; $ <input type="number" id="o-rebate" min="0" step="0.01" placeholder="0.00" oninput="this.setAttribute('data-edited','1'); updateOrderTotalOnly()" /></span></div>
+      </div>
       <div class="sale-total-line">Total <strong id="o-total">$ 0.00</strong></div>
     </div>
     <div class="form-group">
@@ -7931,7 +7944,7 @@ var HIST_FIELDS = {
   ingredientName: function () { return ingredientNames(); },
   saleFlavour: function () {
     var out = [];
-    orders.forEach(function (o) { (o.lines || []).forEach(function (l) { out.push(l.flavour); }); });
+    orders.forEach(function (o) { (o.lines || []).forEach(function (l) { if (!isRebateLine(l)) out.push(l.flavour); }); });
     bottles.forEach(function (b) { (b.flavours || []).forEach(function (f) { out.push(f.name); }); });
     return out;
   }
@@ -8341,7 +8354,14 @@ function loadSales(cb) {
 }
 function saleMoney(n) { return '$ ' + fmtUSD(n || 0); }
 function crmId(prefix) { return prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
-function lineTotal(l) { return (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0); }
+// A B2B 30-day volume discount is stored as an extra order line with size
+// "rebate", qty 0 and the discount amount as its price (so it never counts
+// as bottles and never touches Bottle inventory); it lowers the total.
+function isRebateLine(l) { return String(l && l.size) === 'rebate'; }
+function lineTotal(l) {
+  if (isRebateLine(l)) return -(parseFloat(l.unitPrice) || 0);
+  return (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0);
+}
 function orderTotal(o) { return (o.lines || []).reduce(function (a, l) { return a + lineTotal(l); }, 0); }
 function orderBottles(o) { return (o.lines || []).reduce(function (a, l) { return a + (parseFloat(l.qty) || 0); }, 0); }
 // An order's lines with the batch left out: lines with the same flavour,
@@ -8350,6 +8370,7 @@ function orderBottles(o) { return (o.lines || []).reduce(function (a, l) { retur
 function mergedOrderLines(o) {
   var out = [], idx = {};
   (o.lines || []).forEach(function (l) {
+    if (isRebateLine(l)) { out.push(l); return; }
     var k = (l.flavour || '') + '|' + (l.size || '') + '|' + (parseFloat(l.unitPrice) || 0);
     if (idx[k] == null) { idx[k] = out.length; out.push({ flavour: l.flavour, size: l.size, unitPrice: l.unitPrice, qty: 0 }); }
     out[idx[k]].qty += parseFloat(l.qty) || 0;
@@ -8357,11 +8378,15 @@ function mergedOrderLines(o) {
   return out;
 }
 function orderItemsText(o) {
-  return mergedOrderLines(o).map(function (l) { return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : ''); }).join(' · ');
+  return mergedOrderLines(o).map(function (l) {
+    if (isRebateLine(l)) return (l.flavour || 'Discount') + ' −' + saleMoney(parseFloat(l.unitPrice) || 0);
+    return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '');
+  }).join(' · ');
 }
 // One product per line (orders table, customer history).
 function orderItemsHtml(o) {
   return mergedOrderLines(o).map(function (l) {
+    if (isRebateLine(l)) return '<div class="crm-item crm-item-rebate">' + esc((l.flavour || 'Discount') + ' −' + saleMoney(parseFloat(l.unitPrice) || 0)) + '</div>';
     return '<div class="crm-item">' + esc(fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '')) + '</div>';
   }).join('');
 }
@@ -8414,24 +8439,81 @@ function b2cBottlePrice(size, n) {
     return Math.round(total / n * 100) / 100;
   } catch (e) { return 0; }
 }
-// B2B price list (Oct 2026): per order 4–11 / 12–23 big bottles and
-// 6–17 / 18–35 small bottles; the lowest price applies from 24 big / 36
-// small bottles a month, counted over all of that business's orders in the
-// calendar month. Fewer bottles than the first tier pay the first-tier price.
+// B2B price list (Oct 2026), counted over 30 days (not the calendar month):
+// all bottles of one size a business orders within 30 days set the price.
+//   750 ml: $7 · from 12: $6 · from 24: $5.50
+//   375 ml: $4.50 · from 18: $4 · from 36: $3.50
+// (Below the 4 / 6 bottle minimum the first price applies.)
+var B2B_WINDOW_DAYS = 30;
+var B2B_REMIND_DAY = 20;
 var B2B_TIERS = {
-  '750': { tiers: [[0, 7], [12, 6]], monthly: [24, 5.5] },
-  '375': { tiers: [[0, 4.5], [18, 4]], monthly: [36, 3.5] }
+  '750': [[0, 7], [12, 6], [24, 5.5]],
+  '375': [[0, 4.5], [18, 4], [36, 3.5]]
 };
-// n = bottles of this size on this order; monthN = this business's bottles
-// of this size in the same calendar month, this order included.
-function b2bBottlePrice(size, n, monthN) {
-  var t = B2B_TIERS[String(size)] || B2B_TIERS['375'];
-  if (Math.max(n, monthN || 0) >= t.monthly[0]) return t.monthly[1];
-  var p = t.tiers[0][1];
-  t.tiers.forEach(function (x) { if (n >= x[0]) p = x[1]; });
+function b2bBottlePrice(size, n) {
+  var t = B2B_TIERS[String(size)] || B2B_TIERS['375'], p = t[0][1];
+  t.forEach(function (x) { if (n >= x[0]) p = x[1]; });
   return p;
 }
-
+function b2bNextTier(size, n) {
+  var t = B2B_TIERS[String(size)] || B2B_TIERS['375'];
+  for (var i = 0; i < t.length; i++) if (n < t[i][0]) return { at: t[i][0], price: t[i][1] };
+  return null;
+}
+// 30-day periods start at a business's first B2B order and run 30 days
+// (same day + 30 included); a later order inside that period doesn't start
+// a new count. The first order after a period ends starts the next period.
+// b2bWindow gives the earlier orders that count with an order on `date`
+// (the period it falls in). With `exception`, an order after the period
+// still counts with it (a late reorder that gets the price anyway).
+// Returns { orders, qty: {375, 750}, paid: {375, 750}, rebates, from,
+//           start, late } — start = start of the last period before this
+// order, late = days this order falls after that period's start.
+function b2bPeriodStart(list, date) {
+  var start = '';
+  list.forEach(function (o) {
+    if (String(o.date) > String(date)) return;
+    if (!start || daysBetween(start, o.date) > B2B_WINDOW_DAYS) start = o.date;
+  });
+  return start;
+}
+function b2bWindow(c, date, excludeId, exception) {
+  var out = { orders: [], qty: { '375': 0, '750': 0 }, paid: { '375': 0, '750': 0 }, rebates: 0, from: '', start: '', late: 0 };
+  if (!c || !date) return out;
+  var prev = ordersOfCustomer(c).filter(function (o) {
+    return o.channel === 'B2B' && String(o.id) !== String(excludeId || '') && o.date && String(o.date) <= String(date);
+  });
+  var start = b2bPeriodStart(prev, date);
+  if (!start) return out;
+  out.start = start;
+  out.late = daysBetween(start, date) || 0;
+  if (out.late > B2B_WINDOW_DAYS && !exception) return out;   // this order starts a new period
+  out.orders = prev.filter(function (o) { return String(o.date) >= String(start); });
+  out.orders.forEach(function (o) {
+    if (!out.from || o.date < out.from) out.from = o.date;
+    (o.lines || []).forEach(function (l) {
+      if (isRebateLine(l)) { out.rebates += parseFloat(l.unitPrice) || 0; return; }
+      var sz = String(l.size);
+      if (out.qty[sz] == null) return;
+      out.qty[sz] += parseFloat(l.qty) || 0;
+      out.paid[sz] += lineTotal(l);
+    });
+  });
+  return out;
+}
+// The rebate on a new order: what the earlier orders in the window were
+// charged above the new (lower) price, minus rebates already given there.
+// `thisQty` = bottles per size on the new order.
+function b2bRebate(win, thisQty) {
+  var r = 0;
+  ['375', '750'].forEach(function (sz) {
+    var prevQ = win.qty[sz];
+    if (!prevQ) return;
+    var p = b2bBottlePrice(sz, prevQ + (thisQty[sz] || 0));
+    r += Math.max(0, win.paid[sz] - prevQ * p);
+  });
+  return Math.max(0, Math.round((r - win.rebates) * 100) / 100);
+}
 /* ---- reorder estimate ---- */
 function customerInsights(c) {
   var list = ordersOfCustomer(c);
@@ -8503,13 +8585,63 @@ function renderSales() {
       ? orders.length + ' order' + (orders.length === 1 ? '' : 's') + ' · ' + customers.length + ' customer' + (customers.length === 1 ? '' : 's') + (last ? ' · last order ' + fmtDate(last) : '') + '.'
       : 'No orders yet — add the first one with “+ new order”.';
   }
-  var h = crmNudgeHtml();
+  var h = crmDiscountNudgeHtml() + crmNudgeHtml();
   h += '<div class="crm-tabs">'
     + '<button type="button" class="crm-tab' + (salesTab === 'orders' ? ' active' : '') + '" onclick="setSalesTab(\'orders\')">Orders</button>'
     + '<button type="button" class="crm-tab' + (salesTab === 'customers' ? ' active' : '') + '" onclick="setSalesTab(\'customers\')">Customers</button>'
     + '</div>';
   h += salesTab === 'customers' ? crmCustomersHtml() : crmOrdersHtml();
   body.innerHTML = h;
+}
+// B2B businesses 20–30 days into a 30-day period: they still have a few
+// days to order again and get the lower 30-day price. Each card has a
+// WhatsApp button with a ready-made reminder.
+function crmDiscountDue() {
+  var today = todayISO();
+  return customers.map(function (c) {
+    var list = ordersOfCustomer(c).filter(function (o) { return o.channel === 'B2B' && o.date && o.date <= today; });
+    if (!list.length) return null;
+    var last = list[list.length - 1], start = b2bPeriodStart(list, today), since = daysBetween(start, today);
+    if (since == null || since < B2B_REMIND_DAY || since > B2B_WINDOW_DAYS) return null;
+    var dl = new Date(start + 'T12:00:00'); dl.setDate(dl.getDate() + B2B_WINDOW_DAYS);
+    var deadline = dl.getFullYear() + '-' + pad(dl.getMonth() + 1) + '-' + pad(dl.getDate());
+    return { c: c, last: last, start: start, since: since, left: B2B_WINDOW_DAYS - since, deadline: deadline, win: b2bWindow(c, today, null, false) };
+  }).filter(Boolean).sort(function (a, b) { return a.left - b.left; });
+}
+// What they'd get by ordering more before the deadline, per size.
+function crmDiscountOffer(win) {
+  return ['375', '750'].filter(function (sz) { return win.qty[sz]; }).map(function (sz) {
+    var n = win.qty[sz], nx = b2bNextTier(sz, n);
+    return nx ? { sz: sz, n: n, more: nx.at - n, price: nx.price } : { sz: sz, n: n, more: 0, price: b2bBottlePrice(sz, n) };
+  });
+}
+function crmDiscountText(x) {
+  var first = String(x.c.contact || x.c.name || '').split(' ')[0];
+  var offer = crmDiscountOffer(x.win).filter(function (o) { return o.more > 0; })[0];
+  var t = 'Hi ' + first + '! A little heads-up from toka: you still have ' + x.left + ' day' + (x.left === 1 ? '' : 's') + ' (until ' + fmtDate(x.deadline) + ') to top up your order at the lower price, since everything you order within 30 days counts together.';
+  if (offer) t += ' With ' + offer.more + ' more ' + offer.sz + ' ml bottles, all of them go to $' + offer.price.toFixed(2) + ' a bottle, and we take the difference off what you already paid.';
+  return t + ' Shall I bring you some more?';
+}
+function crmDiscountNudgeHtml() {
+  var due = crmDiscountDue();
+  if (!due.length) return '';
+  return '<div class="crm-nudge crm-nudge-discount"><div class="crm-nudge-title">Discount reminder <span class="crm-nudge-count">' + due.length + '</span></div><div class="crm-nudge-list">'
+    + due.map(function (x) {
+      var d = crmPhoneDigits(x.c.phone);
+      var offer = crmDiscountOffer(x.win).map(function (o) {
+        return fmtNum(o.n) + ' × ' + o.sz + ' ml so far' + (o.more > 0 ? ' · ' + o.more + ' more → ' + saleMoney(o.price) + ' each' : ' · lowest price');
+      }).join('<br>');
+      return '<div class="crm-nudge-card" onclick="openCustomerDrawer(\'' + esc(x.c.id) + '\')">'
+        + '<div class="crm-nudge-name"' + (x.c.alias ? ' title="' + esc(x.c.name) + '"' : '') + '>' + esc(customerDisplayName(x.c)) + '</div>'
+        + '<div class="crm-nudge-meta">30 days from ' + esc(fmtDate(x.start)) + (x.last.date !== x.start ? ' · last order ' + esc(fmtDate(x.last.date)) : '') + '</div>'
+        + '<div class="crm-nudge-meta">Lower price until <span class="crm-nudge-date' + (x.left <= 3 ? ' crm-overdue' : '') + '">' + esc(fmtDate(x.deadline)) + '</span> (' + x.left + ' day' + (x.left === 1 ? '' : 's') + ' left)</div>'
+        + (offer ? '<div class="crm-nudge-meta">' + offer + '</div>' : '')
+        + '<div class="crm-nudge-acts">' + (d
+          ? '<a class="crm-act" href="https://wa.me/' + d + '?text=' + encodeURIComponent(crmDiscountText(x)) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp reminder</a>'
+            + '<a class="crm-act" href="tel:' + esc(String(x.c.phone).replace(/[^\d+]/g, '')) + '" onclick="event.stopPropagation()">Call</a>'
+          : '<span class="muted">add a phone number to send the reminder</span>') + '</div>'
+        + '</div>';
+    }).join('') + '</div></div>';
 }
 function crmNudgeHtml() {
   var due = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
@@ -8533,7 +8665,7 @@ function crmOrdersHtml() {
   list.forEach(function (o) {
     var t = orderTotal(o);
     revenue += t; bottles += orderBottles(o);
-    (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') b375 += q; else b750 += q; });
+    (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') b375 += q; else if (String(l.size) === '750') b750 += q; });
     if (!o.paid) { unpaid += t; unpaidN++; }
     if (o.channel === 'B2B') b2b += t; else b2c += t;
   });
@@ -8615,7 +8747,7 @@ function crmFlavourOptions() {
   function add(f) { f = String(f || '').trim(); var k = f.toLowerCase(); if (f && !seen[k]) { seen[k] = 1; out.push(f); } }
   BIV_FLAVOUR_OPTS.split(',').forEach(add);
   bottleInventory.forEach(function (e) { if (e.stage === 'filled') add(e.flavour); });
-  orders.forEach(function (o) { (o.lines || []).forEach(function (l) { add(l.flavour); }); });
+  orders.forEach(function (o) { (o.lines || []).forEach(function (l) { if (!isRebateLine(l)) add(l.flavour); }); });
   return out;
 }
 function refreshCrmDatalists() {
@@ -8656,25 +8788,55 @@ function orderSizeQty(size) {
   });
   return n;
 }
-// Bottles of one size this customer already ordered in the same calendar
-// month as the order being edited (that order itself left out).
-function customerMonthQty(size) {
-  var c = customerByName(val('o-customer')), month = String(val('o-date') || '').slice(0, 7);
-  if (!c || !month) return 0;
-  var n = 0;
-  ordersOfCustomer(c).forEach(function (o) {
-    if (String(o.id) === String(editingOrderId || '') || String(o.date || '').slice(0, 7) !== month) return;
-    (o.lines || []).forEach(function (l) { if (String(l.size) === String(size)) n += parseFloat(l.qty) || 0; });
-  });
-  return n;
+// The 30-day window of the order being edited (its own lines left out).
+function orderB2bWindow() {
+  var c = customerByName(val('o-customer'));
+  var ex = document.getElementById('o-exception');
+  return b2bWindow(c, val('o-date'), editingOrderId, !!(ex && ex.checked));
 }
 function applyLinePrice(row) {
   if (row.getAttribute('data-edited')) return;
   var size = row.querySelector('.ol-size').value, n = orderSizeQty(size);
-  var p = val('o-channel') === 'B2B' ? b2bBottlePrice(size, n, n + customerMonthQty(size)) : b2cBottlePrice(size, n);
+  var p = val('o-channel') === 'B2B' ? b2bBottlePrice(size, n + (orderB2bWindow().qty[size] || 0)) : b2cBottlePrice(size, n);
   row.querySelector('.ol-price').value = p ? p.toFixed(2) : '';
 }
-function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice); }
+function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice); updateOrderDiscount(); }
+// The 30-day discount box in the order drawer (B2B only): which earlier
+// orders count, the bottles so far, the rebate (filled in automatically
+// unless typed over) and the exception checkbox for a late reorder.
+function updateOrderDiscount() {
+  var box = document.getElementById('o-discount');
+  if (!box) return;
+  var isB2B = val('o-channel') === 'B2B', c = customerByName(val('o-customer'));
+  if (!isB2B || !c) { box.style.display = 'none'; return; }
+  var exEl = document.getElementById('o-exception');
+  var normal = b2bWindow(c, val('o-date'), editingOrderId, false);
+  // The exception is offered when this order falls after the last 30-day period.
+  var canEx = !!(normal.start && normal.late > B2B_WINDOW_DAYS);
+  document.getElementById('o-exception-row').style.display = canEx ? '' : 'none';
+  if (!canEx && exEl) exEl.checked = false;
+  document.getElementById('o-exception-label').textContent = canEx ? ('Exception: the 30 days from ' + fmtDate(normal.start) + ' ended ' + (normal.late - B2B_WINDOW_DAYS) + ' day' + (normal.late - B2B_WINDOW_DAYS === 1 ? '' : 's') + ' ago — count this order with them anyway') : '';
+  var win = orderB2bWindow();
+  var thisQty = { '375': orderSizeQty('375'), '750': orderSizeQty('750') };
+  var info = document.getElementById('o-discount-info');
+  if (!win.orders.length) {
+    info.textContent = canEx ? 'This order starts a new 30-day period.' : 'This order starts a 30-day period — orders until 30 days from it count together for the price.';
+  } else {
+    var parts = ['375', '750'].filter(function (sz) { return win.qty[sz] || thisQty[sz]; }).map(function (sz) {
+      var tot = win.qty[sz] + thisQty[sz], nx = b2bNextTier(sz, tot);
+      return fmtNum(tot) + ' × ' + sz + ' ml → ' + saleMoney(b2bBottlePrice(sz, tot)) + (nx ? ' (from ' + nx.at + ': ' + saleMoney(nx.price) + ')' : '');
+    });
+    var endD = new Date(win.start + 'T12:00:00'); endD.setDate(endD.getDate() + B2B_WINDOW_DAYS);
+    info.textContent = '30-day period ' + fmtDate(win.start) + ' – ' + fmtDate(endD.getFullYear() + '-' + pad(endD.getMonth() + 1) + '-' + pad(endD.getDate())) + ', with ' + win.orders.map(function (o) { return o.invoiceNo || fmtDate(o.date); }).join(', ') + '. ' + parts.join(' · ');
+  }
+  var rIn = document.getElementById('o-rebate');
+  if (!rIn.getAttribute('data-edited')) {
+    var r = b2bRebate(win, thisQty);
+    rIn.value = r ? r.toFixed(2) : '';
+  }
+  box.style.display = '';
+  updateOrderTotalOnly();
+}
 // The batch picked on an order line sets the line's bottle size (the size
 // box itself is hidden), then the line is repriced.
 function orderLineSyncSize(row) {
@@ -8715,13 +8877,16 @@ function readOrderLines() {
       qty: parseFloat(r.querySelector('.ol-qty').value) || 0, unitPrice: parseFloat(r.querySelector('.ol-price').value) || 0 };
   }).filter(function (l) { return l.qty > 0; });
 }
-function updateOrderTotal() {
+function updateOrderTotal() { updateOrderDiscount(); updateOrderTotalOnly(); }
+function updateOrderTotalOnly() {
   var tot = 0;
   [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
     var t = (parseFloat(r.querySelector('.ol-qty').value) || 0) * (parseFloat(r.querySelector('.ol-price').value) || 0);
     r.querySelector('.ol-total').textContent = t ? saleMoney(t) : '';
     tot += t;
   });
+  var rIn = document.getElementById('o-rebate'), box = document.getElementById('o-discount');
+  if (rIn && box && box.style.display !== 'none') tot -= parseFloat(rIn.value) || 0;
   document.getElementById('o-total').textContent = saleMoney(tot);
 }
 function openOrderDrawer(id) {
@@ -8744,7 +8909,14 @@ function openOrderDrawer(id) {
   document.getElementById('o-invoice').value = o ? (o.invoiceNo || '') : '';
   document.getElementById('o-customer-hint').textContent = '';
   document.getElementById('o-lines').innerHTML = '';
-  if (o && o.lines && o.lines.length) o.lines.forEach(function (l) { addOrderLine({ flavour: l.flavour, bottling: l.bottling || '', size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
+  // A saved order keeps its own discount: the rebate it was given (typed
+  // over = kept) and whether it was an exception.
+  var reb = o ? (o.lines || []).filter(isRebateLine)[0] : null;
+  var rIn = document.getElementById('o-rebate');
+  rIn.value = reb ? (parseFloat(reb.unitPrice) || 0).toFixed(2) : '';
+  if (o) rIn.setAttribute('data-edited', '1'); else rIn.removeAttribute('data-edited');
+  document.getElementById('o-exception').checked = !!(reb && /exception/i.test(reb.flavour || ''));
+  if (o && o.lines && o.lines.length) o.lines.filter(function (l) { return !isRebateLine(l); }).forEach(function (l) { addOrderLine({ flavour: l.flavour, bottling: l.bottling || '', size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
   else addOrderLine();
   if (o) onOrderCustomerInput();
   updateOrderTotal();
@@ -8775,6 +8947,13 @@ function postOrder(o, newCustomer, onFail) {
     if (o.deductStock || o._hadStock) loadBottleInventory();
   });
 }
+// The discount line to save with the order (B2B, rebate above 0).
+function orderRebateLines() {
+  var box = document.getElementById('o-discount'), r = parseFloat(val('o-rebate')) || 0;
+  if (val('o-channel') !== 'B2B' || !box || box.style.display === 'none' || r <= 0) return [];
+  var ex = document.getElementById('o-exception');
+  return [{ size: 'rebate', flavour: '30-day volume discount' + (ex && ex.checked ? ' (exception)' : ''), qty: 0, unitPrice: Math.round(r * 100) / 100, bottling: '' }];
+}
 function saveOrder() {
   var date = val('o-date');
   var lines = readOrderLines();
@@ -8802,7 +8981,7 @@ function saveOrder() {
     paidDate: prev ? (prev.paidDate || '') : '',
     deductStock: document.getElementById('o-deduct').checked,
     notes: val('o-notes').trim(),
-    lines: lines,
+    lines: lines.concat(orderRebateLines()),
     _hadStock: prev ? !!prev.deductStock : false
   };
   if (o.paid && !o.paidDate) o.paidDate = todayISO();
@@ -8968,6 +9147,7 @@ function invoiceHtml(o) {
   function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
   function money(n) { return '$ ' + fmtUSD(n); }
   var rows = mergedOrderLines(o).map(function (l) {
+    if (isRebateLine(l)) return '<tr><td>' + esc(String(l.flavour || 'Discount').replace(/ \(exception\)$/, '')) + '</td><td class="r"></td><td class="r"></td><td class="r">\u2212 ' + money(parseFloat(l.unitPrice) || 0) + '</td></tr>';
     return '<tr><td>' + esc(l.flavour || 'Kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
       + '<td class="r">' + fmtNum(parseFloat(l.qty) || 0) + '</td><td class="r">' + money(parseFloat(l.unitPrice) || 0) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>';
   }).join('');
