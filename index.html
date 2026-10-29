@@ -1603,8 +1603,8 @@
   /* price-list downloads: right of the Sales title, like the Expenses figures */
   #view-sales .sales-head { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; -webkit-justify-content: space-between; justify-content: space-between; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px 32px; }
   .pl-dl { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: flex-end; align-items: flex-end; gap: 8px; padding-top: 6px; }
-  .pl-dl a.crm-text-btn { text-decoration: none; padding: 0; }
-  .pl-dl a.crm-text-btn:hover { color: var(--ink); }
+  .pl-dl .crm-text-btn { text-decoration: none; padding: 0; }
+  .pl-dl .crm-text-btn:hover { color: var(--ink); }
   /* No subtitles under page titles (every page). */
   [id^="view-"] > .view-bar + .content-head .content-sub { display: none !important; }
   [id^="view-"] > .view-bar + .content-head { padding-bottom: 36px; }
@@ -1854,7 +1854,6 @@
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
-      <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ new customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
@@ -1869,6 +1868,7 @@
     <div class="pl-dl">
       <a class="crm-text-btn" href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Wholesale price list (PDF)">&darr; download price list b2b</a>
       <a class="crm-text-btn" href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Customer price list (PDF)">&darr; download price list b2c</a>
+      <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
     </div>
   </div>
   <div id="sales-body"></div>
