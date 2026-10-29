@@ -40,11 +40,12 @@ Read this first when continuing work on the toka app.
 - Self-update check at startup reloads if `index.html` changed.
 
 ## Design system
-- Fonts:
-  - **Bricolage Grotesque 700**: titles.
-  - **Newsreader**: body text.
-  - **IBM Plex Mono**: numbers, labels, buttons.
-- Colours = toka brand kit, exact hex: Charcoal `#2C2C2C` (text, IDs), Dark Amber `#4A3728` (titles, buttons/highlights that used to be orange — `--terra` now points here), Warm Grey `#8A8278` (secondary text), Parchment `#D3CBB0` (soft borders/highlights), Terracotta `#C4613A` (`--accent`) **only** for the logo dot and the active tab underline (+ chart series colour). Cream `#EDE8DA` is NOT the background yet — light background kept until the big revamp (DM Serif Display + DM Sans).
+- Fonts (brand kit, Google Fonts link in <head>):
+  - **DM Serif Display** (regular 400, never bold): page titles and all headings.
+  - **DM Sans**: everything else — body 300, labels/tabs/table headers/buttons/IDs 400–500, letter-spacing ~0.02em.
+  - **IBM Plex Mono**: numbers only (`.num` cells, amounts, KPIs, counts, number inputs).
+  - Invoices still use their own old fonts.
+- Colours = toka brand kit, exact hex: Charcoal `#2C2C2C` (text, IDs), Dark Amber `#4A3728` (titles, buttons/highlights that used to be orange — `--terra` now points here), Warm Grey `#8A8278` (secondary text), Parchment `#D3CBB0` (soft borders/highlights), Terracotta `#C4613A` (`--accent`) **only** for the logo dot and the active tab underline (+ chart series colour). Cream `#EDE8DA` is NOT the background yet — light background kept for now.
 - **All interface text is lowercase** (`body { text-transform: lowercase }`); data keeps its case (td, inputs, selects, `.keep-case`). Invoices are untouched.
 - Page head: big title + intro line only. No accent rule, no eyebrow, no count subtitles ("4 batches, newest first" removed).
 - First fermentation: one "Water (hot/cold)" column, shown as `16 L (9 L + 7 L)`; click → two-field editor saving both (`waterCellHtml` / `startWaterInline`).
