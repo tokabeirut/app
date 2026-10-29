@@ -111,7 +111,7 @@ Read this first when continuing work on the toka app.
 - Nothing open. Backend version 41 is deployed and addresses have been moved to the new fields (Oct 21, 2026).
 
 ## Price lists
-- `price-lists/toka_prices_b2b.pdf` and `price-lists/toka_prices_b2c.pdf` (in the repo, so public on the site). Downloads sit right of the Sales page title, like the caisse/spent/remaining figures on Expenses: "PRICE LISTS" label with "b2b ↓  b2c ↓" (`.pl-dl`). No count subtitle on Sales.
+- `price-lists/toka_prices_b2b.pdf` and `price-lists/toka_prices_b2c.pdf` (in the repo, so public on the site). Downloads sit right of the Sales page title, like the caisse/spent/remaining figures on Expenses: plain grey text links "↓ download price list b2b" / "↓ download price list b2c" (`.pl-dl`). No count subtitle on Sales.
 - Style: cream page, header = logo + "contact"; footer = "storage" + sentence left, "drink alive." right, same size (9pt) and same line. Terracotta only for "contact" and "storage"; prices dark amber, "750 ML/375 ML" warm grey.
 - To change them, replace the PDFs in that folder (same file names).
 

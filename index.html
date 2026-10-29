@@ -1602,12 +1602,9 @@
   td.num, td.mono, td.cmp-val, #view-expenses td.amount-cell, #view-expenses td.date-cell, #view-expenses .dual-cell .usd, #view-faucet .ft-chart-table tbody td, .need-tbl .ni-amt { font-size: 0.92em; }
   /* price-list downloads: right of the Sales title, like the Expenses figures */
   #view-sales .sales-head { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; -webkit-justify-content: space-between; justify-content: space-between; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px 32px; }
-  .pl-dl { text-align: right; }
-  .pl-dl-lbl { font-family: 'DM Sans', sans-serif; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
-  .pl-dl-links { display: -webkit-flex; display: flex; gap: 20px; -webkit-justify-content: flex-end; justify-content: flex-end; }
-  .pl-dl-links a { font-family: 'DM Sans', sans-serif; font-size: 1.05rem; color: var(--ink); text-decoration: none; border-bottom: 1px solid transparent; }
-  .pl-dl-links a:hover { border-bottom-color: var(--parchment); }
-  .pl-dl-links a span { color: var(--ink-faint); font-size: 0.85em; }
+  .pl-dl { display: -webkit-flex; display: flex; gap: 6px 16px; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-justify-content: flex-end; justify-content: flex-end; padding-top: 6px; }
+  .pl-dl a.crm-text-btn { text-decoration: none; padding: 0; }
+  .pl-dl a.crm-text-btn:hover { color: var(--ink); }
   /* No subtitles under page titles (every page). */
   [id^="view-"] > .view-bar + .content-head .content-sub { display: none !important; }
   [id^="view-"] > .view-bar + .content-head { padding-bottom: 36px; }
@@ -1870,11 +1867,8 @@
     <!-- price lists: PDFs in the price-lists/ folder next to this page;
          laid out like the caisse / spent / remaining figures on Expenses -->
     <div class="pl-dl">
-      <div class="pl-dl-lbl">Price lists</div>
-      <div class="pl-dl-links">
-        <a href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Download the wholesale price list (PDF)">b2b <span aria-hidden="true">&darr;</span></a>
-        <a href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Download the customer price list (PDF)">b2c <span aria-hidden="true">&darr;</span></a>
-      </div>
+      <a class="crm-text-btn" href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Wholesale price list (PDF)">&darr; download price list b2b</a>
+      <a class="crm-text-btn" href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Customer price list (PDF)">&darr; download price list b2c</a>
     </div>
   </div>
   <div id="sales-body"></div>
