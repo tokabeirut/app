@@ -1603,7 +1603,7 @@
   /* Interface text is all lowercase (toka house style). Data — table cells,
      form fields, IDs — keeps its own case. Empty subtitles take no space. */
   body { text-transform: lowercase; }
-  td, input, textarea, select, option, [contenteditable], .keep-case { text-transform: none; }
+  td, input, textarea, select, option, [contenteditable], .keep-case, #cell-tip { text-transform: none; }
   .content-sub:empty { display: none; }
   .wtr-parts { color: var(--ink-faint); font-size: 0.86em; margin-left: 3px; }
 </style>
@@ -5382,6 +5382,15 @@ function ellip(text, maxPx, cls) {
   if (text == null || String(text).trim() === '') return '<span class="muted">\u2014</span>';
   return '<div class="ellip' + (cls ? ' ' + cls : '') + '" style="max-width:' + maxPx + 'px">' + esc(text) + '</div>';
 }
+// Table text without its "(…)" part — e.g. "White sugar (Najjar Modern
+// Mills)" shows as "White sugar". Hover shows the full text; the inline
+// editor still edits the full value.
+function ellipNoParen(text, maxPx) {
+  if (text == null || String(text).trim() === '') return ellip(text, maxPx);
+  var full = String(text).trim(), short = full.replace(/\s*\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+  if (!short || short === full) return ellip(full, maxPx);
+  return '<div class="ellip" style="max-width:' + maxPx + 'px" data-tiphtml="' + esc(esc(full)) + '">' + esc(short) + '</div>';
+}
 function markEllipsis() {
   var els = document.querySelectorAll('.ellip[data-full]');
   for (var i = 0; i < els.length; i++) {
@@ -5616,9 +5625,9 @@ function rowHtml(b) {
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(esc(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
     + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
-    + cellEd(ellip(b.sugarSource, 84), { type: 'batch', uid: b.uid, field: 'sugarSource', input: 'text' })
+    + cellEd(ellipNoParen(b.sugarSource, 130), { type: 'batch', uid: b.uid, field: 'sugarSource', input: 'text' })
     + cellEd(fmtTea(b.tea), { type: 'batch', uid: b.uid, field: 'tea', input: 'number', cls: 'num' })
-    + cellEd(ellip(b.teaType, 54), { type: 'batch', uid: b.uid, field: 'teaType', input: 'text' })
+    + cellEd(ellipNoParen(b.teaType, 140), { type: 'batch', uid: b.uid, field: 'teaType', input: 'text' })
     + cellEd(fmtSteep(b.steep), { type: 'batch', uid: b.uid, field: 'steep', input: 'number', cls: 'num' })
     + waterCellHtml(b)
     + cellEd(ellip(b.waterSource, 88), { type: 'batch', uid: b.uid, field: 'waterSource', input: 'text' })
@@ -5662,8 +5671,8 @@ function batchRemainingL(b) {
 function batchBranchNoteHtml(b) {
   var lines = [];
   var p = b.parentUid ? batchByUid(b.parentUid) : null;
-  // e.g. "split TANK 2 on 27 Oct · 4 L"
-  if (b.parentUid) lines.push('split ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitDate ? ' on ' + String(fmtDate(b.splitDate)).replace(/\s+\d{4}$/, '') : '') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : ''));
+  // e.g. "split off TANK 2 on 27 Oct · 4 L"
+  if (b.parentUid) lines.push('split off ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitDate ? ' on ' + String(fmtDate(b.splitDate)).replace(/\s+\d{4}$/, '') : '') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : ''));
   var kids = batchBranches(b);
   if (kids.length) {
     lines.push(kids.map(function (k) { return fmtNum(parseFloat(k.splitLitres) || 0) + ' L \u2192 ' + (k.vessel || k.id); }).join(', ')
