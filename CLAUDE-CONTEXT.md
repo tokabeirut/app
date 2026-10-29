@@ -44,9 +44,10 @@ Read this first when continuing work on the toka app.
   - **DM Serif Display** (regular 400, never bold): page titles and all headings.
   - **DM Sans**: everything else — body 300, labels/tabs/table headers/buttons/IDs 400–500, letter-spacing ~0.02em.
   - **IBM Plex Mono**: numbers only (`.num` cells, amounts, KPIs, counts, number inputs).
-  - Invoices still use their own old fonts.
+  - Invoices (`invoiceHtml`): white A4 page, brand-kit fonts. Header and footer copy the price lists exactly (measured in mm): logo top left, "contact" + phone/email top right, parchment line at 47.1 mm; footer line at 263.5 mm, "storage" + storage sentence left, "drink alive." (same size, same line) right. Invoice number/date/status right under the header line. Body text smaller (≈11px). Table brand-kit style (parchment frame, light header row). Thank-you note (B2B or B2C text, same as price lists) above the footer. Terracotta only on "contact" and "storage"; other labels warm grey. The invoice-settings footer note is no longer shown.
 - Colours = toka brand kit, exact hex: Charcoal `#2C2C2C` (text, IDs), Dark Amber `#4A3728` (titles, buttons/highlights that used to be orange — `--terra` now points here), Warm Grey `#8A8278` (secondary text), Parchment `#D3CBB0` (soft borders/highlights), Terracotta `#C4613A` (`--accent`) **only** for the logo dot and the active tab underline (+ chart series colour). Cream `#EDE8DA` is NOT the background yet — light background kept for now.
-- **All interface text is lowercase** (`body { text-transform: lowercase }`); data keeps its case (td, inputs, selects, `.keep-case`). Invoices are untouched.
+- **Capitals, per brand kit:** only small DM Sans labels are in widely-spaced CAPITALS — tab bar, sales sub-tabs, table column headers, field labels, figure/KPI labels, sync bar, tags and status pills (one CSS block at the end of the first <style>, "Brand kit: small DM Sans labels"). Checkbox/option labels stay lowercase. Everything else is lowercase:
+- **All other interface text is lowercase** (`body { text-transform: lowercase }`) — titles, headings, buttons; data keeps its case (td, inputs, selects, `.keep-case`). Invoices are untouched.
 - Page head: big title + intro line only. No accent rule, no eyebrow, no count subtitles ("4 batches, newest first" removed).
 - First fermentation: one "Water (hot/cold)" column, shown as `16 L (9 L + 7 L)`; click → two-field editor saving both (`waterCellHtml` / `startWaterInline`).
 - Logo = `toka-logo.png` from the folder (embedded base64, header + setup screen).

@@ -1596,6 +1596,16 @@
   td, input, textarea, select, option, [contenteditable], .keep-case, #cell-tip { text-transform: none; }
   .content-sub:empty { display: none; }
   .wtr-parts { color: var(--ink-faint); font-size: 0.86em; margin-left: 3px; }
+  /* Brand kit: small DM Sans labels in widely-spaced CAPITALS (tab bar,
+     table headers, field/figure labels, tags & status pills). Titles,
+     headings, buttons and data stay lowercase / as typed. */
+  .view-tab, #view-sales .crm-tab, thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .cmp-opt-grp td, .r-inherited-head td, label, .config-box label, #view-expenses label, #view-expenses .currency-bar label, .plan-vol label, .plan-field-row .plan-field-label, .home-section-title, .header-page-title, #sync-bar, .sync-reconfig, .config-section, .config-sub, #cell-tip .tt-subhead, .kpi .k-lab, #view-sales .sales-stat-label, #view-expenses .exp-stat-label, #view-expenses .sum-card-label, #view-expenses .curr-label, #view-bottlemath .bm-summary-label, #view-bottlemath .bm-card-label, #view-bottlemath .bm-result-label, #view-bottlemath .bm-price-row-label, #view-faucet .ft-rate-label, #view-faucet .ft-panel-head, #view-faucet .ft-result-label, .o-discount-head, .pt-col-title, .ov-chart-label, .caps-label, .soon-tag, .open-tag, .rgroup-tag, .biv-auto-tag, .pt-cat-badge, .pt-card-cat, .pt-card-late, #view-sales .sale-paid-cell, #view-sales .paid-pill, #customer-drawer .paid-pill, .crm-nostock, #view-expenses .badge { text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 400; }
+  .view-tab, #view-sales .crm-tab { font-size: 0.64rem; letter-spacing: 0.16em; }
+  thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .cmp-opt-grp td, .r-inherited-head td { font-size: 0.6rem; letter-spacing: 0.16em; }
+  label, .config-box label, #view-expenses label, #view-expenses .currency-bar label, .plan-vol label, .plan-field-row .plan-field-label, .home-section-title, .header-page-title, #sync-bar, .sync-reconfig, .config-section, .config-sub, #cell-tip .tt-subhead, .kpi .k-lab, #view-sales .sales-stat-label, #view-expenses .exp-stat-label, #view-expenses .sum-card-label, #view-expenses .curr-label, #view-bottlemath .bm-summary-label, #view-bottlemath .bm-card-label, #view-bottlemath .bm-result-label, #view-bottlemath .bm-price-row-label, #view-faucet .ft-rate-label, #view-faucet .ft-panel-head, #view-faucet .ft-result-label, .o-discount-head, .pt-col-title, .ov-chart-label, .caps-label { font-size: 0.6rem; letter-spacing: 0.18em; }
+  .soon-tag, .open-tag, .rgroup-tag, .biv-auto-tag, .pt-cat-badge, .pt-card-cat, .pt-card-late, #view-sales .sale-paid-cell, #view-sales .paid-pill, #customer-drawer .paid-pill, .crm-nostock, #view-expenses .badge { font-size: 0.56rem; letter-spacing: 0.14em; }
+  /* checkbox / option labels read as sentences: keep them lowercase */
+  .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
 </head>
 <body>
@@ -2286,7 +2296,7 @@
     <div style="font-family:'DM Serif Display',Georgia,serif;font-size:1rem;font-weight: 400;color:var(--ink);margin-bottom:4px;">Update flow rate</div>
     <div style="font-size:0.75rem;color:var(--ink-faint);margin-bottom:4px;">Saved on this device and used for all calculations until you change it again.</div>
     <div id="ft-rate-updated-note" style="font-size:0.7rem;color:var(--ink-faint);margin-bottom:20px;"></div>
-    <label style="font-size:0.68rem;text-transform:lowercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">Seconds per litre</label>
+    <label style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">Seconds per litre</label>
     <div style="display:-webkit-flex;display:flex;gap:10px;-webkit-align-items:center;align-items:center;">
       <input type="number" id="ft-rate-input" value="13.32" min="0.1" step="0.01" style="font-family:'IBM Plex Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;"/>
       <span style="color:var(--ink-faint);white-space:nowrap;font-size:0.85rem;">s / L</span>
@@ -2588,7 +2598,7 @@
   <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;width:320px;box-shadow:0 8px 32px rgba(30,27,24,0.16);">
     <div style="font-family:'DM Serif Display',Georgia,serif;font-size:1rem;font-weight: 400;color:var(--ink);margin-bottom:4px;">Update exchange rate</div>
     <div style="font-size:0.75rem;color:var(--ink-faint);margin-bottom:20px;">Set the current USD → LBP rate. Saved expenses keep their original rate.</div>
-    <label style="font-size:0.68rem;text-transform:lowercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">$1 USD =</label>
+    <label style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">$1 USD =</label>
     <div style="display:-webkit-flex;display:flex;gap:10px;-webkit-align-items:center;align-items:center;">
       <input type="number" id="exp-rate-input" value="89550" min="1" step="1" style="font-family:'IBM Plex Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;" onkeydown="if(event.key==='Enter')saveRateModal()"/>
       <span style="color:var(--ink-faint);white-space:nowrap;font-size:0.85rem;">LBP</span>
@@ -2833,18 +2843,18 @@
       <!-- summary -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
-          <div style="font-size:0.65rem;text-transform:lowercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Total deposited</div>
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Total deposited</div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:1.05rem;" id="exp-cm-total">$0.00</div>
         </div>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
-          <div style="font-size:0.65rem;text-transform:lowercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Remaining</div>
+          <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Remaining</div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:1.05rem;" id="exp-cm-remaining">$0.00</div>
         </div>
       </div>
 
       <!-- add deposit form -->
       <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px;">
-        <div style="font-size:0.72rem;font-weight:500;text-transform:lowercase;letter-spacing:0.14em;color:var(--ink);margin-bottom:12px;">Add deposit</div>
+        <div style="font-size:0.72rem;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink);margin-bottom:12px;">Add deposit</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
           <div>
             <label>Date</label>
@@ -2864,7 +2874,7 @@
 
       <!-- deposit history -->
       <div style="border-top:1px solid var(--border);padding-top:14px;">
-        <div style="font-size:0.72rem;font-weight:500;text-transform:lowercase;letter-spacing:0.14em;color:var(--ink);margin-bottom:10px;">History</div>
+        <div style="font-size:0.72rem;font-weight:500;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink);margin-bottom:10px;">History</div>
         <div id="exp-cd-history" style="font-size:0.82rem;"></div>
       </div>
 
@@ -9211,41 +9221,60 @@ function invoiceHtml(o) {
     return '<tr><td>' + esc(l.flavour || 'Kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
       + '<td class="r">' + fmtNum(parseFloat(l.qty) || 0) + '</td><td class="r">' + money(parseFloat(l.unitPrice) || 0) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>';
   }).join('');
+  // Thank-you note, same words as on the price lists (B2B or B2C).
+  var isB2B = (o.channel === 'B2B') || (c && c.type === 'B2B');
+  var thanks = isB2B
+    ? 'thank you for giving toka a place in your fridge, on your table and in your experience. we make it the slow way: small batches, a living culture, bottled by hand in beirut. places like yours are why that effort is worth it. thank you for treating it with care and sharing it with your guests. we’ll bring the bottles, and happily the training for your team, so you can tell the story as well as we can. welcome to the toka family.'
+    : 'thank you for giving toka a place in your fridge and on your table. we make it the slow way: small batches, a living culture, bottled by hand in beirut. every bottle is tended to until it’s ready, never rushed. thank you for pouring it with care and sharing it with the people around you. welcome to the toka family.';
+  var contact = [s.phone ? esc(fmtPhone(s.phone)) : '', s.email ? esc(s.email) : ''].filter(Boolean).join('<br>');
+  // Header and footer copy the toka price lists exactly (positions in mm on
+  // the A4 page), on a white page. Brand-kit fonts throughout.
   return '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc((o.invoiceNo || 'Invoice') + (c.name ? ' ' + c.name : '')) + '</title>'
     + '<meta name="viewport" content="width=device-width, initial-scale=1">'
-    + '<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">'
+    + '<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">'
     + '<style>'
-    + '@page{size:A4;margin:0}*{box-sizing:border-box}body{margin:0;background:#f4f1ec;color:#1e1b18;font-family:Newsreader,Georgia,serif;font-size:14px}'
-    + '.bar{position:sticky;top:0;display:flex;gap:10px;justify-content:center;padding:12px;background:#1e1b18}.bar button{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:9px 18px;border-radius:4px;border:1px solid #fff;background:#fff;color:#1e1b18;cursor:pointer}.bar button.g{background:none;color:#fff}'
-    + '.page{width:210mm;min-height:297mm;margin:24px auto;background:#fff;padding:22mm 20mm 20mm;box-shadow:0 2px 18px rgba(0,0,0,.08);display:flex;flex-direction:column}'
-    + '.head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px}.logo{height:96px}.title{text-align:right;padding-top:84px}.title h1{font-family:"Bricolage Grotesque",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:-.01em}'
-    + '.meta{font-family:"IBM Plex Mono",monospace;font-size:13px;color:#1e1b18;line-height:1.8}.title .meta{margin-top:0}.ml{color:#9a9088}'
-    + '.rule{height:0;margin:0 0 110px}'
-    + '.parties{display:flex;gap:40px;margin-bottom:52px}.parties>div{flex:1;line-height:1.7}.lbl{margin-bottom:10px!important}.who{margin-bottom:4px}.parties .to{text-align:right}.lbl{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9a9088;margin-bottom:6px}.who{font-weight:500;font-size:16px}'
-    + 'table{width:100%;border-collapse:collapse}th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9088;text-align:left;border-bottom:1px solid #e4ddd2;padding:8px 6px}td{padding:15px 6px;border-bottom:1px solid #efe9df}th{padding-bottom:12px!important}th.r,.r{text-align:right}td.r{font-family:"IBM Plex Mono",monospace}.muted{color:#9a9088}'
-    + '.tot{margin-left:auto;width:290px;margin-top:28px}.tot div{display:flex;justify-content:space-between;padding:5px 6px;font-family:"IBM Plex Mono",monospace}.tot .big{border-top:2px solid #1e1b18;margin-top:6px;padding-top:10px;font-size:17px;font-weight:500}'
-    + '.status{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:99px;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;background:#fdf0eb;color:#c0542a}.status.paid{background:#edf6f0;color:#3d7a55}'
-    + '.foot{margin-top:56px;display:flex;gap:40px;font-size:13px;line-height:1.65}.foot>div{flex:1}.thanks{margin-top:auto;padding-top:48px;text-align:center;color:#6f665d;font-style:italic}'
-    + '@media print{body{background:#fff}.bar{display:none}.page{box-shadow:none;margin:0;min-height:0;height:296mm}}'
-    + '@media screen and (max-width:820px){.page{width:auto;min-height:0;padding:28px 22px;margin:0}.title{padding-top:24px}.rule{margin:0 0 44px}.parties,.foot{flex-direction:column;gap:18px}.parties .to{text-align:left}.logo{height:64px}}'
+    + ':root{--parch:#D3CBB0;--terra:#C4613A;--amber:#4A3728;--char:#2C2C2C;--grey:#8A8278;--card:#F6F2E9}'
+    + '@page{size:A4;margin:0}*{box-sizing:border-box}html{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + 'body{margin:0;background:#f4f1ec;color:var(--char);font-family:"DM Sans",sans-serif;font-weight:300;font-size:11px;font-variant-numeric:tabular-nums}'
+    + '.bar{position:sticky;top:0;z-index:3;display:flex;gap:10px;justify-content:center;padding:12px;background:var(--amber)}.bar button{font-family:"DM Sans",sans-serif;font-size:12px;font-weight:500;padding:9px 18px;border-radius:2px;border:1px solid #fff;background:#fff;color:var(--amber);cursor:pointer}.bar button.g{background:none;color:#fff}'
+    + '.page{width:210mm;min-height:297mm;margin:24px auto;background:#fff;padding:0 20mm;box-shadow:0 2px 18px rgba(0,0,0,.08);display:flex;flex-direction:column}'
+    + '.head{position:relative;height:47.1mm;border-bottom:1px solid var(--parch);flex:0 0 auto}'
+    + '.logo{position:absolute;left:-11.57mm;top:5.52mm;width:79.92mm;height:auto}'
+    + '.contact{position:absolute;right:0;top:22.8mm;text-align:right;font-size:9pt;line-height:5.3mm;color:var(--amber)}'
+    + '.lbl{font-family:"DM Sans",sans-serif;font-size:6.6pt;font-weight:400;letter-spacing:0.236em;text-transform:uppercase;color:var(--terra)}'
+    + '.contact .lbl{line-height:1;margin:0 0 1.8mm 0}'
+    + '.meta{text-align:right;margin-top:7mm;line-height:1.75;font-size:10px}.ml{color:var(--grey)}'
+    + '.status{display:inline-block;margin-top:4px;padding:2px 9px;border-radius:99px;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;background:#fdf0eb;color:#C4613A}.status.paid{background:#edf6f0;color:#3d7a55}'
+    + '.parties{display:flex;gap:40px;margin:9mm 0 9mm}.parties>div{flex:1;line-height:1.7}.parties .to{text-align:right}.parties .lbl{margin-bottom:7px;color:var(--grey)}.who{font-family:"DM Serif Display",Georgia,serif;font-size:14px;color:var(--amber);margin-bottom:2px}'
+    + '.card{border:1px solid var(--parch)}table{width:100%;border-collapse:collapse}'
+    + 'th{font-size:6.6pt;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--grey);text-align:left;background:var(--card);border-bottom:1px solid var(--parch);padding:10px 14px 9px}'
+    + 'td{padding:10px 14px;border-bottom:1px solid #efeadf;font-weight:400}tr:last-child td{border-bottom:none}th.r,.r{text-align:right}.muted{color:var(--grey);font-weight:300}'
+    + '.tot{margin-left:auto;width:240px;margin-top:5mm}.tot div{display:flex;justify-content:space-between;padding:4px 14px}.tot .big{border-top:1px solid var(--parch);margin-top:5px;padding-top:9px;align-items:baseline}.tot .big span:first-child{font-weight:400}.tot .big span:last-child{font-family:"DM Serif Display",Georgia,serif;font-size:18px;color:var(--amber)}'
+    + '.foot{margin-top:7mm;display:flex;gap:40px;line-height:1.65}.foot>div{flex:1}.foot .lbl{margin-bottom:6px;color:var(--grey)}'
+    + '.thanks{margin:auto 0 0;padding-top:8mm;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:11.5px;line-height:1.6;color:var(--amber);text-align:justify;text-align-last:left;hyphens:none}'
+    + '.bottom{position:relative;height:33.8mm;border-top:1px solid var(--parch);margin-top:8mm;flex:0 0 auto}'
+    + '.bottom .lbl{position:absolute;left:0;top:7mm}.bottom .txt{position:absolute;left:0;top:12.5mm;font-size:9pt;color:var(--amber)}.sign{position:absolute;right:0;top:12.42mm;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:9pt;color:var(--amber);white-space:nowrap}'
+    + '@media print{body{background:#fff}.bar{display:none}.page{box-shadow:none;margin:0;height:297mm;min-height:0}}'
+    + '@media screen and (max-width:820px){.page{width:auto;margin:0;padding:0 20px}.parties,.foot{flex-direction:column;gap:18px}.parties .to{text-align:left}.bottom{height:auto;padding:14px 0 24px}.bottom .lbl,.bottom .txt,.sign{position:static;display:block;margin-top:6px}}'
     + '</style></head><body>'
-    + '<div class="bar"><button onclick="window.print()">Save as PDF / Print</button><button class="g" onclick="window.close()">Close</button></div>'
+    + '<div class="bar"><button onclick="window.print()">save as pdf / print</button><button class="g" onclick="window.close()">close</button></div>'
     + '<div class="page">'
-    + '<div class="head">' + (logo ? '<img class="logo" src="' + logo + '" alt="toka">' : '<div></div>')
-    + '<div class="title"><div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '</div>'
-    + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div></div>'
-    + '<div class="rule"></div>'
+    + '<div class="head">' + (logo ? '<img class="logo" src="' + logo + '" alt="toka">' : '')
+    + '<div class="contact">' + (contact ? '<div class="lbl">contact</div>' + contact : '') + '</div></div>'
+    + '<div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '<br>'
+    + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div>'
     + '<div class="parties"><div><div class="lbl">Issued by</div><div class="who">' + esc(s.businessName || 'toka') + '</div>' + (s.address ? '<div>' + nl(s.address) + '</div>' : '') + (s.area ? '<div>' + esc(s.area) + '</div>' : '')
-    + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="meta">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
+    + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="muted">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
     + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>'
     + (c.address ? '<div>' + nl(c.address) + '</div>' : '') + (c.area ? '<div>' + esc(c.area) + '</div>' : '') + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
     + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '') + '</div></div>'
-    + '<table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table>'
-    + '<div class="tot"><div><span>Subtotal</span><span>' + money(sub) + '</span></div>'
-    + (rate ? '<div><span>Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
+    + '<div class="card"><table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + '<div class="tot"><div><span class="muted">Subtotal</span><span>' + money(sub) + '</span></div>'
+    + (rate ? '<div><span class="muted">Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
     + '<div class="big"><span>Total (USD)</span><span>' + money(total) + '</span></div></div>'
     + '<div class="foot">' + (s.payment ? '<div><div class="lbl">Payment</div>' + nl(s.payment) + '</div>' : '') + (o.notes ? '<div><div class="lbl">Notes</div>' + nl(o.notes) + '</div>' : '') + '</div>'
-    + (s.footer ? '<div class="thanks">' + nl(s.footer) + '</div>' : '')
+    + '<p class="thanks">' + esc(thanks) + '</p>'
+    + '<div class="bottom"><div class="lbl">storage</div><div class="txt">keep refrigerated at all times, 1–4°C, and store upright. naturally carbonated, so open it chilled.</div><div class="sign">drink alive.</div></div>'
     + '</div></body></html>';
 }
 function openInvoice(id) {
