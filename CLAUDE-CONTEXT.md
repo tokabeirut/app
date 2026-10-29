@@ -48,7 +48,7 @@ Read this first when continuing work on the toka app.
 - Colours = toka brand kit, exact hex: Charcoal `#2C2C2C` (text, IDs), Dark Amber `#4A3728` (titles, buttons/highlights that used to be orange — `--terra` now points here), Warm Grey `#8A8278` (secondary text), Parchment `#D3CBB0` (soft borders/highlights), Terracotta `#C4613A` (`--accent`) **only** for the logo dot and the active tab underline (+ chart series colour). Cream `#EDE8DA` is NOT the background yet — light background kept for now.
 - **Capitals, per brand kit:** only small DM Sans labels are in widely-spaced CAPITALS — tab bar, sales sub-tabs, table column headers, field labels, figure/KPI labels, sync bar, tags and status pills (one CSS block at the end of the first <style>, "Brand kit: small DM Sans labels"). Checkbox/option labels stay lowercase. Everything else is lowercase:
 - **All other interface text is lowercase** (`body { text-transform: lowercase }`) — titles, headings, buttons; data keeps its case (td, inputs, selects, `.keep-case`). Invoices are untouched.
-- Page head: big title + intro line only. No accent rule, no eyebrow, no count subtitles ("4 batches, newest first" removed).
+- Page head: big title only — no subtitle/intro line on any page (hidden by CSS: `.view-bar + .content-head .content-sub`), no accent rule, no eyebrow.
 - First fermentation: one "Water (hot/cold)" column, shown as `16 L (9 L + 7 L)`; click → two-field editor saving both (`waterCellHtml` / `startWaterInline`).
 - Logo = `toka-logo.png` from the folder (embedded base64, header + setup screen).
 - Top bar ("← back" + buttons on the right) has the same height on every page.
@@ -111,7 +111,7 @@ Read this first when continuing work on the toka app.
 - Nothing open. Backend version 41 is deployed and addresses have been moved to the new fields (Oct 21, 2026).
 
 ## Price lists
-- `price-lists/toka_prices_b2b.pdf` and `price-lists/toka_prices_b2c.pdf` (in the repo, so public on the site). Download control in the sales page top bar: one outlined group "PRICE LIST | b2b | b2c" (`.pl-dl`).
+- `price-lists/toka_prices_b2b.pdf` and `price-lists/toka_prices_b2c.pdf` (in the repo, so public on the site). Downloads sit right of the Sales page title, like the caisse/spent/remaining figures on Expenses: "PRICE LISTS" label with "b2b ↓  b2c ↓" (`.pl-dl`). No count subtitle on Sales.
 - Style: cream page, header = logo + "contact"; footer = "storage" + sentence left, "drink alive." right, same size (9pt) and same line. Terracotta only for "contact" and "storage"; prices dark amber, "750 ML/375 ML" warm grey.
 - To change them, replace the PDFs in that folder (same file names).
 

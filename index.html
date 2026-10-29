@@ -1600,11 +1600,17 @@
     /* Numbers in tables (IBM Plex Mono) half a size smaller, so they read the
      same size as the DM Sans text next to them. Big summary figures untouched. */
   td.num, td.mono, td.cmp-val, #view-expenses td.amount-cell, #view-expenses td.date-cell, #view-expenses .dual-cell .usd, #view-faucet .ft-chart-table tbody td, .need-tbl .ni-amt { font-size: 0.92em; }
-  /* price-list download: one outlined group, "price list | b2b | b2c" */
-  .pl-dl { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: stretch; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-right: 6px; }
-  .pl-dl-lbl { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; padding: 0 12px; font-family: 'DM Sans', sans-serif; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); background: var(--surface2); }
-  .pl-dl a { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; padding: 10px 14px; border-left: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--ink); text-decoration: none; -webkit-transition: background .15s; transition: background .15s; }
-  .pl-dl a:hover { background: var(--surface2); }
+  /* price-list downloads: right of the Sales title, like the Expenses figures */
+  #view-sales .sales-head { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; -webkit-justify-content: space-between; justify-content: space-between; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px 32px; }
+  .pl-dl { text-align: right; }
+  .pl-dl-lbl { font-family: 'DM Sans', sans-serif; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px; }
+  .pl-dl-links { display: -webkit-flex; display: flex; gap: 20px; -webkit-justify-content: flex-end; justify-content: flex-end; }
+  .pl-dl-links a { font-family: 'DM Sans', sans-serif; font-size: 1.05rem; color: var(--ink); text-decoration: none; border-bottom: 1px solid transparent; }
+  .pl-dl-links a:hover { border-bottom-color: var(--parchment); }
+  .pl-dl-links a span { color: var(--ink-faint); font-size: 0.85em; }
+  /* No subtitles under page titles (every page). */
+  [id^="view-"] > .view-bar + .content-head .content-sub { display: none !important; }
+  [id^="view-"] > .view-bar + .content-head { padding-bottom: 36px; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -1673,6 +1679,24 @@
 <div id="view-home" class="content" style="display:none">
 
   <div class="home-section">
+    <div class="home-section-title">Business</div>
+    <div class="home-section-grid">
+      <div class="feature-card clickable" onclick="showView('expenses')">
+        <div class="card-head"><span class="name">Expenses</span></div>
+        <div class="desc">Every cost logged and categorized &mdash; receipts attached, running totals &amp; your cash balance always in view.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('sales')">
+        <div class="card-head"><span class="name">Sales</span></div>
+        <div class="desc">Who bought what, at what price &mdash; revenue, bottles sold, the B2B/B2C split and what&rsquo;s still unpaid.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('bottlemath')">
+        <div class="card-head"><span class="name">Bottle math</span></div>
+        <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section">
     <div class="home-section-title">Brewing process</div>
     <div class="home-section-grid">
       <div class="feature-card clickable" onclick="showView('f1')">
@@ -1728,23 +1752,6 @@
     </div>
   </div>
 
-  <div class="home-section">
-    <div class="home-section-title">Business</div>
-    <div class="home-section-grid">
-      <div class="feature-card clickable" onclick="showView('expenses')">
-        <div class="card-head"><span class="name">Expenses</span></div>
-        <div class="desc">Every cost logged and categorized &mdash; receipts attached, running totals &amp; your cash balance always in view.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('sales')">
-        <div class="card-head"><span class="name">Sales</span></div>
-        <div class="desc">Who bought what, at what price &mdash; revenue, bottles sold, the B2B/B2C split and what&rsquo;s still unpaid.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('bottlemath')">
-        <div class="card-head"><span class="name">Bottle math</span></div>
-        <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- ===== FIRST FERMENTATION VIEW ===== -->
@@ -1850,20 +1857,25 @@
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
-      <!-- price lists: PDFs in the price-lists/ folder next to this page -->
-      <div class="pl-dl" role="group" aria-label="Download price list">
-        <span class="pl-dl-lbl"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>price list</span>
-        <a href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Download the wholesale price list (PDF)">b2b</a>
-        <a href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Download the customer price list (PDF)">b2c</a>
-      </div>
       <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ new customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
   </div>
-  <div class="content-head">
-    <div class="content-title">Sales</div>
-    <div class="content-sub" id="sales-sub">&nbsp;</div>
+  <div class="content-head sales-head">
+    <div>
+      <div class="content-title">Sales</div>
+      <div class="content-sub" id="sales-sub">&nbsp;</div>
+    </div>
+    <!-- price lists: PDFs in the price-lists/ folder next to this page;
+         laid out like the caisse / spent / remaining figures on Expenses -->
+    <div class="pl-dl">
+      <div class="pl-dl-lbl">Price lists</div>
+      <div class="pl-dl-links">
+        <a href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Download the wholesale price list (PDF)">b2b <span aria-hidden="true">&darr;</span></a>
+        <a href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Download the customer price list (PDF)">b2c <span aria-hidden="true">&darr;</span></a>
+      </div>
+    </div>
   </div>
   <div id="sales-body"></div>
 </div>
@@ -8675,9 +8687,7 @@ function renderSales() {
   var sub = document.getElementById('sales-sub');
   if (sub) {
     var last = orders.reduce(function (a, o) { return (o.date || '') > a ? o.date : a; }, '');
-    sub.textContent = orders.length
-      ? orders.length + ' order' + (orders.length === 1 ? '' : 's') + ' · ' + customers.length + ' customer' + (customers.length === 1 ? '' : 's') + (last ? ' · last order ' + fmtDate(last) : '') + '.'
-      : 'No orders yet — add the first one with “+ new order”.';
+    sub.textContent = orders.length ? '' : 'No orders yet — add the first one with “+ new order”.';
   }
   var h = crmDiscountNudgeHtml() + crmNudgeHtml();
   h += '<div class="crm-tabs">'
