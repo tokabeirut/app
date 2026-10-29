@@ -117,4 +117,5 @@ Read this first when continuing work on the toka app.
 
 ## Access key (security)
 - Backend v46: every request must carry `key` = Script property `ACCESS_KEY` (Apps Script → Project Settings → Script properties). No key set, or wrong key → `{ok:false,error:'unauthorized'}`; nothing read or written. The no-action status ping stays open.
-- App: key typed once per device on the setup screen, stored in localStorage `toka_access_key_v1`, added by `api()` / `apiPost()`. An 'unauthorized' reply clears it and reopens the setup screen (`checkAuth`, `showConfig`). The web-app URL stays baked in (`DEFAULT_API_URL`) — fine, because the link alone gives no access. Never put the key in the code.
+- App: key typed once per device on the **access page** (full-screen cream, logo, "ACCESS KEY" + one field + "open toka"; no URL field, the old setup page is gone), stored in localStorage `toka_access_key_v1`, added by `api()` / `apiPost()`. An 'unauthorized' reply clears it and reopens the setup screen (`checkAuth`, `showConfig`). The web-app URL stays baked in (`DEFAULT_API_URL`) — fine, because the link alone gives no access. Never put the key in the code.
+- Sync bar "lock" button (`resetConfig`): forgets the key on this device and shows the access page.
