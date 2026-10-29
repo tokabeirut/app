@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '45 (batch on sold / consumed bottles)';
+var VERSION = '46 (access key)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -1207,6 +1207,16 @@ function readBottleMathSettingsObj_() {
 
 /* ---------- web app entry points ---------- */
 
+// Access key: every request must carry the secret set in
+// Project Settings → Script properties → ACCESS_KEY. Without it (or if no
+// key is set yet) nothing is read or written. The key never lives in the
+// app's code, so the public web-app link alone gives no access.
+function keyOk_(k) {
+  var want = PropertiesService.getScriptProperties().getProperty('ACCESS_KEY');
+  return !!want && String(k || '') === String(want);
+}
+function denied_() { return json_({ ok: false, error: 'unauthorized' }); }
+
 function doGet(e) {
   // Writes tunneled through GET so the response is readable cross-origin
   // (see the comment on handleAction_ above).
@@ -1217,9 +1227,12 @@ function doGet(e) {
     } catch (payloadErr) {
       return json_({ ok: false, error: 'bad json' });
     }
+    if (!tunneledBody || !keyOk_(tunneledBody.key)) return denied_();
+    delete tunneledBody.key;
     return handleAction_(tunneledBody);
   }
   var action = (e && e.parameter && e.parameter.action) || '';
+  if (action && !keyOk_(e.parameter.key)) return denied_();
   if (action === 'getBatches') {
     return json_({ ok: true, batches: readAll_() });
   }
@@ -1307,6 +1320,8 @@ function doPost(e) {
   } catch (err) {
     return json_({ ok: false, error: 'bad json' });
   }
+  if (!body || !keyOk_(body.key)) return denied_();
+  delete body.key;
   return handleAction_(body);
 }
 

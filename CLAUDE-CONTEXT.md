@@ -114,3 +114,7 @@ Read this first when continuing work on the toka app.
 - `price-lists/toka_prices_b2b.pdf` and `price-lists/toka_prices_b2c.pdf` (in the repo, so public on the site). Download links "↓ price list b2b / b2c" in the sales page top bar.
 - Style: cream page, header = logo + "contact"; footer = "storage" + sentence left, "drink alive." right, same size (9pt) and same line. Terracotta only for "contact" and "storage"; prices dark amber, "750 ML/375 ML" warm grey.
 - To change them, replace the PDFs in that folder (same file names).
+
+## Access key (security)
+- Backend v46: every request must carry `key` = Script property `ACCESS_KEY` (Apps Script → Project Settings → Script properties). No key set, or wrong key → `{ok:false,error:'unauthorized'}`; nothing read or written. The no-action status ping stays open.
+- App: key typed once per device on the setup screen, stored in localStorage `toka_access_key_v1`, added by `api()` / `apiPost()`. An 'unauthorized' reply clears it and reopens the setup screen (`checkAuth`, `showConfig`). The web-app URL stays baked in (`DEFAULT_API_URL`) — fine, because the link alone gives no access. Never put the key in the code.

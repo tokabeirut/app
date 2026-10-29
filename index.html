@@ -1624,12 +1624,17 @@
       <strong>1 &mdash;</strong> Open <a href="https://sheets.google.com" target="_blank">Google Sheets</a>, create a blank spreadsheet named <code>brewlog</code>.<br><br>
       <strong>2 &mdash;</strong> Click <strong>Extensions &rarr; Apps Script</strong>. Delete existing code, paste <code>toka-brewlog-backend.gs</code>, save.<br><br>
       <strong>3 &mdash;</strong> Click <strong>Deploy &rarr; New deployment</strong> &rarr; Web app &rarr; Anyone &rarr; Deploy. Copy the URL.<br><br>
-      <strong>4 &mdash;</strong> Paste it below. Share the same URL with your team.
+      <strong>4 &mdash;</strong> In Apps Script, <strong>Project Settings &rarr; Script properties</strong>: add <code>ACCESS_KEY</code> with a private key of your choice.<br><br>
+      <strong>5 &mdash;</strong> Paste the URL and the key below. Only share the key with your team.
     </div>
     <div class="config-section">apps script web app url</div>
     <label>Web App URL</label>
     <input type="text" id="cfg-url" placeholder="https://script.google.com/macros/s/&hellip;/exec" autocomplete="off" onkeydown="if(event.key==='Enter')saveConfig()" />
     <div class="config-error" id="cfg-error">Please paste your Web App URL.</div>
+    <div class="config-section">access key</div>
+    <label>Access key</label>
+    <input type="password" id="cfg-key" placeholder="your private key" autocomplete="current-password" onkeydown="if(event.key==='Enter')saveConfig()" />
+    <div class="config-error" id="cfg-key-error">Please enter your access key.</div>
     <button class="config-btn" onclick="saveConfig()">connect &amp; open toka</button>
   </div>
 </div>
@@ -4702,6 +4707,21 @@ var CFG_KEY = 'toka_batches_gs_url_v1';
 // to use the baked-in default, leaving the setup screen stuck on screen.
 var API_URL = DEFAULT_API_URL || '';
 try { var savedApiUrl = localStorage.getItem(CFG_KEY); if (savedApiUrl) API_URL = savedApiUrl; } catch (e) {}
+// Access key: the backend only answers requests that carry it. It is typed
+// once per device (setup screen) and kept on that device only — never in
+// this code — so the public link alone gives no access to the data.
+var KEY_STORE = 'toka_access_key_v1';
+var ACCESS_KEY = '';
+try { ACCESS_KEY = localStorage.getItem(KEY_STORE) || ''; } catch (e) {}
+var authPrompted = false;
+function checkAuth(res) {
+  if (res && res.ok === false && res.error === 'unauthorized' && !authPrompted) {
+    authPrompted = true;
+    ACCESS_KEY = '';
+    try { localStorage.removeItem(KEY_STORE); } catch (e) {}
+    showConfig('That access key didn\u2019t work \u2014 please enter it again.');
+  }
+}
 var batches = [];
 var bottles = [];
 var infusions = [];
@@ -4731,14 +4751,30 @@ var fbLabelByKey = {};
 
 function saveConfig() {
   var url = document.getElementById('cfg-url').value.trim();
-  var err = document.getElementById('cfg-error');
+  var key = document.getElementById('cfg-key').value.trim();
+  var err = document.getElementById('cfg-error'), kerr = document.getElementById('cfg-key-error');
   if (!url || url.indexOf('script.google.com') === -1) { err.style.display = 'block'; return; }
   err.style.display = 'none';
+  if (!key) { kerr.style.display = 'block'; return; }
+  kerr.style.display = 'none';
   API_URL = url;
-  try { localStorage.setItem(CFG_KEY, url); } catch (e) {}
+  ACCESS_KEY = key;
+  try { localStorage.setItem(CFG_KEY, url); localStorage.setItem(KEY_STORE, key); } catch (e) {}
+  if (authPrompted) { location.reload(); return; }   // key was re-entered after a refusal: start clean
   hideConfig();
   revealApp();
   loadAllInBackground();
+}
+// Shows the setup screen again (URL prefilled), e.g. when the key is missing
+// or was refused.
+function showConfig(msg) {
+  var el = document.getElementById('config-overlay');
+  el.style.display = '';
+  el.classList.remove('hidden');
+  var u = document.getElementById('cfg-url'); if (u && !u.value) u.value = API_URL || '';
+  var kerr = document.getElementById('cfg-key-error');
+  if (kerr) { kerr.textContent = msg || 'Please enter your access key.'; kerr.style.display = msg ? 'block' : 'none'; }
+  var k = document.getElementById('cfg-key'); if (k) { k.value = ''; try { k.focus(); } catch (e) {} }
 }
 function resetConfig() {
   if (!confirm('Reconnect to a different Google Sheet? The page will reload.')) return;
@@ -4815,12 +4851,13 @@ function setSyncStatus(state, msg) {
 
 /* ---- API (Safari-safe) ---- */
 function api(params, cb) {
+  params = Object.assign({}, params, { key: ACCESS_KEY });
   var url = API_URL + '?' + Object.keys(params).map(function (k) {
     return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }).join('&');
   var xhr = new XMLHttpRequest();
   xhr.open('GET', url, true);
-  xhr.onload = function () { try { cb(null, JSON.parse(xhr.responseText)); } catch (e) { cb(e); } };
+  xhr.onload = function () { var r; try { r = JSON.parse(xhr.responseText); } catch (e) { cb(e); return; } checkAuth(r); cb(null, r); };
   xhr.onerror = function () { cb(new Error('network error')); };
   xhr.send();
 }
@@ -4837,13 +4874,14 @@ function api(params, cb) {
 // the URL past what Apps Script's GET endpoint reliably accepts, so this
 // isn't just about very large files, it's about any attachment at all.
 function apiPost(body, cb) {
+  body = Object.assign({}, body, { key: ACCESS_KEY });
   var json = JSON.stringify(body);
   var hasFile = !!(body && body.receiptData);
   if (!hasFile && json.length < 1500) {
     var url = API_URL + '?payload=' + encodeURIComponent(json);
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
-    xhr.onload = function () { try { cb(null, JSON.parse(xhr.responseText)); } catch (e) { cb(e); } };
+    xhr.onload = function () { var r; try { r = JSON.parse(xhr.responseText); } catch (e) { cb(e); return; } checkAuth(r); cb(null, r); };
     xhr.onerror = function () { cb(new Error('network error')); };
     xhr.send();
     return;
@@ -14864,7 +14902,8 @@ ftBuildChart();
    a default URL is baked in, so "reconnect" can point at a different sheet. */
 var forceConfig = false;
 try { forceConfig = sessionStorage.getItem('toka_force_config') === '1'; if (forceConfig) sessionStorage.removeItem('toka_force_config'); } catch (e) {}
-if (API_URL && !forceConfig) { hideConfig(); revealApp(); loadAllInBackground(); }
+if (API_URL && ACCESS_KEY && !forceConfig) { hideConfig(); revealApp(); loadAllInBackground(); }
+else showConfig(API_URL && !ACCESS_KEY && !forceConfig ? 'This device needs your access key once.' : '');
 </script>
 
 </body>
