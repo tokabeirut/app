@@ -5662,7 +5662,8 @@ function batchRemainingL(b) {
 function batchBranchNoteHtml(b) {
   var lines = [];
   var p = b.parentUid ? batchByUid(b.parentUid) : null;
-  if (b.parentUid) lines.push('\u21b3 from ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : '') + (b.splitDate ? ' \u00b7 split ' + fmtDate(b.splitDate) : ''));
+  // e.g. "split TANK 2 on 27 Oct · 4 L"
+  if (b.parentUid) lines.push('split ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitDate ? ' on ' + String(fmtDate(b.splitDate)).replace(/\s+\d{4}$/, '') : '') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : ''));
   var kids = batchBranches(b);
   if (kids.length) {
     lines.push(kids.map(function (k) { return fmtNum(parseFloat(k.splitLitres) || 0) + ' L \u2192 ' + (k.vessel || k.id); }).join(', ')
