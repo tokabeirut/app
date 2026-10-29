@@ -44,8 +44,11 @@ Read this first when continuing work on the toka app.
   - **Bricolage Grotesque 700**: titles.
   - **Newsreader**: body text.
   - **IBM Plex Mono**: numbers, labels, buttons.
-- Colours: ink `#1e1b18`, terra (accent) `#c0542a`, cream background.
-- Page head: big title + short orange accent rule + intro line. No category eyebrow.
+- Colours = toka brand kit, exact hex: Charcoal `#2C2C2C` (text, IDs), Dark Amber `#4A3728` (titles, buttons/highlights that used to be orange — `--terra` now points here), Warm Grey `#8A8278` (secondary text), Parchment `#D3CBB0` (soft borders/highlights), Terracotta `#C4613A` (`--accent`) **only** for the logo dot and the active tab underline (+ chart series colour). Cream `#EDE8DA` is NOT the background yet — light background kept until the big revamp (DM Serif Display + DM Sans).
+- **All interface text is lowercase** (`body { text-transform: lowercase }`); data keeps its case (td, inputs, selects, `.keep-case`). Invoices are untouched.
+- Page head: big title + intro line only. No accent rule, no eyebrow, no count subtitles ("4 batches, newest first" removed).
+- First fermentation: one "Water (hot/cold)" column, shown as `16 L (9 L + 7 L)`; click → two-field editor saving both (`waterCellHtml` / `startWaterInline`).
+- Logo = `toka-logo.png` from the folder (embedded base64, header + setup screen).
 - Top bar ("← back" + buttons on the right) has the same height on every page.
 - Tab bar spans the full width, grouped Brewing process | Operations | Business. Two-word names are stacked on two lines.
 - **Every table is click-to-edit inline** (`cellEd` / `startInline` / `commitInline`; the editor overlays the cell so nothing resizes).
