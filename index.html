@@ -1607,6 +1607,7 @@
     /* Numbers in tables (IBM Plex Mono) half a size smaller, so they read the
      same size as the DM Sans text next to them. Big summary figures untouched. */
   td.num, td.mono, td.cmp-val, #view-expenses td.amount-cell, #view-expenses td.date-cell, #view-expenses .dual-cell .usd, #view-faucet .ft-chart-table tbody td, .need-tbl .ni-amt { font-size: 0.92em; }
+  a.crm-text-btn { text-decoration: none; display: inline-block; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -1861,6 +1862,9 @@
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
+      <!-- price lists: PDFs in the price-lists/ folder next to this page -->
+      <a class="crm-text-btn" href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Download the wholesale price list (PDF)">&darr; price list b2b</a>
+      <a class="crm-text-btn" href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Download the customer price list (PDF)">&darr; price list b2c</a>
       <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>

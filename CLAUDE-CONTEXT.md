@@ -109,3 +109,8 @@ Read this first when continuing work on the toka app.
 
 ## Still to do / check
 - Nothing open. Backend version 41 is deployed and addresses have been moved to the new fields (Oct 21, 2026).
+
+## Price lists
+- `price-lists/toka_prices_b2b.pdf` and `price-lists/toka_prices_b2c.pdf` (in the repo, so public on the site). Download links "↓ price list b2b / b2c" in the sales page top bar.
+- Style: cream page, header = logo + "contact"; footer = "storage" + sentence left, "drink alive." right, same size (9pt) and same line. Terracotta only for "contact" and "storage"; prices dark amber, "750 ML/375 ML" warm grey.
+- To change them, replace the PDFs in that folder (same file names).
