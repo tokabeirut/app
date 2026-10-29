@@ -1600,7 +1600,11 @@
     /* Numbers in tables (IBM Plex Mono) half a size smaller, so they read the
      same size as the DM Sans text next to them. Big summary figures untouched. */
   td.num, td.mono, td.cmp-val, #view-expenses td.amount-cell, #view-expenses td.date-cell, #view-expenses .dual-cell .usd, #view-faucet .ft-chart-table tbody td, .need-tbl .ni-amt { font-size: 0.92em; }
-  a.crm-text-btn { text-decoration: none; display: inline-block; }
+  /* price-list download: one outlined group, "price list | b2b | b2c" */
+  .pl-dl { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: stretch; align-items: stretch; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-right: 6px; }
+  .pl-dl-lbl { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; padding: 0 12px; font-family: 'DM Sans', sans-serif; font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); background: var(--surface2); }
+  .pl-dl a { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; padding: 10px 14px; border-left: 1px solid var(--border); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; color: var(--ink); text-decoration: none; -webkit-transition: background .15s; transition: background .15s; }
+  .pl-dl a:hover { background: var(--surface2); }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -1847,10 +1851,13 @@
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
       <!-- price lists: PDFs in the price-lists/ folder next to this page -->
-      <a class="crm-text-btn" href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Download the wholesale price list (PDF)">&darr; price list b2b</a>
-      <a class="crm-text-btn" href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Download the customer price list (PDF)">&darr; price list b2c</a>
+      <div class="pl-dl" role="group" aria-label="Download price list">
+        <span class="pl-dl-lbl"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>price list</span>
+        <a href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Download the wholesale price list (PDF)">b2b</a>
+        <a href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Download the customer price list (PDF)">b2c</a>
+      </div>
       <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
-      <button class="btn-ghost" onclick="openCustomerDrawer()">+ customer</button>
+      <button class="btn-ghost" onclick="openCustomerDrawer()">+ new customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
   </div>
@@ -8428,8 +8435,6 @@ var INVOICE_FIELDS = [
   ['phone', 'Phone', 'text', '+961 …'],
   ['email', 'Email', 'text', 'hello@…'],
   ['taxId', 'Registration / tax no.', 'text', 'optional'],
-  ['payment', 'Payment details', 'textarea', 'Bank, account, Whish/OMT number, terms …'],
-  ['footer', 'Footer note', 'textarea', 'e.g. Thank you for drinking toka!'],
   ['taxRate', 'Tax rate (%)', 'number', '0 = no tax line']
 ];
 function loadSales(cb) {
@@ -8803,7 +8808,7 @@ function crmInvoiceIcon() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>';
 }
 function crmCustomersHtml() {
-  if (!customers.length) return '<div class="sales-empty">No customers yet — they’re added automatically with their first order, or with “+ customer”.</div>';
+  if (!customers.length) return '<div class="sales-empty">No customers yet — they’re added automatically with their first order, or with “+ new customer”.</div>';
   var rows = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
     .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || customerDisplayName(a.c).localeCompare(customerDisplayName(b.c)); });
   var h = '<div class="table-wrap"><div class="table-scroll"><table class="crm-table"><thead><tr>'
@@ -9217,7 +9222,9 @@ function closeInvoiceSettings() {
   document.getElementById('invset-overlay').classList.remove('open');
 }
 function saveInvoiceSettings() {
-  var prev = invoiceSettings, next = {};
+  // Start from what's saved, so values no longer in the form (payment
+  // details, footer note) are kept as they are.
+  var prev = invoiceSettings, next = Object.assign({}, invoiceSettings || {});
   INVOICE_FIELDS.forEach(function (f) { next[f[0]] = val('inv-' + f[0]).trim(); });
   invoiceSettings = next;
   closeInvoiceSettings();
