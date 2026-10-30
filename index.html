@@ -7137,7 +7137,7 @@ function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n === 37
 function logBottlingInInventory(shared, qty, ids, cb) {
   qty = parseFloat(qty) || 0;
   if (qty <= 0 || !bottleIsSellSize(shared.volumeMl)) { if (cb) cb(true); return; }
-  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'unknown';
+  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ').toLowerCase() || 'unknown';
   var fill = {
     size: bottleInvSizeLabel(shared.volumeMl || 375),
     flavour: flavour,
@@ -7163,17 +7163,21 @@ function aphroKeyFor(b) {
   var g = bivBottlings().filter(function (x) { return x.date === b.bottlingDate && x.ids.indexOf(b.bottleId) >= 0; })[0];
   return g ? g.key : ((b.bottlingDate || '') + '|' + (b.bottleId || ''));
 }
-function aphroEntryFor(b) {
-  if (!b) return null;
+function aphroEntriesFor(b) {
+  if (!b) return [];
   var k = aphroKeyFor(b);
-  return bottleInventory.filter(function (e) { return e.stage === 'consumed' && String(e.bottling || '') === k && String(e.notes || '').toLowerCase() === APHRO_NOTE; })[0] || null;
+  return bottleInventory.filter(function (e) { return e.stage === 'consumed' && String(e.bottling || '') === k && String(e.notes || '').trim().toLowerCase() === APHRO_NOTE; });
 }
-function aphroCount(b) { var e = aphroEntryFor(b); return e ? Math.abs(parseFloat(e.qty) || 0) : 0; }
+function aphroEntryFor(b) { return aphroEntriesFor(b)[0] || null; }
+// All aphrometer lines of a bottling count (some were logged in two goes).
+function aphroCount(b) { return aphroEntriesFor(b).reduce(function (t, e) { return t + Math.abs(parseFloat(e.qty) || 0); }, 0); }
 function syncAphrometer(b, orig, n) {
   n = Math.max(0, parseInt(n, 10) || 0);
   if (!bottleIsSellSize(b.volumeMl)) return;
-  var e = aphroEntryFor(orig || b), body = null;
-  var flavour = (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'unknown';
+  var all = aphroEntriesFor(orig || b), e = all[0] || null, body = null;
+  // Several lines for one bottling: keep the first, remove the others.
+  all.slice(1).forEach(function (x) { apiPost({ action: 'deleteBottleInvEntry', id: x.id }, function () {}); });
+  var flavour = (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ').toLowerCase() || 'unknown';
   if (e && n === 0) body = { action: 'deleteBottleInvEntry', id: e.id };
   else if (e) { var upd = JSON.parse(JSON.stringify(e)); upd.qty = -n; body = { action: 'updateBottleInvEntry', entry: upd }; }
   else if (n > 0) body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: bottleInvSizeLabel(b.volumeMl || 375), date: b.bottlingDate || todayISO(), flavour: flavour, bottling: aphroKeyFor(b), qty: -n, notes: APHRO_NOTE } };
@@ -9630,7 +9634,7 @@ function bivBottlings() {
     if (e.stage !== 'sold' && e.stage !== 'consumed') return;
     var fl = e.flavour || '(unspecified)', sz = e.size || '(unspecified)', q = Math.abs(parseFloat(e.qty) || 0);
     var g = null;
-    if (e.bottling) for (var i = 0; i < list.length; i++) { if (list[i].key === e.bottling && list[i].flavour === fl) { g = list[i]; break; } }
+    if (e.bottling) for (var i = 0; i < list.length; i++) { if (list[i].key === e.bottling && String(list[i].flavour).toLowerCase() === String(fl).toLowerCase()) { g = list[i]; break; } }
     if (g) { var take = Math.min(q, Math.max(0, g.left[sz] || 0)); g.left[sz] = (g.left[sz] || 0) - take; q -= take; }
     if (q > 0) pool[fl + '|' + sz] = (pool[fl + '|' + sz] || 0) + q;
   });
@@ -9929,7 +9933,7 @@ function bivFlavourDisplay(fl) {
 }
 // Spices of a bottling, named the way inventory rows store a flavour.
 function bivBottleFlavourName(b) {
-  return (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'unknown';
+  return (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ').toLowerCase() || 'unknown';
 }
 // The bottle record behind an "Auto: bottled <ids>" note (same ID, or one
 // bottle of that group).
