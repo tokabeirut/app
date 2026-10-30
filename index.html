@@ -17,7 +17,7 @@
      than iOS does. -->
 <link rel="icon" type="image/png" href="toka-icon.png"/>
 <title>toka</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
 <style>
   :root {
     --bg: #faf8f4;
@@ -194,7 +194,7 @@
   .rgroup-infusion { background: #f0e6d6; color: #8a6a2f; }
   .rgroup-unlinked { background: #f3e6e6; color: #a34a4a; }
   .rgroup-count { color: var(--ink-faint); font-size: 0.72rem; margin-left: 9px; }
-  .num { font-family: 'IBM Plex Mono', monospace; }
+  .num { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
   .id-cell { font-family: 'DM Sans', sans-serif; color: var(--ink); font-weight: 500; font-size: inherit; } /* same size as the rest of the table */
   .f1-branch-note { font-family: 'DM Sans', sans-serif; font-size: 0.71rem; color: var(--ink-faint); margin-top: 3px; white-space: nowrap; line-height: 1.3; }
   .r-inherited td { opacity: 0.55; font-style: italic; }
@@ -350,7 +350,7 @@
   .recipe-open-btn.open .brew-tri { -webkit-transform: rotate(90deg); transform: rotate(90deg); }
   .kpi-row { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px; }
   .kpi { -webkit-flex: 1 1 150px; flex: 1 1 150px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
-  .kpi .k-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.55rem; line-height: 1.1; color: var(--ink); }
+  .kpi .k-val { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.55rem; line-height: 1.1; color: var(--ink); }
   .kpi .k-lab { font-size: 0.68rem; color: var(--ink-faint); text-transform: lowercase; letter-spacing: 0.09em; margin-top: 5px; }
   .kpi .k-sub { font-size: 0.7rem; color: var(--ink-faint); margin-top: 3px; }
   /* ── BOTTLE INVENTORY ── */
@@ -359,7 +359,7 @@
   .biv-summary-grid { display: grid; grid-template-columns: minmax(140px, 1.4fr) 1fr 1fr; -webkit-column-gap: 24px; column-gap: 24px; align-items: center; }
   .biv-progress-row { margin-top: 10px; }
   .biv-progress-label { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; font-size: 0.9rem; color: var(--ink); margin-bottom: 7px; }
-  .biv-progress-pct { font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; color: var(--ink-faint); }
+  .biv-progress-pct { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.76rem; color: var(--ink-faint); }
   .biv-progress-track { height: 10px; border-radius: 20px; background: var(--surface2); overflow: hidden; }
   .biv-progress-fill { height: 100%; background: var(--terra); border-radius: 20px; }
   .biv-stat-table { margin-top: 24px; }
@@ -367,7 +367,7 @@
   .biv-stat-row:last-child { border-bottom: none; }
   .biv-stat-row.biv-stat-head { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; text-transform: lowercase; letter-spacing: 0.02em; color: var(--ink-faint); }
   .biv-stat-label { font-size: 0.9rem; color: var(--ink); }
-  .biv-stat-val { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 1rem; color: var(--ink); }
+  .biv-stat-val { text-align: right; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1rem; color: var(--ink); }
   .biv-stat-colhead { font-family: 'DM Sans', sans-serif; text-transform: lowercase; letter-spacing: 0.02em; font-size: 0.75rem; color: var(--ink-faint); }
   /* Flavour breakdown, indented under "Filled bottles at atelier" — shares
      the .biv-summary-grid column layout so the Small/Big numbers still
@@ -376,7 +376,7 @@
      it don't shift). */
   .biv-stat-subrow { padding: 4px 0; }
   .biv-stat-sublabel { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); padding-left: 20px; }
-  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
+  .biv-stat-subval { font-size: 0.78rem; font-style: italic; color: var(--ink-faint); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; text-align: right; }
   .biv-fold-row { cursor: pointer; }
   .biv-fold-row:hover .biv-stat-label, .biv-fold-row:hover .biv-stat-sublabel { color: var(--terra); }
   .biv-tri { display: inline-block; width: 14px; margin-left: -14px; font-size: 0.62rem; color: var(--ink-faint); font-style: normal; -webkit-transition: -webkit-transform .15s; transition: transform .15s; }
@@ -394,7 +394,7 @@
   .biv-stat-btlrow.biv-btl-link:hover .biv-btl-id { text-decoration: underline; }
   .biv-sold-batch { cursor: pointer; }
   .biv-batch-ref { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; color: var(--ink-faint); margin-top: 2px; }
-  .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; text-align: right; }
+  .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
      transfer, or the empty-stock half of a fill) — dimmed, smaller and
      italic so they read as a consequence of another entry rather than
@@ -417,7 +417,7 @@
   .ftl-head-row { display: -webkit-flex; display: flex; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
   .ftl-head-spacer { width: 280px; -webkit-flex-shrink: 0; flex-shrink: 0; }
   .ftl-head-track { -webkit-flex: 1; flex: 1; max-width: 520px; position: relative; height: 22px; }
-  .ftl-tick { position: absolute; bottom: 0; font-size: 0.84rem; font-family: 'IBM Plex Mono', monospace; color: var(--ink-faint); -webkit-transform: translateX(-50%); transform: translateX(-50%); }
+  .ftl-tick { position: absolute; bottom: 0; font-size: 0.84rem; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; color: var(--ink-faint); -webkit-transform: translateX(-50%); transform: translateX(-50%); }
   .ftl-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .ftl-row:last-child { border-bottom: none; }
   .ftl-label { width: 280px; -webkit-flex-shrink: 0; flex-shrink: 0; padding-right: 16px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; }
@@ -432,19 +432,19 @@
   .ftl-day-guide.multi { opacity: 0.38; }
   .ftl-cursor { position: absolute; top: 50%; width: 15px; height: 15px; border-radius: 50%; background: var(--terra); border: 2px solid var(--bg); -webkit-box-shadow: 0 1px 4px rgba(0,0,0,.18); box-shadow: 0 1px 4px rgba(0,0,0,.18); -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); z-index: 2; }
   .ftl-ph-dot { position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%; background: #4a8a7a; border: 1.5px solid var(--bg); -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); z-index: 1; }
-  .ftl-ph-val { position: absolute; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); bottom: calc(100% + 6px); font-size: 0.84rem; font-family: 'IBM Plex Mono', monospace; color: var(--ink-faint); white-space: nowrap; line-height: 1; }
+  .ftl-ph-val { position: absolute; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); bottom: calc(100% + 6px); font-size: 0.84rem; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; color: var(--ink-faint); white-space: nowrap; line-height: 1; }
   .ftl-ph-dot.below .ftl-ph-val { bottom: auto; top: calc(100% + 6px); }
-  .ftl-meta { width: 56px; -webkit-flex-shrink: 0; flex-shrink: 0; text-align: right; padding-left: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.67rem; color: var(--ink-faint); }
+  .ftl-meta { width: 56px; -webkit-flex-shrink: 0; flex-shrink: 0; text-align: right; padding-left: 10px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.67rem; color: var(--ink-faint); }
   .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
   .chart-card + .chart-card { margin-top: 12px; }
   .chart-card .cc-title { font-size: 0.78rem; color: var(--ink-faint); margin-bottom: 8px; }
   .chart { width: 100%; height: auto; display: block; }
   .chart .grid { stroke: var(--border); stroke-width: 1; }
-  .chart .ax-y, .chart .ax-x { fill: var(--ink-faint); font-size: 10px; font-family: 'IBM Plex Mono', monospace; }
+  .chart .ax-y, .chart .ax-x { fill: var(--ink-faint); font-size: 10px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
   .chart .ax-y { text-anchor: end; }
   .chart .ax-x { text-anchor: middle; }
   .chart .ax-x.sub { font-size: 9px; }
-  .chart .bar-val { fill: var(--ink); font-size: 11px; text-anchor: middle; font-family: 'IBM Plex Mono', monospace; }
+  .chart .bar-val { fill: var(--ink); font-size: 11px; text-anchor: middle; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
   .legend { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
   .legend-item { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); }
   .legend-sw { width: 14px; height: 3px; border-radius: 2px; -webkit-flex-shrink: 0; flex-shrink: 0; }
@@ -473,8 +473,8 @@
   .plan-sub { font-size: 0.74rem; color: var(--ink-faint); margin-bottom: 16px; }
   .plan-vol { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
   .plan-vol label { font-size: 0.72rem; color: var(--ink-faint); text-transform: lowercase; letter-spacing: 0.09em; }
-  .plan-vol input { width: 84px; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.86rem; background: var(--bg); color: var(--ink); }
-  .vol-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.06em; color: var(--ink-faint); cursor: pointer; -webkit-transition: all .12s; transition: all .12s; }
+  .plan-vol input { width: 84px; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.86rem; background: var(--bg); color: var(--ink); }
+  .vol-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 13px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.7rem; letter-spacing: 0.06em; color: var(--ink-faint); cursor: pointer; -webkit-transition: all .12s; transition: all .12s; }
   .vol-chip:hover { border-color: var(--terra-light); color: var(--terra); }
   .vol-chip.active { background: var(--terra); border-color: var(--terra); color: #fff; }
   .plan-steps { font-size: 0.82rem; color: var(--ink); line-height: 1.65; background: var(--terra-pale); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 16px; }
@@ -485,7 +485,7 @@
   .need-tbl td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 0.84rem; }
   .need-tbl tr:last-child td { border-bottom: none; }
   .need-tbl .ni-item { color: var(--ink); }
-  .need-tbl .ni-amt { font-family: 'IBM Plex Mono', monospace; color: var(--terra); white-space: nowrap; }
+  .need-tbl .ni-amt { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; color: var(--terra); white-space: nowrap; }
   .need-tbl .ni-amt .ni-sub { color: var(--ink-faint); font-size: 0.74rem; }
   .note-input { width: 100%; box-sizing: border-box; border: 1px solid transparent; background: transparent; border-radius: var(--radius-sm); padding: 5px 7px; font-family: 'DM Sans', sans-serif; font-weight: 300; font-size: 0.8rem; color: var(--ink); -webkit-transition: border-color .12s, background .12s; transition: border-color .12s, background .12s; }
   .note-input:hover { border-color: var(--border); }
@@ -522,7 +522,7 @@
   .ov-node:hover { border-color: var(--terra-light); background: var(--surface); }
   .ov-node-label { -webkit-box-flex: 1; -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: 'DM Sans', sans-serif; font-size: 0.93rem; color: var(--ink); white-space: nowrap; }
   .ov-node-live { border-color: var(--terra); -webkit-box-shadow: 0 0 0 2px var(--terra), 0 0 0 5px var(--terra-pale); box-shadow: 0 0 0 2px var(--terra), 0 0 0 5px var(--terra-pale); }
-  .ov-node-days { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); margin-top: 4px; white-space: nowrap; }
+  .ov-node-days { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.66rem; color: var(--ink-faint); margin-top: 4px; white-space: nowrap; }
   .ov-spark-wrap { cursor: pointer; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; padding: 2px; border-radius: 4px; }
   .ov-spark-wrap:hover { background: var(--bg); }
   .ov-spark { width: 40px; height: 16px; display: block; }
@@ -583,7 +583,7 @@
   #today-body .an-empty { font-size: 10pt; }
   #today-body .ftl-head-track, #today-body .ftl-track-outer { max-width: none; }
   #today-body .ftl-batch-id { font-size: 10pt; }
-  .ftl-day-label { position: absolute; top: 5px; font-family: 'IBM Plex Mono', monospace; font-size: 0.84rem; color: var(--ink-faint); white-space: nowrap; line-height: 1; z-index: 2; }
+  .ftl-day-label { position: absolute; top: 5px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.84rem; color: var(--ink-faint); white-space: nowrap; line-height: 1; z-index: 2; }
   #today-body .ftl-day-label { font-size: 10pt; color: var(--ink); }
   #today-body .ftl-row[data-tiphtml] { cursor: default; }
   #today-body .ftl-row[data-tiphtml]:hover { background: var(--surface2); }
@@ -750,7 +750,7 @@
   .pt-col-head { display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; -webkit-justify-content: space-between; justify-content: space-between; padding: 0 4px 10px; }
   .pt-col-title { font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.02em; text-transform: lowercase; color: var(--ink); }
   .pt-col-sub { font-family: 'DM Sans', sans-serif; font-size: 0.68rem; letter-spacing: 0.02em; color: var(--ink-faint); }
-  .pt-col-count { font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; color: var(--ink-faint); }
+  .pt-col-count { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.66rem; color: var(--ink-faint); }
   .pt-col-now .pt-col-title { color: var(--terra); }
   .pt-col-empty { padding: 14px 6px; font-size: 0.8rem; color: var(--ink-faint); font-style: italic; }
   .pt-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--pt-c, var(--ink-faint)); border-radius: var(--radius-sm); padding: 9px 10px 9px 11px; margin-bottom: 8px; cursor: pointer; -webkit-transition: border-color .12s, -webkit-transform .12s; transition: border-color .12s, transform .12s; }
@@ -779,7 +779,7 @@
   #view-spices .ing-head { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; gap: 10px; margin-bottom: 10px; }
   #view-spices .ing-name { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 1.05rem; color: var(--ink); }
   #view-spices .ing-add { background: none; border: none; padding: 0; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.68rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--terra); }
-  #view-spices .ing-left { font-family: 'IBM Plex Mono', monospace; font-size: 1.45rem; font-weight: 600; color: var(--ink); }
+  #view-spices .ing-left { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.45rem; font-weight: 600; color: var(--ink); }
   #view-spices .ing-left.neg, #view-spices .ing-card.is-low .ing-left { color: var(--terra); }
   #view-spices .ing-left.muted { color: var(--ink-faint); }
   #view-spices .ing-left-lbl { font-size: 0.7rem; font-weight: 400; color: var(--ink-faint); letter-spacing: 0.06em; }
@@ -789,7 +789,7 @@
   #view-spices .ing-note { font-size: 0.82rem; color: var(--ink-faint); line-height: 1.45; }
   #view-spices .ing-note.faint { font-size: 0.76rem; margin-top: 2px; }
   #view-spices .ing-log-head { padding-top: 26px; }
-  #view-spices td.mono { font-family: 'IBM Plex Mono', monospace; }
+  #view-spices td.mono { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
   #view-spices td.row-actions { white-space: nowrap; text-align: right; }
   .ing-table { table-layout: fixed; min-width: 760px; width: 760px; width: max(760px, 100%); }
   .ing-table th:nth-child(1), .ing-table td:nth-child(1) { width: 130px; }
@@ -806,7 +806,7 @@
   #view-sales .sales-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; padding: 0 48px; margin-bottom: 18px; }
   #view-sales .sales-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
   #view-sales .sales-stat-label { font-family: 'DM Sans', sans-serif; font-size: 0.71rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--ink-faint); margin-bottom: 8px; }
-  #view-sales .sales-stat-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.35rem; font-weight: 600; color: var(--ink); }
+  #view-sales .sales-stat-val { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.35rem; font-weight: 600; color: var(--ink); }
   #view-sales .sales-stat-val.warn { color: var(--terra); }
   #view-sales .sales-stat-note { font-size: 0.82rem; color: var(--ink-faint); margin-top: 4px; }
   #view-sales .sales-mix { padding: 0 48px; margin-bottom: 24px; }
@@ -814,7 +814,7 @@
   #view-sales .sales-mix-bar { height: 6px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
   #view-sales .sales-mix-b2b { height: 100%; background: var(--terra); }
   #view-sales .sales-empty { padding: 30px 48px; color: var(--ink-faint); }
-  #view-sales td.mono { font-family: 'IBM Plex Mono', monospace; }
+  #view-sales td.mono { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
   #view-sales td.row-actions { white-space: nowrap; text-align: right; }
   #view-sales .sale-paid-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 7px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; letter-spacing: 0.02em; text-transform: lowercase; }
   #view-sales .sale-paid-cb { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: #3d7a55; }
@@ -848,7 +848,7 @@
   .crm-table th:nth-child(11), .crm-table td:nth-child(11) { width: 210px; }
   #view-sales td.crm-unpaid-val { color: var(--terra); }
   .crm-alias { font-family: 'DM Sans', sans-serif; font-size: 0.71rem; color: var(--ink-faint); background: var(--surface2); border-radius: 99px; padding: 1px 7px; margin-left: 4px; white-space: nowrap; }
-  #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'IBM Plex Mono', monospace; }
+  #view-sales .crm-table td.mono, #view-sales .crm-table td.row-actions { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
   #view-sales .crm-table td.row-actions { white-space: nowrap; text-align: right; }
   .crm-text-btn { background: none; border: none; padding: 0 10px 0 0; color: var(--ink-faint); cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.73rem; letter-spacing: 0.02em; text-transform: lowercase; }
   .crm-text-btn:hover { color: var(--terra); }
@@ -858,10 +858,10 @@
   #view-sales .crm-tab.active { color: var(--terra); border-bottom-color: var(--terra); }
   #view-sales .crm-nudge { margin: 0 48px 22px; padding: 16px 18px; background: var(--terra-pale); border: 1px solid var(--terra-light, #D3CBB0); border-radius: var(--radius); }
   #view-sales .crm-nudge-title { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 0.95rem; color: var(--ink); margin-bottom: 12px; }
-  #view-sales .crm-nudge-count { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 6px; border-radius: 99px; background: var(--terra); color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 0.66rem; text-align: center; vertical-align: middle; }
+  #view-sales .crm-nudge-count { display: inline-block; min-width: 20px; padding: 1px 7px; margin-left: 6px; border-radius: 99px; background: var(--terra); color: #fff; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.66rem; text-align: center; vertical-align: middle; }
   #view-sales .crm-nudge-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
   #view-sales .crm-nudge-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; cursor: pointer; line-height: 1.5; }
-  #view-sales .crm-nudge-date { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink); }
+  #view-sales .crm-nudge-date { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.78rem; color: var(--ink); }
   #view-sales .crm-nudge-date.crm-overdue { color: var(--terra); }
   #view-sales .crm-nudge-card:hover { border-color: var(--terra-light, #D3CBB0); }
   #view-sales .crm-nudge-name { font-weight: 500; font-size: 1.05rem; margin-bottom: 8px; }
@@ -893,10 +893,10 @@
   .o-discount-head { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--terra); margin-bottom: 6px; }
   .o-discount .hint { margin-bottom: 8px; }
   .o-rebate-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; gap: 10px; font-size: 0.9rem; }
-  .o-rebate-input { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+  .o-rebate-input { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 4px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
   .o-rebate-input input { width: 90px; text-align: right; }
   .crm-item-rebate { color: var(--terra); font-size: 0.85em; }
-  .ol-total { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; color: var(--ink-faint); text-align: right; white-space: nowrap; }
+  .ol-total { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.72rem; color: var(--ink-faint); text-align: right; white-space: nowrap; }
   .crm-hist-stats { display: -webkit-flex; display: flex; gap: 16px; -webkit-flex-wrap: wrap; flex-wrap: wrap; font-size: 0.86rem; margin-bottom: 8px; }
   .crm-hist-list { margin-top: 12px; border-top: 1px solid var(--border); }
   .crm-hist-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
@@ -905,7 +905,7 @@
   .crm-hist-items { font-size: 0.82rem; color: var(--ink-faint); margin-top: 3px; }
   #customer-drawer .paid-pill { border: 1px solid var(--terra-light, #D3CBB0); background: var(--terra-pale); color: var(--terra); border-radius: 99px; padding: 2px 9px; font-family: 'DM Sans', sans-serif; font-size: 0.64rem; letter-spacing: 0.02em; text-transform: lowercase; }
   #customer-drawer .paid-pill.is-paid { border-color: #b9d9c4; background: #edf6f0; color: #3d7a55; }
-  .sale-total-line { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin: 12px 0 16px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: lowercase; color: var(--ink-faint); }
+  .sale-total-line { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin: 12px 0 16px; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.7rem; letter-spacing: 0.12em; text-transform: lowercase; color: var(--ink-faint); }
   .sale-total-line strong { font-size: 1rem; letter-spacing: 0; color: var(--ink); }
   .sale-paid-label { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 10px; cursor: pointer; text-transform: none; letter-spacing: normal; font-family: 'DM Sans', sans-serif; font-size: 0.96rem; color: var(--ink); margin: 0; }
   /* The generic form-input rule makes every <input> full-width with padding;
@@ -965,7 +965,7 @@
   .cmp-table tr.cmp-sec td { background: var(--surface2); font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0.02em; color: var(--ink-faint); padding: 9px 14px; border-top: 2px solid var(--border); }
   .cmp-table tr.cmp-sec:first-child td { border-top: none; }
   .cmp-table td.cmp-label { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; letter-spacing: 0.02em; color: var(--ink-faint); border-left: 3px solid transparent; }
-  .cmp-table td.cmp-val { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+  .cmp-table td.cmp-val { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.8rem; }
   .cmp-table tr.cmp-diff td.cmp-label { border-left-color: var(--terra); color: var(--terra); }
   .cmp-table tr.cmp-diff td.cmp-val { background: var(--terra-pale); }
   .cmp-none { color: var(--ink-faint); }
@@ -1029,7 +1029,7 @@
     .ftl-meta, .ftl-head-meta { width: 44px; padding-left: 6px; font-size: 0.62rem; }
     .home-section-grid { grid-template-columns: 1fr; }
   }
-  .count-badge { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.06em; background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 1px 8px; }
+  .count-badge { display: inline-block; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.7rem; letter-spacing: 0.06em; background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 1px 8px; }
   tr.bgroup-head { cursor: pointer; background: var(--surface2); }
   tr.bgroup-head:hover { background: var(--terra-pale); }
   .bgroup-tri { display: inline-block; margin-right: 6px; color: var(--ink-faint); font-size: 0.65rem; -webkit-transition: -webkit-transform .15s; transition: transform .15s; }
@@ -1083,7 +1083,7 @@
 #view-faucet .ft-page, #view-bottlecalc .ft-page { max-width: 820px; margin: 0 auto; padding: 0 48px 48px; }
 #view-faucet .ft-rate-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 14px; margin-bottom: 24px; }
 #view-faucet .ft-rate-label { color: var(--ink-faint); text-transform: lowercase; letter-spacing: 0.16em; font-size: 0.76rem; }
-#view-faucet .ft-rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 5px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; cursor: pointer; -webkit-transition: background 0.15s; transition: background 0.15s; }
+#view-faucet .ft-rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 5px 14px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.78rem; cursor: pointer; -webkit-transition: background 0.15s; transition: background 0.15s; }
 #view-faucet .ft-rate-badge:hover { background: var(--terra-light); }
 #view-faucet .ft-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 24px; }
 #view-faucet .ft-panel-head { padding: 13px 22px; border-bottom: 1px solid var(--border); background: var(--surface2); font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0.02em; color: var(--ink-faint); }
@@ -1091,8 +1091,8 @@
 #view-faucet .ft-panel-body .form-group { max-width: 240px; }
 #view-faucet .ft-result { display: none; margin-top: 14px; padding: 20px 22px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
 #view-faucet .ft-result-label { font-size: 0.74rem; text-transform: lowercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 8px; }
-#view-faucet .ft-result-time { font-family: 'IBM Plex Mono', monospace; font-size: 1.9rem; font-weight: 500; color: var(--ink); letter-spacing: 0.02em; line-height: 1.1; }
-#view-faucet .ft-result-seconds { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
+#view-faucet .ft-result-time { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.9rem; font-weight: 500; color: var(--ink); letter-spacing: 0.02em; line-height: 1.1; }
+#view-faucet .ft-result-seconds { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
 #view-faucet .ft-chart-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; table-layout: fixed; }
 #view-faucet .ft-chart-table thead th { text-align: left; width: 33%; padding: 11px 22px; font-size: 0.72rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0.12em; color: var(--ink-faint); border-bottom: 1px solid var(--border); background: var(--surface2); }
 #view-faucet .ft-chart-table thead th:last-child { width: 34%; }
@@ -1100,7 +1100,7 @@
 #view-faucet .ft-chart-table tbody tr:nth-child(odd) { background: var(--surface); }
 #view-faucet .ft-chart-table tbody tr:nth-child(even) { background: var(--bg); }
 #view-faucet .ft-chart-table tbody tr:hover { background: var(--terra-pale); }
-#view-faucet .ft-chart-table tbody td { padding: 11px 22px; font-family: 'IBM Plex Mono', monospace; }
+#view-faucet .ft-chart-table tbody td { padding: 11px 22px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
 #view-faucet .ft-chart-table .col-vol { color: var(--ink); }
 #view-faucet .ft-chart-table .col-secs { color: var(--ink-faint); }
 #view-faucet .ft-chart-table .col-min { color: var(--terra); }
@@ -1120,11 +1120,11 @@
 #view-bottlecalc .bc-diagram { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; justify-content: center; gap: 22px; flex-wrap: wrap; margin: 8px 0 4px; }
 #view-bottlecalc .bc-sizes { display: -webkit-flex; display: flex; gap: 22px; -webkit-align-items: flex-start; align-items: flex-start; }
 #view-bottlecalc .bc-box-group { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
-#view-bottlecalc .bc-pct-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; gap: 3px; height: 26px; margin-bottom: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; color: var(--ink-faint); }
+#view-bottlecalc .bc-pct-box { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; gap: 3px; height: 26px; margin-bottom: 10px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.9rem; color: var(--ink-faint); }
 #view-bottlecalc .bc-pct-box.bc-pct-box-spacer { visibility: hidden; }
-#view-bottlecalc .bc-pct-input { width: 62px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 3px 7px; font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
+#view-bottlecalc .bc-pct-input { width: 62px; text-align: right; border: 1px solid var(--border); border-radius: 20px; padding: 3px 7px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.88rem; background: var(--surface2); color: var(--ink); -webkit-appearance: none; }
 #view-bottlecalc .bc-box { width: 160px; height: 160px; box-sizing: border-box; border: 2px solid var(--ink); border-radius: var(--radius-sm); background: var(--surface); display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; justify-content: center; gap: 8px; padding: 10px; }
-#view-bottlecalc .bc-box-input { width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; border: none; background: transparent; text-align: center; font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 2.1rem; color: var(--ink); outline: none; -webkit-appearance: none; padding: 0; }
+#view-bottlecalc .bc-box-input { width: 100%; max-width: 100%; box-sizing: border-box; margin: 0; border: none; background: transparent; text-align: center; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-weight: 700; font-size: 2.1rem; color: var(--ink); outline: none; -webkit-appearance: none; padding: 0; }
 #view-bottlecalc .bc-box-unit { font-size: 0.76rem; color: var(--ink-faint); text-align: center; line-height: 1.35; }
 #view-bottlecalc .bc-arrow-wrap { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: center; align-items: center; }
 #view-bottlecalc .bc-arrow { width: 90px; height: 160px; display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; justify-content: center; font-size: 1.9rem; color: var(--ink-faint); }
@@ -1173,13 +1173,13 @@
 #view-bottlemath .bm-summary-item { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 150px; padding: 11px 22px; border-right: 1px solid var(--border); white-space: nowrap; text-align: center; }
 #view-bottlemath .bm-summary-item:last-child { border-right: none; }
 #view-bottlemath .bm-summary-label { font-family: 'DM Sans', sans-serif; font-size: 0.66rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--ink-faint); margin-bottom: 4px; white-space: nowrap; }
-#view-bottlemath .bm-summary-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
+#view-bottlemath .bm-summary-val { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
 #view-bottlemath .bm-summary-val.accent { color: var(--terra); }
 
 #view-bottlemath .bm-cards { display: -webkit-flex; display: flex; gap: 16px; flex-wrap: wrap; -webkit-justify-content: flex-start; justify-content: flex-start; }
 #view-bottlemath .bm-card { -webkit-flex: 1 1 180px; flex: 1 1 180px; min-width: 160px; max-width: 240px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
 #view-bottlemath .bm-card-label { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--ink-faint); margin-bottom: 12px; }
-#view-bottlemath .bm-card-val { font-family: 'IBM Plex Mono', monospace; font-size: 2.1rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 6px; }
+#view-bottlemath .bm-card-val { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 2.1rem; font-weight: 700; color: var(--ink); display: -webkit-flex; display: flex; -webkit-align-items: baseline; align-items: baseline; gap: 6px; }
 #view-bottlemath .bm-card-val input { text-align: left; border: none; background: transparent; font: inherit; font-weight: 700; color: var(--ink); padding: 0; -webkit-appearance: none; }
 #view-bottlemath .bm-card-unit { font-size: 1.15rem; color: var(--ink); font-weight: 400; }
 
@@ -1188,7 +1188,7 @@
 #view-bottlemath table.bm-table th, #view-bottlemath table.bm-table td { text-align: right; }
 #view-bottlemath table.bm-table th:first-child, #view-bottlemath table.bm-table td:first-child { text-align: left; }
 #view-bottlemath table.bm-table tbody tr.bm-total-row td { font-weight: 700; background: var(--terra-pale); }
-#view-bottlemath table.bm-table tbody tr.bm-total-row td.num { color: var(--terra); font-family: 'IBM Plex Mono', monospace; }
+#view-bottlemath table.bm-table tbody tr.bm-total-row td.num { color: var(--terra); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
 /* Custom/added rows: free-text label + unit, and a remove button, on top
    of the same pill inputs used for the fixed rows above them. */
 #view-bottlemath .bm-text-input { width: 100%; min-width: 90px; border: none; border-bottom: 1px solid transparent; background: transparent; font: inherit; color: var(--ink); padding: 3px 0; -webkit-appearance: none; }
@@ -1200,7 +1200,7 @@
 #view-bottlemath .bm-add-link { background: none; border: 1px dashed var(--border); border-radius: 99px; padding: 5px 14px; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--terra); cursor: pointer; }
 #view-bottlemath .bm-add-link:hover { background: var(--terra-pale); border-color: var(--terra-light); }
 
-#view-bottlemath .bm-input { width: 68px; text-align: right; border: none; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 1px; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; background: transparent; color: var(--ink); -webkit-appearance: none; }
+#view-bottlemath .bm-input { width: 68px; text-align: right; border: none; border-bottom: 1px solid transparent; border-radius: 0; padding: 2px 1px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.8rem; background: transparent; color: var(--ink); -webkit-appearance: none; }
 #view-bottlemath .bm-input:focus { border-bottom-color: var(--border); outline: none; }
 #view-bottlemath .bm-input.bm-input-wide { width: 78px; }
 /* Now that inputs read as plain text (no pill), italics is what marks a
@@ -1228,7 +1228,7 @@
 #view-bottlemath .bm-amount-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 7px; }
 #view-bottlemath .bm-unit { width: 52px; text-align: left; color: var(--ink-faint); font-size: 0.78rem; white-space: nowrap; }
 #view-bottlemath .bm-buy-cell { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; }
-#view-bottlemath .bm-buy-symbol { color: var(--ink-faint); font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; }
+#view-bottlemath .bm-buy-symbol { color: var(--ink-faint); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.8rem; }
 /* Price inputs in the one-off/running cost tables: size to the value's own
    length so the "$" sits one space away from the figure, instead of a fixed
    box leaving a big gap for short numbers. */
@@ -1240,7 +1240,7 @@
 #view-bottlemath .bm-result-grid { display: -webkit-flex; display: flex; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
 #view-bottlemath .bm-result-card { -webkit-flex: 1 1 220px; flex: 1 1 220px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
 #view-bottlemath .bm-result-label { font-family: 'DM Sans', sans-serif; font-size: 0.68rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--ink-faint); margin-bottom: 6px; }
-#view-bottlemath .bm-result-val { font-family: 'IBM Plex Mono', monospace; font-size: 1.5rem; font-weight: 700; color: var(--ink); }
+#view-bottlemath .bm-result-val { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.5rem; font-weight: 700; color: var(--ink); }
 
 #view-bottlemath .bm-overhead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 #view-bottlemath .bm-overhead-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
@@ -1259,14 +1259,14 @@
 #view-bottlemath .bm-price-head { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: baseline; align-items: baseline; margin-bottom: 10px; }
 #view-bottlemath .bm-price-title { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 1.02rem; letter-spacing: 0; color: var(--ink); }
 #view-bottlemath .bm-price-fullcost { font-size: 0.7rem; color: var(--ink-faint); }
-#view-bottlemath .bm-price-fullcost strong { color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+#view-bottlemath .bm-price-fullcost strong { color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
 #view-bottlemath .bm-price-row { display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; -webkit-align-items: center; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); gap: 10px; }
 #view-bottlemath .bm-price-row:first-of-type { border-top: none; }
 #view-bottlemath .bm-price-row-label { font-family: 'DM Sans', sans-serif; font-size: 0.73rem; letter-spacing: 0.02em; text-transform: lowercase; color: var(--ink-faint); -webkit-flex-shrink: 0; flex-shrink: 0; width: 68px; }
 #view-bottlemath .bm-price-range { display: -webkit-inline-flex; display: inline-flex; -webkit-align-items: center; align-items: center; gap: 6px; -webkit-flex-shrink: 0; flex-shrink: 0; }
 #view-bottlemath .bm-price-range-sep { color: var(--ink-faint); font-size: 0.78rem; }
 #view-bottlemath .bm-price-keep { font-size: 0.8rem; color: var(--ink); text-align: right; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
-#view-bottlemath .bm-price-keep strong { color: var(--terra); font-family: 'IBM Plex Mono', monospace; }
+#view-bottlemath .bm-price-keep strong { color: var(--terra); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
 #view-bottlemath .bm-price-pct { color: var(--ink-faint); font-size: 0.72rem; }
 #view-bottlemath .bm-input.bm-bundle-qty { width: 4.5ch; text-align: center; }
 #view-bottlemath .bm-bundle-per { color: var(--ink-faint); font-size: 0.7rem; margin-top: 2px; }
@@ -1283,7 +1283,7 @@
 #view-expenses .exp-stats-inline { display: -webkit-flex; display: flex; gap: 24px; }
 #view-expenses .exp-stat { text-align: right; }
 #view-expenses .exp-stat-label { font-size: 0.65rem; text-transform: lowercase; letter-spacing: 0.14em; color: var(--ink-faint); margin-bottom: 4px; }
-#view-expenses .exp-stat-value { font-family: 'IBM Plex Mono', monospace; font-size: 1.05rem; color: var(--ink); }
+#view-expenses .exp-stat-value { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1.05rem; color: var(--ink); }
 #view-expenses .exp-head-right { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: flex-end; align-items: flex-end; gap: 14px; }
 #view-expenses .exp-notes { width: 340px; max-width: 100%; }
 #view-expenses .exp-notes-toggle { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; margin-left: auto; background: none; border: none; padding: 0; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.74rem; text-transform: lowercase; letter-spacing: 0.02em; color: var(--ink-faint); }
@@ -1306,9 +1306,9 @@
   }
 #view-expenses .currency-bar label { color: var(--ink-faint); text-transform: lowercase; letter-spacing: 0.16em; font-size: 0.76rem; margin: 0; }
 #view-expenses .rate-input-wrap { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; }
-#view-expenses .currency-bar input { width: 110px; background: var(--surface2); border: 1px solid var(--border); color: var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; padding: 4px 8px; border-radius: var(--radius-sm); outline: none; -webkit-appearance: none; }
+#view-expenses .currency-bar input { width: 110px; background: var(--surface2); border: 1px solid var(--border); color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.8rem; padding: 4px 8px; border-radius: var(--radius-sm); outline: none; -webkit-appearance: none; }
 #view-expenses .currency-bar input:focus { border-color: var(--terra); }
-#view-expenses .rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 4px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 0.75rem; -webkit-transition: background 0.15s; transition: background 0.15s; }
+#view-expenses .rate-badge { background: var(--terra-pale); color: var(--terra); border: 1px solid var(--terra-light); border-radius: 99px; padding: 4px 12px; font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.75rem; -webkit-transition: background 0.15s; transition: background 0.15s; }
 #view-expenses .rate-badge:hover { background: var(--terra-light); }
 #view-expenses .app-layout {
     display: -webkit-flex; display: flex;
@@ -1431,7 +1431,7 @@
 #view-expenses .curr-label { font-size: 0.66rem; font-weight: 400; text-transform: lowercase; letter-spacing: 0.02em; margin-bottom: 4px; font-family: 'DM Sans', sans-serif; }
 #view-expenses .usd-color { color: #326638; }
 #view-expenses .lbp-color { color: #8a4a10; }
-#view-expenses .dual-amount input { font-family: 'IBM Plex Mono', monospace; }
+#view-expenses .dual-amount input { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; }
 #view-expenses .upload-zone {
     border: 1px dashed var(--border); border-radius: var(--radius-sm);
     padding: 14px 12px; text-align: center; cursor: pointer; background: transparent;
@@ -1507,14 +1507,14 @@
 #view-expenses tbody tr:nth-child(even) { background: var(--bg); }
 #view-expenses tbody tr:hover { background: var(--terra-pale) !important; }
 #view-expenses tbody td { padding: 11px 14px; vertical-align: middle; white-space: nowrap; }
-#view-expenses .amount-cell { font-family: 'IBM Plex Mono', monospace; font-weight: 400; }
+#view-expenses .amount-cell { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-weight: 400; }
 #view-expenses .desc-cell { color: var(--ink-faint); font-size: 0.75rem; margin-top: 2px; white-space: normal; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 #view-expenses .item-cell { max-width: 200px; white-space: normal; overflow: hidden; vertical-align: middle; text-align: left; }
-#view-expenses .date-cell { font-family: 'IBM Plex Mono', monospace; font-size: 0.82rem; color: var(--ink-faint); }
+#view-expenses .date-cell { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.82rem; color: var(--ink-faint); }
 #view-expenses .buyer-tag { font-size: 0.84rem; color: var(--ink-faint); }
 #view-expenses .dual-cell { line-height: 1.5; }
-#view-expenses .dual-cell .usd { font-family: 'IBM Plex Mono', monospace; font-weight: 400; }
-#view-expenses .dual-cell .lbp { font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; color: var(--ink-faint); }
+#view-expenses .dual-cell .usd { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-weight: 400; }
+#view-expenses .dual-cell .lbp { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 0.78rem; color: var(--ink-faint); }
 #view-expenses .badge { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 0.82rem; font-weight: 400; letter-spacing: 0.02em; text-transform: lowercase; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
 #view-expenses .badge-ingredients { background: #dff0e0; color: #326638; }
 #view-expenses .badge-production { background: #fff0cc; color: #7a5a00; }
@@ -1533,7 +1533,7 @@
 #view-expenses .summary-grid { display: -webkit-grid; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 14px 20px; background: var(--surface2); border-top: 1px solid var(--border); }
 #view-expenses .sum-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 13px; }
 #view-expenses .sum-card-label { font-size: 0.68rem; text-transform: lowercase; letter-spacing: 0.16em; color: var(--ink-faint); margin-bottom: 4px; }
-#view-expenses .sum-card-amount { font-family: 'IBM Plex Mono', monospace; font-size: 1rem; }
+#view-expenses .sum-card-amount { font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; font-size: 1rem; }
 #view-expenses .receipt-thumb { width: 28px; height: 28px; object-fit: cover; border-radius: 3px; border: 1px solid var(--border); cursor: pointer; -webkit-transition: opacity 0.12s; transition: opacity 0.12s; }
 #view-expenses .receipt-thumb:hover { opacity: 0.75; }
 #view-expenses .receipt-link { font-size: 1rem; opacity: 0.45; text-decoration: none; -webkit-transition: opacity 0.12s; transition: opacity 0.12s; }
@@ -1597,9 +1597,13 @@
   thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .cmp-opt-grp td, .r-inherited-head td { font-size: 0.6rem; letter-spacing: 0.16em; }
   label, .config-box label, #view-expenses label, #view-expenses .currency-bar label, .plan-vol label, .plan-field-row .plan-field-label, .home-section-title, .header-page-title, #sync-bar, .sync-reconfig, .config-section, .config-sub, #cell-tip .tt-subhead, .kpi .k-lab, #view-sales .sales-stat-label, #view-expenses .exp-stat-label, #view-expenses .sum-card-label, #view-expenses .curr-label, #view-bottlemath .bm-summary-label, #view-bottlemath .bm-card-label, #view-bottlemath .bm-result-label, #view-bottlemath .bm-price-row-label, #view-faucet .ft-rate-label, #view-faucet .ft-panel-head, #view-faucet .ft-result-label, .o-discount-head, .pt-col-title, .ov-chart-label, .caps-label { font-size: 0.6rem; letter-spacing: 0.18em; }
   .soon-tag, .open-tag, .rgroup-tag, .biv-auto-tag, .pt-cat-badge, .pt-card-cat, .pt-card-late, #view-sales .sale-paid-cell, #view-sales .paid-pill, #customer-drawer .paid-pill, .crm-nostock, #view-expenses .badge { font-size: 0.56rem; letter-spacing: 0.14em; }
-    /* Numbers in tables (IBM Plex Mono) half a size smaller, so they read the
-     same size as the DM Sans text next to them. Big summary figures untouched. */
-  td.num, td.mono, td.cmp-val, #view-expenses td.amount-cell, #view-expenses td.date-cell, #view-expenses .dual-cell .usd, #view-faucet .ft-chart-table tbody td, .need-tbl .ni-amt { font-size: 0.92em; }
+  /* Numbers (brand font DM Sans): same size as the text, a touch heavier than
+     the light body text, even-width digits and a little extra spacing so
+     columns of figures read clearly. */
+  body { font-variant-numeric: tabular-nums lining-nums; }
+  td.num, td.mono, td.cmp-val { font-weight: 400; letter-spacing: 0.03em; }
+  /* numbers half a point smaller than the text (13.4px text → ~12.8px) */
+  td.num, td.mono, td.cmp-val, #view-expenses td.amount-cell, #view-expenses td.date-cell, #view-expenses .dual-cell .usd, #view-faucet .ft-chart-table tbody td, .need-tbl .ni-amt { font-size: 0.95em; }
   /* price-list downloads: right of the Sales title, like the Expenses figures */
   #view-sales .sales-head { display: -webkit-flex; display: flex; -webkit-align-items: flex-start; align-items: flex-start; -webkit-justify-content: space-between; justify-content: space-between; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 16px 32px; }
   .pl-dl { display: -webkit-flex; display: flex; -webkit-flex-direction: column; flex-direction: column; -webkit-align-items: flex-end; align-items: flex-end; gap: 8px; padding-top: 6px; }
@@ -2302,7 +2306,7 @@
     <div id="ft-rate-updated-note" style="font-size:0.7rem;color:var(--ink-faint);margin-bottom:20px;"></div>
     <label style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">Seconds per litre</label>
     <div style="display:-webkit-flex;display:flex;gap:10px;-webkit-align-items:center;align-items:center;">
-      <input type="number" id="ft-rate-input" value="13.32" min="0.1" step="0.01" style="font-family:'IBM Plex Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;"/>
+      <input type="number" id="ft-rate-input" value="13.32" min="0.1" step="0.01" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;"/>
       <span style="color:var(--ink-faint);white-space:nowrap;font-size:0.85rem;">s / L</span>
     </div>
     <div style="display:-webkit-flex;display:flex;gap:10px;margin-top:18px;">
@@ -2604,7 +2608,7 @@
     <div style="font-size:0.75rem;color:var(--ink-faint);margin-bottom:20px;">Set the current USD → LBP rate. Saved expenses keep their original rate.</div>
     <label style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);display:block;margin-bottom:6px;">$1 USD =</label>
     <div style="display:-webkit-flex;display:flex;gap:10px;-webkit-align-items:center;align-items:center;">
-      <input type="number" id="exp-rate-input" value="89550" min="1" step="1" style="font-family:'IBM Plex Mono',monospace;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;" onkeydown="if(event.key==='Enter')saveRateModal()"/>
+      <input type="number" id="exp-rate-input" value="89550" min="1" step="1" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:1rem;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--ink);outline:none;width:100%;-webkit-appearance:none;" onkeydown="if(event.key==='Enter')saveRateModal()"/>
       <span style="color:var(--ink-faint);white-space:nowrap;font-size:0.85rem;">LBP</span>
     </div>
     <div style="display:-webkit-flex;display:flex;gap:10px;margin-top:18px;">
@@ -2673,11 +2677,11 @@
           <div class="dual-amount">
             <div>
               <div class="curr-label usd-color">$ USD</div>
-              <input type="text" id="exp-f-amount-usd" placeholder="0.00" inputmode="decimal" oninput="syncAmount('usd')" onblur="formatUSDField('exp-f-amount-usd')" style="font-family:'IBM Plex Mono',monospace;"/>
+              <input type="text" id="exp-f-amount-usd" placeholder="0.00" inputmode="decimal" oninput="syncAmount('usd')" onblur="formatUSDField('exp-f-amount-usd')" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;"/>
             </div>
             <div>
               <div class="curr-label lbp-color">LBP</div>
-              <input type="text" id="exp-f-amount-lbp" placeholder="0" inputmode="numeric" oninput="syncAmount('lbp')" style="font-family:'IBM Plex Mono',monospace;"/>
+              <input type="text" id="exp-f-amount-lbp" placeholder="0" inputmode="numeric" oninput="syncAmount('lbp')" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;"/>
             </div>
           </div>
         </div>
@@ -2779,7 +2783,7 @@
             <div id="exp-dp-months-ui">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                 <button onclick="shiftYear(-1)" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink-faint);padding:0 4px;">‹</button>
-                <span id="exp-dp-year-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--ink);"></span>
+                <span id="exp-dp-year-label" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:0.82rem;color:var(--ink);"></span>
                 <button onclick="shiftYear(1)" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink-faint);padding:0 4px;">›</button>
               </div>
               <div id="exp-dp-month-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;"></div>
@@ -2848,11 +2852,11 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
           <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Total deposited</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.05rem;" id="exp-cm-total">$0.00</div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:1.05rem;" id="exp-cm-total">$0.00</div>
         </div>
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;">
           <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.16em;color:var(--ink-faint);margin-bottom:4px;">Remaining</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.05rem;" id="exp-cm-remaining">$0.00</div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:1.05rem;" id="exp-cm-remaining">$0.00</div>
         </div>
       </div>
 
@@ -2866,7 +2870,7 @@
           </div>
           <div>
             <label>Amount (USD)</label>
-            <input type="text" id="exp-cd-amount" placeholder="0.00" inputmode="decimal" style="font-family:'IBM Plex Mono',monospace;font-size:0.85rem;"/>
+            <input type="text" id="exp-cd-amount" placeholder="0.00" inputmode="decimal" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:0.85rem;"/>
           </div>
         </div>
         <div style="margin-bottom:12px;">
@@ -2948,11 +2952,11 @@
         <div class="dual-amount">
           <div>
             <div class="curr-label usd-color">$ USD</div>
-            <input type="text" id="exp-edit-amount-usd" inputmode="decimal" oninput="syncEditAmount('usd')" onblur="formatUSDField('exp-edit-amount-usd')" style="font-family:'IBM Plex Mono',monospace;"/>
+            <input type="text" id="exp-edit-amount-usd" inputmode="decimal" oninput="syncEditAmount('usd')" onblur="formatUSDField('exp-edit-amount-usd')" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;"/>
           </div>
           <div>
             <div class="curr-label lbp-color">LBP</div>
-            <input type="text" id="exp-edit-amount-lbp" inputmode="numeric" oninput="syncEditAmount('lbp')" style="font-family:'IBM Plex Mono',monospace;"/>
+            <input type="text" id="exp-edit-amount-lbp" inputmode="numeric" oninput="syncEditAmount('lbp')" style="font-family:'DM Sans',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;"/>
           </div>
         </div>
       </div>
@@ -4176,7 +4180,7 @@ function renderExpTable() {
     return '<div class="sum-card">'
       + '<div class="sum-card-label">' + label + '</div>'
       + '<div class="sum-card-amount" style="color:var(--terra)">$' + fmtUSD(t.usd) + '</div>'
-      + '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:0.72rem;color:var(--ink-faint);margin-top:1px">' + fmtLBP(t.lbp) + ' LBP</div>'
+      + '<div style="font-family:\'DM Sans\',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:0.72rem;color:var(--ink-faint);margin-top:1px">' + fmtLBP(t.lbp) + ' LBP</div>'
       + '</div>';
   }).join('');
 
@@ -4528,11 +4532,11 @@ function renderCaisse() {
       hist.innerHTML = sorted.map(function(d) {
         var dateStr = d.date ? d.date.slice(0,10).split('-').reverse().join('/').replace(/^0/,'').replace(/\/0/g,'/') : '—';
         return '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);">'
-          + '<div><span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.75rem;color:var(--ink-faint);">' + escHtml(dateStr) + '</span>'
+          + '<div><span style="font-family:\'DM Sans\',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:0.75rem;color:var(--ink-faint);">' + escHtml(dateStr) + '</span>'
           + (d.note ? '<span style="margin-left:10px;color:var(--ink-faint);font-size:0.78rem;">' + escHtml(d.note) + '</span>' : '')
           + '</div>'
           + '<div style="display:flex;align-items:center;gap:8px;">'
-          + '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:0.88rem;">$' + fmtUSD(parseFloat(d.amountUSD)||0) + '</span>'
+          + '<span style="font-family:\'DM Sans\',sans-serif;font-weight:400;letter-spacing:0.03em;font-variant-numeric:tabular-nums;font-size:0.88rem;">$' + fmtUSD(parseFloat(d.amountUSD)||0) + '</span>'
           + '<button onclick="deleteDeposit(\'' + escHtml(d.uid) + '\')" style="background:none;border:none;cursor:pointer;color:var(--ink-faint);font-size:0.85rem;padding:0 2px;line-height:1;" title="Delete">✕</button>'
           + '</div></div>';
       }).join('');
