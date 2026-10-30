@@ -3140,7 +3140,7 @@
       <button type="button" class="btn-ghost btn-add-flavour" onclick="addSourceRow()">+ add vessel</button>
       <div class="hint">One or more first-fermentation vessels these bottles came from.</div>
     </div>
-    <div class="form-group" id="b-number-group">
+    <div class="form-group" id="b-number-group" style="display:none">
       <label>Bottle number(s)</label>
       <input type="text" id="b-number" placeholder="e.g. 32 or 32-50 or 48,51" oninput="onBottleNumberInput()" />
       <div class="hint" id="b-number-hint">A single number, or a list/range (e.g. 32-50 or 48,51) to create independent, individually trackable bottles.</div>
@@ -6640,7 +6640,7 @@ function setBottleDrawerFieldVisibility(isGroup) {
   var numGroup = document.getElementById('b-number-group');
   var qtyGroup = document.getElementById('b-qty-group');
   if (idGroup) idGroup.style.display = isGroup ? 'none' : '';
-  if (numGroup) numGroup.style.display = isGroup ? 'none' : '';
+  if (numGroup) numGroup.style.display = 'none';   // bottle numbers no longer used (Oct 2026)
   if (isGroup && qtyGroup) qtyGroup.style.display = 'none';
 }
 function openBottleDrawer() {
@@ -10898,12 +10898,12 @@ function setF1Days(v) {
 // Default is 5 days. Stored under a new key so any old saved value (the
 // previous 3-day default) on a device doesn't override it.
 function getF2Days() {
-  var v = parseInt(lsGet('toka_f2_days_v2'), 10);
-  return (!isNaN(v) && v > 0) ? v : 5;
+  var v = parseInt(lsGet('toka_f2_days_v3'), 10);
+  return (!isNaN(v) && v > 0) ? v : 4;   // bottles go in the fridge after 4 days
 }
 function setF2Days(v) {
   v = parseInt(v, 10);
-  if (!isNaN(v) && v > 0) lsSet('toka_f2_days_v2', String(v));
+  if (!isNaN(v) && v > 0) lsSet('toka_f2_days_v3', String(v));
   renderToday();
 }
 // Elapsed-day threshold (0-indexed) at which a carbonating bottle is

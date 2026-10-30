@@ -72,7 +72,7 @@ Read this first when continuing work on the toka app.
   - **Faucet timer**.
   - **Volume converter**: default split 2/3 375 ml, 1/3 750 ml.
 - **Operations**
-  - **Daily operations**: brew/infusion/fridge reminders. Fridge reminder is 5 days after bottling.
+  - **Daily operations**: brew/infusion/fridge reminders. Fridge reminder is 4 days after bottling (`getF2Days`, default 4; per-device override key `toka_f2_days_v3`, no UI).
   - **Bottle inventory**:
     - Stages: depot / atelier / filled / sold / consumed / recycled / other.
     - One "Log a bottle movement" form.
@@ -121,3 +121,4 @@ Read this first when continuing work on the toka app.
 - Sync bar "lock" button (`resetConfig`): forgets the key on this device and shows the access page.
 - Invoice details form: payment details and footer note fields removed; saving keeps any values already stored for them (merge, not overwrite).
 - Sales top bar button reads "+ new customer".
+- Bottling drawer: "Bottle number(s)" field hidden (no longer used); one bottling = one row with a quantity. Old IDs with numbers keep their number when edited.
