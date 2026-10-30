@@ -1621,6 +1621,9 @@
   ::placeholder { text-transform: lowercase; }
   td.empty { text-transform: lowercase; }
   .biv-table tr.biv-sub-row.biv-sub-mid td { border-bottom: none; padding-bottom: 2px; }
+  /* Batch, infusion and bottle IDs (F1-…, INF-…, BTL-…) always show as saved,
+     wherever they appear (daily operations, timelines, tooltips, pickers). */
+  .id-cell, .task-id, .ftl-batch-id, .tt-head, .biv-batch-ref, .biv-btl-id, .cmp-opt-id, .cmp-link, .ov-node-label, .src-cell, .id-ref { text-transform: none; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -3048,7 +3051,7 @@
         <input type="text" id="f-id" oninput="onIdInput()" />
         <button type="button" class="regen" onclick="regenId()" title="Rebuild from date &amp; vessel">&#8635;</button>
       </div>
-      <div class="hint">Auto: F1-&lt;date&gt;-&lt;vessel&gt; &middot; editable</div>
+      <div class="hint">auto: <span class="id-ref">F1-&lt;date&gt;-&lt;vessel&gt;</span> &middot; editable</div>
     </div>
     <div class="form-group">
       <label>Brewing date</label>
@@ -3145,7 +3148,7 @@
         <input type="text" id="b-id" oninput="onBottleIdInput()" />
         <button type="button" class="regen" onclick="regenBottleId()" title="Rebuild from date &amp; number">&#8635;</button>
       </div>
-      <div class="hint">Auto: BTL-&lt;date&gt;-&lt;spice initials&gt;-&lt;number&gt; &middot; editable</div>
+      <div class="hint">auto: <span class="id-ref">BTL-&lt;date&gt;-&lt;size&gt;-&lt;spice initials&gt;</span> &middot; editable</div>
     </div>
     <div class="form-group">
       <label>From F1 (source vessels, L)</label>
@@ -3286,7 +3289,7 @@
         <input type="text" id="i-id" oninput="onInfusionIdInput()" />
         <button type="button" class="regen" onclick="regenInfusionId()" title="Rebuild from date &amp; vessel">&#8635;</button>
       </div>
-      <div class="hint">Auto: INF-&lt;date&gt;-&lt;vessel&gt; &middot; editable</div>
+      <div class="hint">auto: <span class="id-ref">INF-&lt;date&gt;-&lt;vessel&gt;</span> &middot; editable</div>
     </div>
     <div class="form-group">
       <label>Source vessel (L)</label>
