@@ -123,3 +123,4 @@ Read this first when continuing work on the toka app.
 - Sales top bar button reads "+ new customer".
 - Bottling drawer: "Bottle number(s)" field hidden (no longer used); one bottling = one row with a quantity. Old IDs with numbers keep their number when edited.
 - Expenses add/edit: "item name" and "paid to" suggest earlier entries as you type (HIST_FIELDS `expName`, `expVendor`), same dropdown as spices. Suggestion list keeps the original capitals.
+- Aphrometer bottles: bottling form field "aphrometer bottles" (`b-aphro`). They stay in the bottling's count (and the fill), and one Bottle-inventory line stage 'consumed', notes "Aphrometer", linked via `bottling` key, takes them out of sellable filled stock (`syncAphrometer`, `aphroCount`). Editing the number updates/deletes that line. Shown under the quantity in the bottling table ("2 aphrometer"). No backend change.

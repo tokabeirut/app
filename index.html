@@ -1612,6 +1612,7 @@
   /* No subtitles under page titles (every page). */
   [id^="view-"] > .view-bar + .content-head .content-sub { display: none !important; }
   [id^="view-"] > .view-bar + .content-head { padding-bottom: 36px; }
+  .aphro-note { font-size: 0.72rem; color: var(--ink-faint); margin-top: 3px; white-space: nowrap; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -3153,6 +3154,11 @@
       <label>Quantity (bottles)</label>
       <input type="number" id="b-qty" min="1" step="1" value="1" />
       <div class="hint">How many identical bottles in this run. All values below are per single bottle.</div>
+    </div>
+    <div class="form-group" id="b-aphro-group">
+      <label>Aphrometer bottles</label>
+      <input type="number" id="b-aphro" min="0" step="1" value="0" />
+      <div class="hint">Bottles of this run capped with an aphrometer. They count as bottled, but are logged as consumed right away, so they're not in the stock you can sell.</div>
     </div>
 
     <div class="form-section">
@@ -6646,6 +6652,8 @@ function setBottleDrawerFieldVisibility(isGroup) {
   if (idGroup) idGroup.style.display = isGroup ? 'none' : '';
   if (numGroup) numGroup.style.display = 'none';   // bottle numbers no longer used (Oct 2026)
   if (isGroup && qtyGroup) qtyGroup.style.display = 'none';
+  var aphroGroup = document.getElementById('b-aphro-group');
+  if (aphroGroup) aphroGroup.style.display = isGroup ? 'none' : '';
 }
 function openBottleDrawer() {
   editingBottleUid = null;
@@ -6657,6 +6665,7 @@ function openBottleDrawer() {
   setSourceRows([]);
   document.getElementById('b-number').value = '';
   document.getElementById('b-qty').value = '1';
+  document.getElementById('b-aphro').value = '0';
   document.getElementById('b-bottling').value = todayISO();
   document.getElementById('b-fridge').value = '';
   document.getElementById('b-fridge-group').style.display = 'none';
@@ -6686,6 +6695,7 @@ function openBottleEdit(u) {
   document.getElementById('b-id').value = b.bottleId || '';
   document.getElementById('b-number').value = bottleNumberFromId(b.bottleId);
   document.getElementById('b-qty').value = (b.count != null && b.count !== '') ? b.count : '1';
+  document.getElementById('b-aphro').value = String(aphroCount(b));
   document.getElementById('b-bottling').value = b.bottlingDate || '';
   document.getElementById('b-fridge').value = b.fridgeDate || '';
   document.getElementById('b-fridge-group').style.display = '';
@@ -7060,6 +7070,10 @@ function saveBottle() {
     return;
   }
 
+  var aphroN = Math.max(0, parseInt(val('b-aphro'), 10) || 0);
+  if (aphroN > (parseFloat(val('b-qty')) || 1)) { alert('There can\u2019t be more aphrometer bottles than bottles in this run.'); return; }
+  var origBottle = null;
+  if (isEdit) for (var ob = 0; ob < bottles.length; ob++) { if (String(bottles[ob].uid) === String(editingBottleUid)) { origBottle = JSON.parse(JSON.stringify(bottles[ob])); break; } }
   var b = {
     uid: isEdit ? editingBottleUid : uid(),
     bottleId: val('b-id').trim(),
@@ -7077,7 +7091,8 @@ function saveBottle() {
       alert('Could not save. If this keeps happening, your backend may be an older version \u2014 redeploy the latest toka-brewlog-backend.gs as a new version.');
       return;
     }
-    if (!isEdit) logBottlingInInventory(shared, b.count, [b.bottleId]);
+    if (!isEdit) logBottlingInInventory(shared, b.count, [b.bottleId], function () { syncAphrometer(b, null, aphroN); });
+    else if (origBottle && aphroN !== aphroCount(origBottle)) syncAphrometer(b, origBottle, aphroN);
     editingBottleUid = null;
     closeBottleDrawer();
     loadBottles();
@@ -7111,6 +7126,35 @@ function logBottlingInInventory(shared, qty, ids, cb) {
   apiPost({ action: 'fillBottles', fill: fill }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'inventory not updated'); if (cb) cb(false); return; }
     if (cb) cb(true); else loadBottleInventory();
+  });
+}
+// Aphrometer bottles: part of a bottling capped with an aphrometer (pressure
+// gauge) instead of a crown cap — never sold. They stay in the bottling's
+// count, and one "consumed" line (notes "Aphrometer", linked to the
+// bottling) takes them out of the sellable filled stock.
+var APHRO_NOTE = 'Aphrometer';
+function aphroKeyFor(b) {
+  var g = bivBottlings().filter(function (x) { return x.date === b.bottlingDate && x.ids.indexOf(b.bottleId) >= 0; })[0];
+  return g ? g.key : ((b.bottlingDate || '') + '|' + (b.bottleId || ''));
+}
+function aphroEntryFor(b) {
+  if (!b) return null;
+  var k = aphroKeyFor(b);
+  return bottleInventory.filter(function (e) { return e.stage === 'consumed' && String(e.bottling || '') === k && String(e.notes || '') === APHRO_NOTE; })[0] || null;
+}
+function aphroCount(b) { var e = aphroEntryFor(b); return e ? Math.abs(parseFloat(e.qty) || 0) : 0; }
+function syncAphrometer(b, orig, n) {
+  n = Math.max(0, parseInt(n, 10) || 0);
+  if (!bottleIsSellSize(b.volumeMl)) return;
+  var e = aphroEntryFor(orig || b), body = null;
+  var flavour = (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Unknown';
+  if (e && n === 0) body = { action: 'deleteBottleInvEntry', id: e.id };
+  else if (e) { var upd = JSON.parse(JSON.stringify(e)); upd.qty = -n; body = { action: 'updateBottleInvEntry', entry: upd }; }
+  else if (n > 0) body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: bottleInvSizeLabel(b.volumeMl || 375), date: b.bottlingDate || todayISO(), flavour: flavour, bottling: aphroKeyFor(b), qty: -n, notes: APHRO_NOTE } };
+  if (!body) return;
+  apiPost(body, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'aphrometer bottles not logged'); return; }
+    loadBottleInventory(function () { renderBottles(); });
   });
 }
 function createBottlesSequentially(list, i, cb) {
@@ -7686,7 +7730,7 @@ function bottleRowHtml(b, newDate, groupUid, groupOpen) {
     + cellEd(valWithPer(b.sugarG, 'g', b.volumeMl, 1000, 'mg', true), { type: 'bottle', uid: b.uid, field: 'sugarG', input: 'number', cls: 'num' })
     + cellEd(valWithPer(b.yeastMg, 'mg', b.volumeMl, 1, 'mg', true), { type: 'bottle', uid: b.uid, field: 'yeastMg', input: 'number', cls: 'num' })
     + '<td class="flav-cell"><div class="flav-inner">' + flavorCell(b, true) + '</div></td>'
-    + cellEd((qty > 1 ? '<span class="count-badge">\u00d7' + qty + '</span>' : '1'), { type: 'bottle', uid: b.uid, field: 'count', input: 'number', cls: 'num' })
+    + cellEd((qty > 1 ? '<span class="count-badge">\u00d7' + qty + '</span>' : '1') + (aphroCount(b) ? '<div class="aphro-note">' + fmtNum(aphroCount(b)) + ' aphrometer</div>' : ''), { type: 'bottle', uid: b.uid, field: 'count', input: 'number', cls: 'num' })
     + cellEd('<div class="clip-inner muted">' + (b.notes ? esc(b.notes) : '\u2014') + '</div>', { type: 'bottle', uid: b.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
