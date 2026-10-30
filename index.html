@@ -1619,6 +1619,7 @@
   button.crm-link, button.cmp-pick-btn { text-transform: none; }
   ::placeholder { text-transform: lowercase; }
   td.empty, .crm-chan { text-transform: lowercase; }
+  .biv-table tr.biv-sub-row.biv-sub-mid td { border-bottom: none; padding-bottom: 2px; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -9532,17 +9533,17 @@ function bivKpisHtml() {
   h += bivStatRowHtml('', sizes, {}, true);
   h += bivStatRowHtml('Empty bottles at depot', sizes, b.depot);
   h += bivStatRowHtml('Empty bottles at atelier', sizes, b.atelierEmpty);
-  // Click "Filled bottles at atelier" to unfold every flavour's bottlings,
-  // or a single flavour to unfold just that one.
-  var allOpen = flavoursAllOpen(b);
+  // Folded by default: click "filled bottles at atelier" to show the
+  // breakdown per flavour; click a flavour to show its bottlings.
+  var allOpen = bivFilledOpen();
   h += bivStatRowHtml('Filled bottles at atelier', sizes, filledAtelierNet).replace('class="biv-summary-grid biv-stat-row"',
-    'class="biv-summary-grid biv-stat-row biv-fold-row" onclick="bivToggleAllFlavours()" title="Show the bottlings behind each flavour"')
+    'class="biv-summary-grid biv-stat-row biv-fold-row" onclick="bivToggleAllFlavours()" title="Show the breakdown per flavour"')
     .replace('<div class="biv-stat-label">', '<div class="biv-stat-label"><span class="biv-tri' + (allOpen ? ' open' : '') + '">&#9656;</span>');
   // Remaining filled stock by flavour (fills minus consumption), split into
   // the same Small/Big columns as every other row so it lines up under
   // "Filled bottles at atelier" — the row it's a breakdown of.
   var flavours = Object.keys(b.filledEventsByFlavour).sort(function (a, c) { return bivFlavourRank(a) - bivFlavourRank(c); });
-  for (var j = 0; j < flavours.length; j++) {
+  for (var j = 0; allOpen && j < flavours.length; j++) {
     var fl = flavours[j];
     var filledBySize = b.filledByFlavourSize[fl] || {};
     var consumedBySize = b.consumedByFlavourSize[fl] || {};
@@ -9578,10 +9579,10 @@ function flavoursAllOpen(b) {
   var o = bivOpenFlavours(), fls = Object.keys(b.filledEventsByFlavour);
   return fls.length > 0 && fls.every(function (f) { return o[f]; });
 }
+function bivFilledOpen() { return lsGet('toka_biv_filled_open') === '1'; }
 function bivToggleAllFlavours() {
-  var b = bivBalances(), o = {};
-  if (!flavoursAllOpen(b)) Object.keys(b.filledEventsByFlavour).forEach(function (f) { o[f] = 1; });
-  bivSetOpenFlavours(o);
+  lsSet('toka_biv_filled_open', bivFilledOpen() ? '0' : '1');
+  renderBottleInventory();
 }
 // Every bottling ("Filled" row, or several written on the same day with the
 // same note) with how many bottles are left per size. A sold or consumed
@@ -10032,7 +10033,7 @@ function bivFlavourCellHtml(e) {
   if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Change the batch in the order">' + inner + '</td>';
   return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
 }
-function bivRowHtml(e, sub, newDate) {
+function bivRowHtml(e, sub, newDate, extras) {
   var id = esc(e.id);
   var qtyNum = parseFloat(e.qty) || 0;
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
@@ -10045,7 +10046,7 @@ function bivRowHtml(e, sub, newDate) {
   // automatically (e.g. a bottling's "Filled" line). Only a counter line
   // that ends up on its own (e.g. when filtering on Depot) is small italic.
   if (e.auto && (e.stage === 'depot' || e.stage === 'atelier') && qtyNum < 0) cls.push('biv-auto-row');
-  if (sub) cls.push('biv-has-sub');
+  if (sub || (extras && extras.length)) cls.push('biv-has-sub');
   if (newDate) cls.push('date-start');   // orange line between dates, as on Bottling
   var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
@@ -10056,12 +10057,16 @@ function bivRowHtml(e, sub, newDate) {
     + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? bivNoteDisplay(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
-  if (sub) {
-    // Read-only line for the automatic counterpart; edits to the main row
-    // (date, size, quantity) and deleting it carry over to this one.
-    h += '<tr class="biv-sub-row"><td></td><td>' + esc(bivStageLabel(sub.stage)) + '</td><td></td><td></td>'
-      + '<td class="num">' + fmtNum(parseFloat(sub.qty) || 0) + '</td><td></td><td></td></tr>';
-  }
+  // Read-only counter lines under the main row: the automatic counterpart
+  // (edits to the main row carry over to it) and any aphrometer bottles of
+  // this bottling (changed in the bottling itself).
+  var subs = [];
+  if (sub) subs.push([bivStageLabel(sub.stage), fmtNum(parseFloat(sub.qty) || 0), '']);
+  (extras || []).forEach(function (x) { subs.push([bivStageLabel(x.stage), '-' + fmtNum(Math.abs(parseFloat(x.qty) || 0)), APHRO_NOTE]); });
+  subs.forEach(function (r, k) {
+    h += '<tr class="biv-sub-row' + (k < subs.length - 1 ? ' biv-sub-mid' : '') + '"><td></td><td>' + esc(r[0]) + '</td><td></td><td></td>'
+      + '<td class="num">' + r[1] + '</td><td>' + esc(r[2]) + '</td><td></td></tr>';
+  });
   return h;
 }
 // Sort: latest date first, then (within a date) by stage (Recycled on top,
@@ -10239,12 +10244,27 @@ function bivLogTableHtml() {
   var list = bivFilteredSortedLog();
   var pairs = bivPairs(), shown = {};
   list.forEach(function (e) { shown[e.id] = true; });
+  // Aphrometer bottles ("consumed" lines linked to a bottling) are drawn as a
+  // counter line under that bottling's "filled" line, like the atelier one.
+  var aphroUnder = {}, aphroHost = {};
+  list.forEach(function (f) {
+    if (f.stage !== 'filled') return;
+    var m = /^Auto: bottled (.+)$/.exec(String(f.notes || ''));
+    if (!m) return;
+    var key = (f.date || '') + '|' + m[1];
+    bottleInventory.forEach(function (c) {
+      if (c.stage === 'consumed' && String(c.notes || '').toLowerCase() === APHRO_NOTE && String(c.bottling || '') === key && !aphroHost[c.id]) {
+        (aphroUnder[f.id] = aphroUnder[f.id] || []).push(c); aphroHost[c.id] = f.id;
+      }
+    });
+  });
   var rows = '', prevDate = null;
   for (var i = 0; i < list.length; i++) {
     var e = list[i], partner = pairs.partnerOf[e.id];
     if (partner && shown[partner.id]) continue;          // drawn under its partner
+    if (aphroHost[e.id] && shown[aphroHost[e.id]]) continue;   // drawn under its bottling
     var sub = pairs.autoOf[e.id];
-    rows += bivRowHtml(e, sub || null, prevDate !== null && String(e.date) !== prevDate);
+    rows += bivRowHtml(e, sub || null, prevDate !== null && String(e.date) !== prevDate, aphroUnder[e.id]);
     prevDate = String(e.date);
   }
   if (!rows) {
