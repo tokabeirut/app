@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '46 (access key)';
+var VERSION = '47 (lowercase app-written values)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -716,7 +716,7 @@ function nextInvoiceNo_(dateIso, existing) {
 function readAllCustomers_() {
   return readSheetObjects_(getCustomersSheet_(), 'customer_pk').map(function (c) {
     return {
-      id: String(c.customer_pk), name: String(c.name || ''), alias: String(c.alias || ''), type: String(c.type || 'B2C'),
+      id: String(c.customer_pk), name: String(c.name || ''), alias: String(c.alias || ''), type: String(c.type || 'b2c').toLowerCase(),
       contact: String(c.contact_person || ''), phone: String(c.phone || ''), email: String(c.email || ''),
       address: String(c.address || ''), area: String(c.area || ''), reorderDays: c.reorder_days === '' ? '' : c.reorder_days,
       notes: String(c.notes || ''), created: ymd_(c.created_date)
@@ -734,14 +734,14 @@ function readAllOrders_() {
     return {
       id: String(o.order_pk), invoiceNo: String(o.invoice_no || ''), date: ymd_(o.order_date),
       customerId: String(o.customer_fk || ''), customerName: String(o.customer_name || ''),
-      channel: String(o.channel || 'B2C'), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
+      channel: String(o.channel || 'b2c').toLowerCase(), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
       deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''),
       lines: lines[String(o.order_pk)] || []
     };
   });
 }
 function customerRow_(c) {
-  return { customer_pk: c.id, name: c.name || '', alias: c.alias || '', type: c.type || 'B2C', contact_person: c.contact || '', phone: c.phone || '',
+  return { customer_pk: c.id, name: c.name || '', alias: c.alias || '', type: String(c.type || 'b2c').toLowerCase(), contact_person: c.contact || '', phone: c.phone || '',
     email: c.email || '', address: c.address || '', area: c.area || '', reorder_days: (c.reorderDays == null ? '' : c.reorderDays), notes: c.notes || '',
     created_date: c.created || ymd_(new Date()) };
 }
@@ -753,8 +753,8 @@ function upsertCustomer_(c) {
 }
 function invSizeLabel_(size) {
   var s = String(size);
-  if (s === '375') return 'Small (375ml)';
-  if (s === '750') return 'Big (750ml)';
+  if (s === '375') return 'small (375ml)';
+  if (s === '750') return 'big (750ml)';
   return s ? s + ' ml' : '';
 }
 // Saves an order + its lines + its "sold" inventory rows, all replaced together.
@@ -770,7 +770,7 @@ function saveOrder_(o, customer) {
       o.invoiceNo = nextInvoiceNo_(o.date, existing);
     }
     var orow = rowFrom_({ order_pk: o.id, invoice_no: o.invoiceNo, order_date: o.date || '', customer_fk: o.customerId || '',
-      customer_name: o.customerName || '', channel: o.channel || 'B2C', paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
+      customer_name: o.customerName || '', channel: String(o.channel || 'b2c').toLowerCase(), paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
       deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '' }, on, omap);
     var r = findRowByKey_(osh, omap, 'order_pk', o.id);
     if (r === -1) osh.appendRow(orow); else osh.getRange(r, 1, 1, on).setValues([orow]);
@@ -787,7 +787,7 @@ function saveOrder_(o, customer) {
     if (o.deductStock) {
       var irows = (o.lines || []).filter(function (l) { return parseFloat(l.qty) > 0; }).map(function (l) {
         return buildBottleInvRow_({ id: Utilities.getUuid(), stage: 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
-          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'Sold: ' + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
+          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'sold: ' + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
       });
       if (irows.length) ish.getRange(ish.getLastRow() + 1, 1, irows.length, inN).setValues(irows);
     }
@@ -1639,7 +1639,7 @@ function handleAction_(body) {
     var fqty = parseFloat(f.qty) || 0;
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'atelier', date: fdate, size: f.size || '',
-      qty: -fqty, notes: (truthy_(f.auto) && f.notes) ? f.notes : ('Filled: ' + (f.flavour || '')), auto: true
+      qty: -fqty, notes: (truthy_(f.auto) && f.notes) ? f.notes : ('filled: ' + (f.flavour || '')), auto: true
     }, fncols, fmap));
     fsh.appendRow(buildBottleInvRow_({
       id: Utilities.getUuid(), stage: 'filled', size: f.size || '', date: fdate, flavour: f.flavour || '',

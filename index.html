@@ -1612,13 +1612,14 @@
   /* No subtitles under page titles (every page). */
   [id^="view-"] > .view-bar + .content-head .content-sub { display: none !important; }
   [id^="view-"] > .view-bar + .content-head { padding-bottom: 36px; }
-  .aphro-note { font-size: 0.72rem; color: var(--ink-faint); margin-top: 3px; white-space: nowrap; }
+  .aphro-note { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 0.9em; color: var(--ink-faint); white-space: nowrap; vertical-align: middle; cursor: default; }
+  .aphro-note svg { display: block; }
   /* Buttons don't inherit text-transform by default; make them follow the
      lowercase interface. Buttons that show data (names, IDs) keep their case. */
   button { text-transform: inherit; }
   button.crm-link, button.cmp-pick-btn { text-transform: none; }
   ::placeholder { text-transform: lowercase; }
-  td.empty, .crm-chan { text-transform: lowercase; }
+  td.empty { text-transform: lowercase; }
   .biv-table tr.biv-sub-row.biv-sub-mid td { border-bottom: none; padding-bottom: 2px; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
@@ -1912,8 +1913,8 @@
     <div class="form-group">
       <label>Channel</label>
       <select id="o-channel" onchange="onOrderChannelChange()">
-        <option value="B2C">b2c &mdash; direct</option>
-        <option value="B2B">b2b &mdash; shop / caf&eacute;</option>
+        <option value="b2c">b2c &mdash; direct</option>
+        <option value="b2b">b2b &mdash; shop / caf&eacute;</option>
       </select>
     </div>
     <div class="form-section">
@@ -1967,8 +1968,8 @@
       <div class="form-group">
         <label>Type</label>
         <select id="c-type" onchange="syncCustomerContactField()">
-          <option value="B2C">b2c &mdash; direct</option>
-          <option value="B2B">b2b &mdash; shop / caf&eacute;</option>
+          <option value="b2c">b2c &mdash; direct</option>
+          <option value="b2b">b2b &mdash; shop / caf&eacute;</option>
         </select>
       </div>
       <div class="form-group" id="c-contact-group">
@@ -4744,6 +4745,20 @@ var plannedBrews = [];
 // comment on getBottleInvSheet_ for the two-pool (empty-by-size /
 // filled-by-flavour) model this powers.
 var bottleInventory = [];
+// Codes the app writes are lowercase ("small (375ml)", "b2b"). Older rows in
+// the sheet may still say "Small (375ml)" / "B2B": they're read the same way.
+function canonSize(v) {
+  var t = String(v == null ? '' : v).trim(), l = t.toLowerCase();
+  if (l === 'small (375ml)') return 'small (375ml)';
+  if (l === 'big (750ml)') return 'big (750ml)';
+  return t;
+}
+function canonChan(v) { var l = String(v || '').trim().toLowerCase(); return l === 'b2b' ? 'b2b' : 'b2c'; }
+function normInvRows(list) { (list || []).forEach(function (e) { e.size = canonSize(e.size); }); return list || []; }
+function normSales() {
+  (orders || []).forEach(function (o) { o.channel = canonChan(o.channel); });
+  (customers || []).forEach(function (c) { c.type = canonChan(c.type); });
+}
 // Planned infusions/brews are edited as a local draft (Save/Cancel below)
 // instead of autosaving on every keystroke like the rest of the app. These
 // track, per plan id: whether it's never made it to the sheet yet
@@ -4978,9 +4993,10 @@ function applyAllData(res) {
     dailyChecklist = res.dailyChecklist || [];
     plannedInfusions = res.plannedInfusions || [];
     plannedBrews = res.plannedBrews || [];
-    bottleInventory = res.bottleInventory || [];
+    bottleInventory = normInvRows(res.bottleInventory);
     if (Array.isArray(res.orders)) orders = res.orders;
     if (Array.isArray(res.customers)) customers = res.customers;
+    normSales();
     if (res.invoiceSettings && typeof res.invoiceSettings === 'object') invoiceSettings = res.invoiceSettings;
     if (Array.isArray(res.ingredientPurchases)) ingredientPurchases = res.ingredientPurchases;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
@@ -7111,8 +7127,8 @@ function saveBottle() {
 // "Filled bottles at atelier" counts them without a manual Fill.
 function bottleInvSizeLabel(vol) {
   var n = parseFloat(vol);
-  if (n === 375) return 'Small (375ml)';
-  if (n === 750) return 'Big (750ml)';
+  if (n === 375) return 'small (375ml)';
+  if (n === 750) return 'big (750ml)';
   return n ? (n + ' ml') : '';
 }
 // Only the sizes we sell (375 / 750 ml) go into Bottle inventory — 1000 ml
@@ -7121,13 +7137,13 @@ function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n === 37
 function logBottlingInInventory(shared, qty, ids, cb) {
   qty = parseFloat(qty) || 0;
   if (qty <= 0 || !bottleIsSellSize(shared.volumeMl)) { if (cb) cb(true); return; }
-  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Unknown';
+  var flavour = (shared.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'unknown';
   var fill = {
     size: bottleInvSizeLabel(shared.volumeMl || 375),
     flavour: flavour,
     qty: qty,
     date: shared.bottlingDate || todayISO(),
-    notes: 'Auto: bottled ' + ids.filter(Boolean).join(', '),
+    notes: 'auto: bottled ' + ids.filter(Boolean).join(', '),
     auto: true
   };
   apiPost({ action: 'fillBottles', fill: fill }, function (err, res) {
@@ -7140,6 +7156,9 @@ function logBottlingInInventory(shared, qty, ids, cb) {
 // count, and one "consumed" line (notes "Aphrometer", linked to the
 // bottling) takes them out of the sellable filled stock.
 var APHRO_NOTE = 'aphrometer';
+// Small gauge icon shown next to the bottle count when part of a bottling is
+// under an aphrometer.
+var APHRO_ICON = '<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.3"></circle><path d="M8 8l3-2.6"></path><circle cx="8" cy="8" r="0.9" fill="currentColor" stroke="none"></circle></svg>';
 function aphroKeyFor(b) {
   var g = bivBottlings().filter(function (x) { return x.date === b.bottlingDate && x.ids.indexOf(b.bottleId) >= 0; })[0];
   return g ? g.key : ((b.bottlingDate || '') + '|' + (b.bottleId || ''));
@@ -7154,7 +7173,7 @@ function syncAphrometer(b, orig, n) {
   n = Math.max(0, parseInt(n, 10) || 0);
   if (!bottleIsSellSize(b.volumeMl)) return;
   var e = aphroEntryFor(orig || b), body = null;
-  var flavour = (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Unknown';
+  var flavour = (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'unknown';
   if (e && n === 0) body = { action: 'deleteBottleInvEntry', id: e.id };
   else if (e) { var upd = JSON.parse(JSON.stringify(e)); upd.qty = -n; body = { action: 'updateBottleInvEntry', entry: upd }; }
   else if (n > 0) body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: bottleInvSizeLabel(b.volumeMl || 375), date: b.bottlingDate || todayISO(), flavour: flavour, bottling: aphroKeyFor(b), qty: -n, notes: APHRO_NOTE } };
@@ -7737,7 +7756,7 @@ function bottleRowHtml(b, newDate, groupUid, groupOpen) {
     + cellEd(valWithPer(b.sugarG, 'g', b.volumeMl, 1000, 'mg', true), { type: 'bottle', uid: b.uid, field: 'sugarG', input: 'number', cls: 'num' })
     + cellEd(valWithPer(b.yeastMg, 'mg', b.volumeMl, 1, 'mg', true), { type: 'bottle', uid: b.uid, field: 'yeastMg', input: 'number', cls: 'num' })
     + '<td class="flav-cell"><div class="flav-inner">' + flavorCell(b, true) + '</div></td>'
-    + cellEd((qty > 1 ? '<span class="count-badge">\u00d7' + qty + '</span>' : '1') + (aphroCount(b) ? '<div class="aphro-note">' + fmtNum(aphroCount(b)) + ' aphrometer</div>' : ''), { type: 'bottle', uid: b.uid, field: 'count', input: 'number', cls: 'num' })
+    + cellEd((qty > 1 ? '<span class="count-badge">\u00d7' + qty + '</span>' : '1') + (aphroCount(b) ? ' <span class="aphro-note" title="' + fmtNum(aphroCount(b)) + ' aphrometer bottle' + (aphroCount(b) === 1 ? '' : 's') + '">' + APHRO_ICON + fmtNum(aphroCount(b)) + '</span>' : ''), { type: 'bottle', uid: b.uid, field: 'count', input: 'number', cls: 'num' })
     + cellEd('<div class="clip-inner muted">' + (b.notes ? esc(b.notes) : '\u2014') + '</div>', { type: 'bottle', uid: b.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
@@ -8505,6 +8524,7 @@ function loadSales(cb) {
     if (err || !res || !res.ok || !Array.isArray(res.orders)) { if (cb) cb(err || new Error('load failed')); return; }
     orders = res.orders;
     customers = res.customers || [];
+    normSales();
     if (res.invoiceSettings) invoiceSettings = res.invoiceSettings;
     if (cb) cb(null);
   });
@@ -8638,7 +8658,7 @@ function b2bWindow(c, date, excludeId, exception) {
   var out = { orders: [], qty: { '375': 0, '750': 0 }, paid: { '375': 0, '750': 0 }, rebates: 0, from: '', start: '', late: 0 };
   if (!c || !date) return out;
   var prev = ordersOfCustomer(c).filter(function (o) {
-    return o.channel === 'B2B' && String(o.id) !== String(excludeId || '') && o.date && String(o.date) <= String(date);
+    return o.channel === 'b2b' && String(o.id) !== String(excludeId || '') && o.date && String(o.date) <= String(date);
   });
   var start = b2bPeriodStart(prev, date);
   if (!start) return out;
@@ -8754,7 +8774,7 @@ function renderSales() {
 function crmDiscountDue() {
   var today = todayISO();
   return customers.map(function (c) {
-    var list = ordersOfCustomer(c).filter(function (o) { return o.channel === 'B2B' && o.date && o.date <= today; });
+    var list = ordersOfCustomer(c).filter(function (o) { return o.channel === 'b2b' && o.date && o.date <= today; });
     if (!list.length) return null;
     var last = list[list.length - 1], start = b2bPeriodStart(list, today), since = daysBetween(start, today);
     if (since == null || since < B2B_REMIND_DAY || since > B2B_WINDOW_DAYS) return null;
@@ -8822,7 +8842,7 @@ function crmOrdersHtml() {
     revenue += t; bottles += orderBottles(o);
     (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') b375 += q; else if (String(l.size) === '750') b750 += q; });
     if (!o.paid) { unpaid += t; unpaidN++; }
-    if (o.channel === 'B2B') b2b += t; else b2c += t;
+    if (o.channel === 'b2b') b2b += t; else b2c += t;
   });
   var h = '<div class="sales-periods">' + SALES_PERIODS.map(function (p) {
     return '<button type="button" class="sales-chip' + (p.key === salesPeriod ? ' active' : '') + '" onclick="setSalesPeriod(\'' + p.key + '\')">' + p.label + '</button>';
@@ -8880,7 +8900,7 @@ function crmCustomersHtml() {
     h += '<tr>'
       + cellEd(c.alias ? '<strong>' + esc(c.alias) + '</strong>' : '<span class="muted">—</span>', { type: 'customer', uid: c.id, field: 'alias' })
       + cellEd(c.alias ? esc(c.name || '—') : '<strong>' + esc(c.name || '—') + '</strong>', { type: 'customer', uid: c.id, field: 'name' })
-      + cellEd(esc(c.type || 'B2C'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'B2C:B2C,B2B:B2B', cls: 'mono' })
+      + cellEd(esc(c.type || 'b2c'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'b2c:b2c,b2b:b2b', cls: 'mono' })
       + cellEd(esc(c.phone ? fmtPhone(c.phone) : '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
       + cellEd('<div class="clip-inner muted">' + esc([c.address, c.area].filter(Boolean).join(' · ') || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', cls: 'notes-cell' })
@@ -8952,7 +8972,7 @@ function orderB2bWindow() {
 function applyLinePrice(row) {
   if (row.getAttribute('data-edited')) return;
   var size = row.querySelector('.ol-size').value, n = orderSizeQty(size);
-  var p = val('o-channel') === 'B2B' ? b2bBottlePrice(size, n + (orderB2bWindow().qty[size] || 0)) : b2cBottlePrice(size, n);
+  var p = val('o-channel') === 'b2b' ? b2bBottlePrice(size, n + (orderB2bWindow().qty[size] || 0)) : b2cBottlePrice(size, n);
   row.querySelector('.ol-price').value = p ? p.toFixed(2) : '';
 }
 function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), applyLinePrice); updateOrderDiscount(); }
@@ -8962,7 +8982,7 @@ function applyAllLinePrices() { [].forEach.call(document.querySelectorAll('#o-li
 function updateOrderDiscount() {
   var box = document.getElementById('o-discount');
   if (!box) return;
-  var isB2B = val('o-channel') === 'B2B', c = customerByName(val('o-customer'));
+  var isB2B = val('o-channel') === 'b2b', c = customerByName(val('o-customer'));
   if (!isB2B || !c) { box.style.display = 'none'; return; }
   var exEl = document.getElementById('o-exception');
   var normal = b2bWindow(c, val('o-date'), editingOrderId, false);
@@ -9011,7 +9031,7 @@ function onOrderLineChange(el, sizeChanged) {
 }
 function onOrderChannelChange() {
   applyAllLinePrices();
-  if (!editingOrderId) document.getElementById('o-paid').checked = val('o-channel') !== 'B2B';
+  if (!editingOrderId) document.getElementById('o-paid').checked = val('o-channel') !== 'b2b';
   updateOrderTotal();
 }
 function onOrderCustomerInput() {
@@ -9052,7 +9072,7 @@ function openOrderDrawer(id) {
   document.getElementById('order-save-btn').textContent = o ? 'Update order' : 'Save order';
   document.getElementById('o-date').value = o ? (o.date || todayISO()) : todayISO();
   document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
-  document.getElementById('o-channel').value = o ? (o.channel || 'B2C') : 'B2C';
+  document.getElementById('o-channel').value = o ? (o.channel || 'b2c') : 'b2c';
   document.getElementById('o-paid').checked = o ? !!o.paid : true;
   document.getElementById('o-deduct').checked = o ? !!o.deductStock : true;
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
@@ -9105,7 +9125,7 @@ function postOrder(o, newCustomer, onFail) {
 // The discount line to save with the order (B2B, rebate above 0).
 function orderRebateLines() {
   var box = document.getElementById('o-discount'), r = parseFloat(val('o-rebate')) || 0;
-  if (val('o-channel') !== 'B2B' || !box || box.style.display === 'none' || r <= 0) return [];
+  if (val('o-channel') !== 'b2b' || !box || box.style.display === 'none' || r <= 0) return [];
   var ex = document.getElementById('o-exception');
   return [{ size: 'rebate', flavour: '30-day volume discount' + (ex && ex.checked ? ' (exception)' : ''), qty: 0, unitPrice: Math.round(r * 100) / 100, bottling: '' }];
 }
@@ -9178,7 +9198,7 @@ function deleteOrder(id) {
 // for B2C the name already is the person, so the box is hidden.
 function syncCustomerContactField() {
   var g = document.getElementById('c-contact-group');
-  if (g) g.style.display = (val('c-type') === 'B2B') ? '' : 'none';
+  if (g) g.style.display = (val('c-type') === 'b2b') ? '' : 'none';
 }
 function openCustomerDrawer(id) {
   var c = id ? findCustomer(id) : null;
@@ -9187,7 +9207,7 @@ function openCustomerDrawer(id) {
   document.getElementById('customer-save-btn').textContent = c ? 'Update customer' : 'Save customer';
   document.getElementById('c-name').value = c ? c.name : '';
   document.getElementById('c-alias').value = c ? (c.alias || '') : '';
-  document.getElementById('c-type').value = c ? (c.type || 'B2C') : 'B2C';
+  document.getElementById('c-type').value = c ? (c.type || 'b2c') : 'b2c';
   document.getElementById('c-contact').value = c ? (c.contact || '') : '';
   syncCustomerContactField();
   document.getElementById('c-phone').value = c ? (c.phone || '') : '';
@@ -9233,7 +9253,7 @@ function saveCustomer() {
   if (aliasClash && String(aliasClash.id) !== String(editingCustomerId)) { alert('“' + val('c-alias').trim() + '” is already used by ' + aliasClash.name + '.'); return; }
   var prev = editingCustomerId ? findCustomer(editingCustomerId) : null;
   var c = {
-    id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-type') === 'B2B' ? val('c-contact').trim() : '',
+    id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-type') === 'b2b' ? val('c-contact').trim() : '',
     phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(), area: val('c-area').trim(),
     reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO()
   };
@@ -9309,7 +9329,7 @@ function invoiceHtml(o) {
       + '<td class="r">' + fmtNum(parseFloat(l.qty) || 0) + '</td><td class="r">' + money(parseFloat(l.unitPrice) || 0) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>';
   }).join('');
   // Thank-you note, same words as on the price lists (B2B or B2C).
-  var isB2B = (o.channel === 'B2B') || (c && c.type === 'B2B');
+  var isB2B = (o.channel === 'b2b') || (c && c.type === 'b2b');
   var thanks = isB2B
     ? 'thank you for giving toka a place in your fridge, on your table and in your experience. we make it the slow way: small batches, a living culture, bottled by hand in beirut. places like yours are why that effort is worth it. thank you for treating it with care and sharing it with your guests. we’ll bring the bottles, and happily the training for your team, so you can tell the story as well as we can. welcome to the toka family.'
     : 'thank you for giving toka a place in your fridge and on your table. we make it the slow way: small batches, a living culture, bottled by hand in beirut. every bottle is tended to until it’s ready, never rushed. thank you for pouring it with care and sharing it with the people around you. welcome to the toka family.';
@@ -9378,7 +9398,7 @@ function openInvoice(id) {
 function loadBottleInventory(cb) {
   api({ action: 'getBottleInventory' }, function (err, res) {
     if (err || !res || !res.ok) { if (cb) cb(err || new Error('load failed')); return; }
-    bottleInventory = res.bottleInventory || [];
+    bottleInventory = normInvRows(res.bottleInventory);
     if (typeof renderBottleInventory === 'function') renderBottleInventory();
     if (cb) cb(null);
   });
@@ -9466,7 +9486,7 @@ function bivBalances() {
 function bivSizeList(b) {
   // Known sizes always show first (even at zero), then any extra category
   // someone free-types later still gets picked up automatically.
-  var sizes = ['Small (375ml)', 'Big (750ml)'];
+  var sizes = ['small (375ml)', 'big (750ml)'];
   [b.received, b.depot, b.atelierEmpty, b.filledEvents, b.consumed, b.sold].forEach(function (m) {
     for (var k in m) { if (sizes.indexOf(k) === -1) sizes.push(k); }
   });
@@ -9593,8 +9613,8 @@ function bivBottlings() {
   var groups = {}, order = [];
   bottleInventory.forEach(function (e) {
     if ((e.stage || '') !== 'filled') return;
-    var m = /^Auto: bottled (.+)$/.exec(String(e.notes || ''));
-    var label = m ? m[1] : 'Filled by hand';
+    var m = /^auto: bottled (.+)$/i.exec(String(e.notes || ''));
+    var label = m ? m[1] : 'filled by hand';
     var fl = e.flavour || '(unspecified)';
     var key = (e.date || '') + '|' + label;
     var gk = key + '|' + fl;
@@ -9630,7 +9650,7 @@ function bivBottlingRefName(key) {
   return bivBottlingName({ ids: ids }) + (ids.length ? '' : ' ' + fmtDate(String(key).split('|')[0]));
 }
 function bivBottlingName(g) {
-  if (!g.ids.length) return 'Filled by hand';
+  if (!g.ids.length) return 'filled by hand';
   return g.ids.length > 1 ? g.ids[0] + ' +' + (g.ids.length - 1) : g.ids[0];
 }
 function bivBottlingByKey(key, flavour) {
@@ -9644,7 +9664,7 @@ function bivBottlingByKey(key, flavour) {
 // oldest-first, which is only an estimate), then "any batch" per flavour
 // and size.
 // Values: "<bottling key>||<flavour>||<size>", or "||<flavour>||<size>".
-var BIV_SIZES = ['Small (375ml)', 'Big (750ml)'];
+var BIV_SIZES = ['small (375ml)', 'big (750ml)'];
 function bivSizeShort(sizeLabel) { var m = /(\d+)\s*ml/i.exec(String(sizeLabel || '')); return m ? m[1] + ' ml' : String(sizeLabel || ''); }
 function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
   if (!selBottling && !selFlavour) { selFlavour = 'Cardamom Sumac'; selSize = selSize || BIV_SIZES[0]; }   // default: Cardamom Sumac 375 ml, any batch
@@ -9696,7 +9716,7 @@ function bivFlavourBottlingsHtml(fl, sizes) {
 // Fixed vocabularies for the bottle_inventory ledger's categorical fields —
 // used both for the quick-add forms' <select>s and as the `options` string
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
-var BIV_SIZE_OPTS = 'Small (375ml):small (375ml),Big (750ml):big (750ml)';
+var BIV_SIZE_OPTS = 'small (375ml),big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
 var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,recycled:Recycled,other:Other';
 function bivOptionsHtml(optStr) {
@@ -9823,14 +9843,6 @@ function bivAddMovement() {
     loadBottleInventory();
   });
 }
-// Notes the app writes itself ("Auto: bottled …", "Sold: …", "Filled: …",
-// "Aphrometer") are shown in lowercase like the rest of the interface; IDs,
-// invoice numbers and names inside them keep their case. Typed notes stay as typed.
-function bivNoteDisplay(n) {
-  n = String(n || '');
-  var m = /^(Auto: bottled|Auto: brought from depot|Sold:|Filled:|Aphrometer)(.*)$/i.exec(n);
-  return m ? esc(m[1].toLowerCase()) + esc(m[2]) : esc(n);
-}
 function bivStageLabel(stage) {
   if (stage === 'atelier') return 'atelier';
   if (stage === 'filled') return 'filled';
@@ -9861,11 +9873,11 @@ function renameBaseBrewRows() {
   // size and quantity) instead of "Filled: <flavour>".
   var used = {};
   bottleInventory.forEach(function (f) {
-    if (f.stage !== 'filled' || !/^Auto: bottled /.test(String(f.notes || ''))) return;
+    if (f.stage !== 'filled' || !/^auto: bottled /i.test(String(f.notes || ''))) return;
     var q = parseFloat(f.qty) || 0;
     for (var i = 0; i < bottleInventory.length; i++) {
       var a = bottleInventory[i];
-      if (used[a.id] || a.stage !== 'atelier' || !/^Filled: /.test(String(a.notes || ''))) continue;
+      if (used[a.id] || a.stage !== 'atelier' || !/^filled: /i.test(String(a.notes || ''))) continue;
       if (a.date !== f.date || a.size !== f.size || (parseFloat(a.qty) || 0) !== -q) continue;
       used[a.id] = true;
       a.notes = f.notes;
@@ -9878,8 +9890,8 @@ function renameBaseBrewRows() {
     if (e.stage !== 'sold' || !e.orderId || typeof findOrder !== 'function') return;
     var o = findOrder(e.orderId);
     if (!o || !o.invoiceNo) return;
-    var want = 'Sold: ' + o.invoiceNo + (orderCustomerName(o) ? ' · ' + orderCustomerName(o) : '');
-    if (String(e.notes || '') !== want && /^Sold: /.test(String(e.notes || ''))) { e.notes = want; if (todo.indexOf(e) === -1) todo.push(e); }
+    var want = 'sold: ' + o.invoiceNo + (orderCustomerName(o) ? ' · ' + orderCustomerName(o) : '');
+    if (String(e.notes || '') !== want && /^sold: /i.test(String(e.notes || ''))) { e.notes = want; if (todo.indexOf(e) === -1) todo.push(e); }
   });
   if (!todo.length) return;
   if (typeof renderBottleInventory === 'function') renderBottleInventory();
@@ -9917,7 +9929,7 @@ function bivFlavourDisplay(fl) {
 }
 // Spices of a bottling, named the way inventory rows store a flavour.
 function bivBottleFlavourName(b) {
-  return (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'Unknown';
+  return (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ') || 'unknown';
 }
 // The bottle record behind an "Auto: bottled <ids>" note (same ID, or one
 // bottle of that group).
@@ -9940,7 +9952,7 @@ function bivSyncBottlingFlavours() {
   var todo = [], renamed = {};
   bottleInventory.forEach(function (f) {
     if (f.stage !== 'filled') return;
-    var m = /^Auto: bottled (.+)$/.exec(String(f.notes || ''));
+    var m = /^auto: bottled (.+)$/i.exec(String(f.notes || ''));
     if (!m) return;
     var bo = bivBottleForIds(m[1].split(', '));
     if (!bo) return;
@@ -9976,8 +9988,8 @@ function bivSyncBottlingFlavours() {
   })(0);
 }
 function bivSizeRank(size) {
-  if (size === 'Small (375ml)') return 0;
-  if (size === 'Big (750ml)') return 1;
+  if (size === 'small (375ml)') return 0;
+  if (size === 'big (750ml)') return 1;
   return 2;
 }
 function bivFlavourRank(flavour) {
@@ -10051,10 +10063,10 @@ function bivRowHtml(e, sub, newDate, extras) {
   var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
-    + cellEd(esc(String(e.size || '—').toLowerCase()), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
+    + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
     + bivFlavourCellHtml(e)
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
-    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? bivNoteDisplay(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
   // Read-only counter lines under the main row: the automatic counterpart
@@ -10249,7 +10261,7 @@ function bivLogTableHtml() {
   var aphroUnder = {}, aphroHost = {};
   list.forEach(function (f) {
     if (f.stage !== 'filled') return;
-    var m = /^Auto: bottled (.+)$/.exec(String(f.notes || ''));
+    var m = /^auto: bottled (.+)$/i.exec(String(f.notes || ''));
     if (!m) return;
     var key = (f.date || '') + '|' + m[1];
     bottleInventory.forEach(function (c) {
