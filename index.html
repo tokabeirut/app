@@ -1613,6 +1613,12 @@
   [id^="view-"] > .view-bar + .content-head .content-sub { display: none !important; }
   [id^="view-"] > .view-bar + .content-head { padding-bottom: 36px; }
   .aphro-note { font-size: 0.72rem; color: var(--ink-faint); margin-top: 3px; white-space: nowrap; }
+  /* Buttons don't inherit text-transform by default; make them follow the
+     lowercase interface. Buttons that show data (names, IDs) keep their case. */
+  button { text-transform: inherit; }
+  button.crm-link, button.cmp-pick-btn { text-transform: none; }
+  ::placeholder { text-transform: lowercase; }
+  td.empty, .crm-chan { text-transform: lowercase; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -1905,8 +1911,8 @@
     <div class="form-group">
       <label>Channel</label>
       <select id="o-channel" onchange="onOrderChannelChange()">
-        <option value="B2C">B2C &mdash; direct</option>
-        <option value="B2B">B2B &mdash; shop / caf&eacute;</option>
+        <option value="B2C">b2c &mdash; direct</option>
+        <option value="B2B">b2b &mdash; shop / caf&eacute;</option>
       </select>
     </div>
     <div class="form-section">
@@ -1960,8 +1966,8 @@
       <div class="form-group">
         <label>Type</label>
         <select id="c-type" onchange="syncCustomerContactField()">
-          <option value="B2C">B2C &mdash; direct</option>
-          <option value="B2B">B2B &mdash; shop / caf&eacute;</option>
+          <option value="B2C">b2c &mdash; direct</option>
+          <option value="B2B">b2b &mdash; shop / caf&eacute;</option>
         </select>
       </div>
       <div class="form-group" id="c-contact-group">
@@ -2720,7 +2726,7 @@
         <div class="form-group">
           <label class="linked-toggle" style="text-transform:none;letter-spacing:normal;">
             <input type="checkbox" id="exp-f-linked" onchange="toggleLinkedExpense()"/>
-            <span>Linked to another entry (split receipt)</span>
+            <span>linked to another entry (split receipt)</span>
           </label>
           <div id="exp-linked-box" style="display:none;margin-top:8px;">
             <select id="exp-f-linked-entry" onchange="updateLinkedNote()">
@@ -2745,25 +2751,25 @@
         <div>
           <label>Category</label>
           <select id="exp-filter-cat" onchange="renderExpTable()">
-            <option value="">All categories</option>
-            <option value="ingredients">Ingredients</option>
-            <option value="production">Production Costs</option>
-            <option value="utilities">Utilities</option>
-            <option value="maintenance">Maintenance &amp; Repairs</option>
-            <option value="packaging">Packaging</option>
-            <option value="marketing">Marketing &amp; Sales</option>
-            <option value="rnd">R&amp;D &amp; Education</option>
-            <option value="equipment">Equipment</option>
-            <option value="capex">Capital Expenditures</option>
-            <option value="atelier">Atelier Supplies</option>
-            <option value="legal">Legal</option>
-            <option value="other">Other</option>
+            <option value="">all categories</option>
+            <option value="ingredients">ingredients</option>
+            <option value="production">production costs</option>
+            <option value="utilities">utilities</option>
+            <option value="maintenance">maintenance &amp; repairs</option>
+            <option value="packaging">packaging</option>
+            <option value="marketing">marketing &amp; sales</option>
+            <option value="rnd">r&amp;d &amp; education</option>
+            <option value="equipment">equipment</option>
+            <option value="capex">capital expenditures</option>
+            <option value="atelier">atelier supplies</option>
+            <option value="legal">legal</option>
+            <option value="other">other</option>
           </select>
         </div>
         <div>
           <label>Paid by</label>
           <select id="exp-filter-buyer" onchange="renderExpTable()">
-            <option value="">All</option>
+            <option value="">all</option>
             <option>Toka</option>
             <option>Patrick</option>
             <option>Christaki</option>
@@ -2992,7 +2998,7 @@
       <div class="form-group">
         <label class="linked-toggle" style="text-transform:none;letter-spacing:normal;">
           <input type="checkbox" id="exp-edit-linked" onchange="toggleEditLinkedExpense()"/>
-          <span>Linked to another entry (split receipt)</span>
+          <span>linked to another entry (split receipt)</span>
         </label>
         <div id="exp-edit-linked-box" style="display:none;margin-top:8px;">
           <select id="exp-edit-linked-entry" onchange="updateEditLinkedNote()">
@@ -7132,7 +7138,7 @@ function logBottlingInInventory(shared, qty, ids, cb) {
 // gauge) instead of a crown cap — never sold. They stay in the bottling's
 // count, and one "consumed" line (notes "Aphrometer", linked to the
 // bottling) takes them out of the sellable filled stock.
-var APHRO_NOTE = 'Aphrometer';
+var APHRO_NOTE = 'aphrometer';
 function aphroKeyFor(b) {
   var g = bivBottlings().filter(function (x) { return x.date === b.bottlingDate && x.ids.indexOf(b.bottleId) >= 0; })[0];
   return g ? g.key : ((b.bottlingDate || '') + '|' + (b.bottleId || ''));
@@ -7140,7 +7146,7 @@ function aphroKeyFor(b) {
 function aphroEntryFor(b) {
   if (!b) return null;
   var k = aphroKeyFor(b);
-  return bottleInventory.filter(function (e) { return e.stage === 'consumed' && String(e.bottling || '') === k && String(e.notes || '') === APHRO_NOTE; })[0] || null;
+  return bottleInventory.filter(function (e) { return e.stage === 'consumed' && String(e.bottling || '') === k && String(e.notes || '').toLowerCase() === APHRO_NOTE; })[0] || null;
 }
 function aphroCount(b) { var e = aphroEntryFor(b); return e ? Math.abs(parseFloat(e.qty) || 0) : 0; }
 function syncAphrometer(b, orig, n) {
@@ -9689,7 +9695,7 @@ function bivFlavourBottlingsHtml(fl, sizes) {
 // Fixed vocabularies for the bottle_inventory ledger's categorical fields —
 // used both for the quick-add forms' <select>s and as the `options` string
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
-var BIV_SIZE_OPTS = 'Small (375ml),Big (750ml)';
+var BIV_SIZE_OPTS = 'Small (375ml):small (375ml),Big (750ml):big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
 var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,recycled:Recycled,other:Other';
 function bivOptionsHtml(optStr) {
@@ -9734,11 +9740,11 @@ function bivFlavourOptionsHtml() { return bivOptionsHtml(bivFlavourOptsString())
 // entry does (and whether a flavour is needed), so there's a single place to
 // log anything instead of a separate box per stage.
 var BIV_MOVES = [
-  ['depot', 'Empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
-  ['atelier', 'Empty bottles at atelier', 'e.g. brought back by Claire from the depot'],
-  ['filled', 'Filled bottles at atelier', 'optional'],
-  ['consumed', 'Consumed bottles', 'e.g. gave to Kevin'],
-  ['recycled', 'Recycled bottles', 'e.g. returned by a customer']
+  ['depot', 'empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
+  ['atelier', 'empty bottles at atelier', 'e.g. brought back by Claire from the depot'],
+  ['filled', 'filled bottles at atelier', 'optional'],
+  ['consumed', 'consumed bottles', 'e.g. gave to Kevin'],
+  ['recycled', 'recycled bottles', 'e.g. returned by a customer']
 ];
 function bivAddFormsHtml() {
   var today = todayISO();
@@ -9816,14 +9822,22 @@ function bivAddMovement() {
     loadBottleInventory();
   });
 }
+// Notes the app writes itself ("Auto: bottled …", "Sold: …", "Filled: …",
+// "Aphrometer") are shown in lowercase like the rest of the interface; IDs,
+// invoice numbers and names inside them keep their case. Typed notes stay as typed.
+function bivNoteDisplay(n) {
+  n = String(n || '');
+  var m = /^(Auto: bottled|Auto: brought from depot|Sold:|Filled:|Aphrometer)(.*)$/i.exec(n);
+  return m ? esc(m[1].toLowerCase()) + esc(m[2]) : esc(n);
+}
 function bivStageLabel(stage) {
-  if (stage === 'atelier') return 'Atelier';
-  if (stage === 'filled') return 'Filled';
-  if (stage === 'consumed') return 'Consumed';
-  if (stage === 'recycled') return 'Recycled';
-  if (stage === 'sold') return 'Sold';
-  if (stage === 'other') return 'Other';
-  return 'Depot';
+  if (stage === 'atelier') return 'atelier';
+  if (stage === 'filled') return 'filled';
+  if (stage === 'consumed') return 'consumed';
+  if (stage === 'recycled') return 'recycled';
+  if (stage === 'sold') return 'sold';
+  if (stage === 'other') return 'other';
+  return 'depot';
 }
 // Rank helpers purely for sort order (see bivSortedLog) — not tied to the
 // field names anymore now that size/flavour are separate columns.
@@ -10036,10 +10050,10 @@ function bivRowHtml(e, sub, newDate) {
   var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
     + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
-    + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
+    + cellEd(esc(String(e.size || '—').toLowerCase()), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
     + bivFlavourCellHtml(e)
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
-    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? bivNoteDisplay(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
   if (sub) {
@@ -14481,15 +14495,15 @@ function bmBuildIngredientsTable() {
       + '</tr>';
   });
   h += '<tr class="bm-add-row"><td colspan="7"><button type="button" class="bm-add-link" onclick="bmAddCustomRow()">+ add item</button></td></tr>';
-  h += '<tr class="bm-total-row"><td>Cost for one bottle</td><td></td><td></td><td></td>'
+  h += '<tr class="bm-total-row"><td>cost for one bottle</td><td></td><td></td><td></td>'
     + '<td class="num" id="bm-out-fillcost-bottle750">—</td>'
     + '<td class="num" id="bm-out-fillcost-bottle375">—</td><td></td></tr>';
   h += '</tbody>';
   document.getElementById('bm-ingredients-table').innerHTML = h;
 }
 var BM_OURS_TABLES = {
-  oneOff: { containerId: 'bm-oneoff-table', idPrefix: 'oneoff', totalLabel: 'Total' },
-  running: { containerId: 'bm-running-table', idPrefix: 'running', totalLabel: 'Per month' }
+  oneOff: { containerId: 'bm-oneoff-table', idPrefix: 'oneoff', totalLabel: 'total' },
+  running: { containerId: 'bm-running-table', idPrefix: 'running', totalLabel: 'per month' }
 };
 function bmBuildOursTable(kind) {
   var cfg = BM_OURS_TABLES[kind];
@@ -14512,9 +14526,9 @@ function bmBuildOursTable(kind) {
 function bmBuildFullCostTable() {
   document.getElementById('bm-fullcost-table').innerHTML =
     '<thead><tr><th></th><th>750 ml</th><th>375 ml</th></tr></thead><tbody>'
-    + '<tr><td>The product</td><td class="num" id="bm-out-s5-product-bottle750">—</td><td class="num" id="bm-out-s5-product-bottle375">—</td></tr>'
-    + '<tr><td>Its share of the overhead</td><td class="num" id="bm-out-s5-share-bottle750">—</td><td class="num" id="bm-out-s5-share-bottle375">—</td></tr>'
-    + '<tr class="bm-total-row"><td>Full cost</td><td class="num" id="bm-out-s5-full-bottle750">—</td><td class="num" id="bm-out-s5-full-bottle375">—</td></tr>'
+    + '<tr><td>the product</td><td class="num" id="bm-out-s5-product-bottle750">—</td><td class="num" id="bm-out-s5-product-bottle375">—</td></tr>'
+    + '<tr><td>its share of the overhead</td><td class="num" id="bm-out-s5-share-bottle750">—</td><td class="num" id="bm-out-s5-share-bottle375">—</td></tr>'
+    + '<tr class="bm-total-row"><td>full cost</td><td class="num" id="bm-out-s5-full-bottle750">—</td><td class="num" id="bm-out-s5-full-bottle375">—</td></tr>'
     + '</tbody>';
 }
 function bmBuildPriceCards() {
@@ -14551,9 +14565,9 @@ function bmBuildPriceCards() {
   document.getElementById('bm-price-cards').innerHTML = h;
 }
 var BM_BREAKEVEN_ROWS = [
-  { mode: 'wholesale', label: 'Only B2B' },
-  { mode: 'half', label: 'Half B2B, half B2C' },
-  { mode: 'retail', label: 'Only B2C' }
+  { mode: 'wholesale', label: 'only b2b' },
+  { mode: 'half', label: 'half b2b, half b2c' },
+  { mode: 'retail', label: 'only b2c' }
 ];
 function bmBuildBreakEvenTable() {
   var h = '<thead><tr><th>Where we sell</th><th>Litres we have to sell</th>'
