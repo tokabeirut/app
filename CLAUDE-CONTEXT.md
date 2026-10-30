@@ -52,7 +52,7 @@ Read this first when continuing work on the toka app.
 - First fermentation: one "Water (hot/cold)" column, shown as `16 L (9 L + 7 L)`; click → two-field editor saving both (`waterCellHtml` / `startWaterInline`).
 - Logo = `toka-logo.png` from the folder (embedded base64, header + setup screen).
 - Top bar ("← back" + buttons on the right) has the same height on every page.
-- Tab bar spans the full width, grouped Brewing process | Operations | Business. Two-word names are stacked on two lines.
+- Tab bar spans the full width, grouped Business | Brewing process | Operations (same order as the home page). Two-word names are stacked on two lines.
 - **Every table is click-to-edit inline** (`cellEd` / `startInline` / `commitInline`; the editor overlays the cell so nothing resizes).
 - Units go in field labels, e.g. "Tea (g)", never in separate unit boxes.
 - Money is always shown with 2 decimals (`$ 12.50`).

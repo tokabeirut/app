@@ -1648,6 +1648,12 @@
      shown on every other page so you can jump straight to another page
      without going back to Home first. Grouped to match the Home sections. ===== -->
 <nav id="view-tabs" style="display:none">
+  <div class="view-tab-group" style="-webkit-flex-grow:3;flex-grow:3">
+    <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
+    <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
+    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle<br>math</button>
+  </div>
+  <div class="view-tab-divider"></div>
   <div class="view-tab-group" style="-webkit-flex-grow:6;flex-grow:6">
     <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">First<br>fermentation</button>
     <button type="button" class="view-tab" data-view="infusion" onclick="showView('infusion')">Infusion</button>
@@ -1663,12 +1669,6 @@
     <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
     <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
-  </div>
-  <div class="view-tab-divider"></div>
-  <div class="view-tab-group" style="-webkit-flex-grow:3;flex-grow:3">
-    <button type="button" class="view-tab" data-view="expenses" onclick="showView('expenses')">Expenses</button>
-    <button type="button" class="view-tab" data-view="sales" onclick="showView('sales')">Sales</button>
-    <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle<br>math</button>
   </div>
 </nav>
 
