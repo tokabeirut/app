@@ -2201,7 +2201,7 @@
       <div class="bc-sizes">
         <div class="bc-box-group">
           <div class="bc-pct-box">
-            <input type="number" id="bc-pct-small" class="bc-pct-input" value="66.67" min="0" max="100" step="any" oninput="bcOnPctEdit('small')" />
+            <input type="number" id="bc-pct-small" class="bc-pct-input" value="100" min="0" max="100" step="any" oninput="bcOnPctEdit('small')" />
             <span>%</span>
           </div>
           <div class="bc-box">
@@ -2211,7 +2211,7 @@
         </div>
         <div class="bc-box-group">
           <div class="bc-pct-box">
-            <input type="number" id="bc-pct-big" class="bc-pct-input" value="33.33" min="0" max="100" step="any" oninput="bcOnPctEdit('big')" />
+            <input type="number" id="bc-pct-big" class="bc-pct-input" value="0" min="0" max="100" step="any" oninput="bcOnPctEdit('big')" />
             <span>%</span>
           </div>
           <div class="bc-box">
@@ -10557,7 +10557,6 @@ function readingGroupsHtml(list, vesselMode) {
         + (canGo ? ' onclick="' + goFn + '(\'' + esc(s.uid) + '\')"' : '')
       + '>' + esc(s.id || '(unknown)') + '</span>'
       + (s.orphaned ? '<span class="rgroup-tag rgroup-unlinked">unlinked</span>' : '')
-      + '<span class="rgroup-count">' + rs.length + (rs.length === 1 ? ' reading' : ' readings') + (groups[gi].inherited && groups[gi].inherited.length ? ' + ' + groups[gi].inherited.length + ' before the split' : '') + '</span>'
       + '</td></tr>';
     for (var i = 0; i < rs.length; i++) out += readingRowHtml(rs[i]);
     var inh = groups[gi].inherited || [];
