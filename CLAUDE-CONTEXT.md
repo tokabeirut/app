@@ -122,3 +122,4 @@ Read this first when continuing work on the toka app.
 - Invoice details form: payment details and footer note fields removed; saving keeps any values already stored for them (merge, not overwrite).
 - Sales top bar button reads "+ new customer".
 - Bottling drawer: "Bottle number(s)" field hidden (no longer used); one bottling = one row with a quantity. Old IDs with numbers keep their number when edited.
+- Expenses add/edit: "item name" and "paid to" suggest earlier entries as you type (HIST_FIELDS `expName`, `expVendor`), same dropdown as spices. Suggestion list keeps the original capitals.

@@ -1586,7 +1586,7 @@
   /* Interface text is all lowercase (toka house style). Data — table cells,
      form fields, IDs — keeps its own case. Empty subtitles take no space. */
   body { text-transform: lowercase; }
-  td, input, textarea, select, option, [contenteditable], .keep-case, #cell-tip { text-transform: none; }
+  td, input, textarea, select, option, [contenteditable], .keep-case, #cell-tip, #hist-dropdown { text-transform: none; }
   .content-sub:empty { display: none; }
   .wtr-parts { color: var(--ink-faint); font-size: 0.86em; margin-left: 3px; }
   /* Brand kit: small DM Sans labels in widely-spaced CAPITALS (tab bar,
@@ -2669,7 +2669,7 @@
 
         <div class="form-group">
           <label>Item Name</label>
-          <input type="text" id="exp-f-name" placeholder="e.g. SCOBY culture, glass bottles…"/>
+          <input type="text" id="exp-f-name" placeholder="e.g. SCOBY culture, glass bottles…" data-hist-field="expName" autocomplete="off"/>
         </div>
 
         <div class="form-group">
@@ -2688,7 +2688,7 @@
 
         <div class="form-group">
           <label>Paid to</label>
-          <input type="text" id="exp-f-vendor" placeholder="e.g. Local Brew Co., supermarket…"/>
+          <input type="text" id="exp-f-vendor" placeholder="e.g. Local Brew Co., supermarket…" data-hist-field="expVendor" autocomplete="off"/>
         </div>
 
         <div class="form-group">
@@ -2944,7 +2944,7 @@
 
       <div class="form-group">
         <label>Item Name</label>
-        <input type="text" id="exp-edit-name"/>
+        <input type="text" id="exp-edit-name" data-hist-field="expName" autocomplete="off"/>
       </div>
 
       <div class="form-group">
@@ -2963,7 +2963,7 @@
 
       <div class="form-group">
         <label>Paid to</label>
-        <input type="text" id="exp-edit-vendor"/>
+        <input type="text" id="exp-edit-vendor" data-hist-field="expVendor" autocomplete="off"/>
       </div>
 
       <div class="form-group">
@@ -8046,6 +8046,8 @@ var HIST_FIELDS = {
     return out;
   },
   ptCategory: function () { return productionTasks.map(function (t) { return t.category; }); },
+  expName: function () { return expenses.map(function (x) { return x.name; }); },
+  expVendor: function () { return expenses.map(function (x) { return x.vendor; }); },
   saleCustomer: function () { return customers.map(function (c) { return c.name; }); },
   ingredientName: function () { return ingredientNames(); },
   saleFlavour: function () {
