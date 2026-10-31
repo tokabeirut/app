@@ -132,3 +132,4 @@ Read this first when continuing work on the toka app.
 - Batch/infusion/bottle IDs (F1-…, INF-…, BTL-…) always show as saved, also outside tables: CSS rule on .id-cell, .task-id, .ftl-batch-id, .tt-head, .biv-batch-ref, .biv-btl-id, .cmp-opt-id, .cmp-link, .ov-node-label, .src-cell, .id-ref.
 - Labo: no reading count ("1 reading + 6 before the split") next to each group name.
 - Volume converter starts at 100% small / 0% big.
+- Complimentary orders (backend v48, orders column `complimentary`): checkbox in the order drawer; all prices 0, no 30-day discount/rebate, paid row hidden (saved as paid). Bottles still leave stock as "sold". Kept out of the sales figures (revenue, bottles sold, average, unpaid) — shown as "+ N complimentary" under bottles sold — and out of the B2B 30-day window and discount reminders. Table shows a grey "Complimentary" pill; invoice status "Complimentary".

@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '47 (lowercase app-written values)';
+var VERSION = '48 (complimentary orders)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -666,7 +666,7 @@ function readAllIngredientPurchases_() {
 var SALES_SHEET = 'Sales';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
-var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes'];
+var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary'];
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
 
@@ -735,7 +735,7 @@ function readAllOrders_() {
       id: String(o.order_pk), invoiceNo: String(o.invoice_no || ''), date: ymd_(o.order_date),
       customerId: String(o.customer_fk || ''), customerName: String(o.customer_name || ''),
       channel: String(o.channel || 'b2c').toLowerCase(), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
-      deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''),
+      deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''), complimentary: truthy_(o.complimentary),
       lines: lines[String(o.order_pk)] || []
     };
   });
@@ -771,7 +771,7 @@ function saveOrder_(o, customer) {
     }
     var orow = rowFrom_({ order_pk: o.id, invoice_no: o.invoiceNo, order_date: o.date || '', customer_fk: o.customerId || '',
       customer_name: o.customerName || '', channel: String(o.channel || 'b2c').toLowerCase(), paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
-      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '' }, on, omap);
+      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '', complimentary: o.complimentary ? 'yes' : '' }, on, omap);
     var r = findRowByKey_(osh, omap, 'order_pk', o.id);
     if (r === -1) osh.appendRow(orow); else osh.getRange(r, 1, 1, on).setValues([orow]);
 

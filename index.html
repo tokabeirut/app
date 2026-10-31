@@ -822,6 +822,7 @@
   #view-sales .sale-paid-cell .is-unpaid { color: var(--terra); }
   #view-sales .paid-pill { border: 1px solid var(--terra-light, #D3CBB0); background: var(--terra-pale); color: var(--terra); border-radius: 99px; padding: 3px 10px; font-family: 'DM Sans', sans-serif; font-size: 0.68rem; letter-spacing: 0.02em; text-transform: lowercase; cursor: pointer; }
   #view-sales .paid-pill.is-paid { border-color: #b9d9c4; background: #edf6f0; color: #3d7a55; }
+  #view-sales .paid-pill.is-comp { border-color: var(--border); background: var(--surface2); color: var(--ink-faint); cursor: default; }
   /* px column widths + max(sum, 100%) like Bottling/Infusion: fills a
      laptop screen, scrolls sideways on a phone instead of squashing. */
   .sales-table { table-layout: fixed; min-width: 1240px; width: 1240px; width: max(1240px, 100%); }
@@ -1934,6 +1935,9 @@
       <div class="sale-total-line">Total <strong id="o-total">$ 0.00</strong></div>
     </div>
     <div class="form-group">
+      <label class="sale-paid-label"><input type="checkbox" id="o-comp" class="task-check" onchange="onOrderCompChange()" /> <span>Complimentary &mdash; free, nothing to pay</span></label>
+    </div>
+    <div class="form-group" id="o-paid-group">
       <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" /> <span>Paid</span></label>
     </div>
     <div class="form-group">
@@ -4759,7 +4763,7 @@ function canonSize(v) {
 function canonChan(v) { var l = String(v || '').trim().toLowerCase(); return l === 'b2b' ? 'b2b' : 'b2c'; }
 function normInvRows(list) { (list || []).forEach(function (e) { e.size = canonSize(e.size); }); return list || []; }
 function normSales() {
-  (orders || []).forEach(function (o) { o.channel = canonChan(o.channel); });
+  (orders || []).forEach(function (o) { o.channel = canonChan(o.channel); o.complimentary = o.complimentary === true || /^(yes|true|1)$/i.test(String(o.complimentary || '')); });
   (customers || []).forEach(function (c) { c.type = canonChan(c.type); });
 }
 // Planned infusions/brews are edited as a local draft (Save/Cancel below)
@@ -8665,7 +8669,7 @@ function b2bWindow(c, date, excludeId, exception) {
   var out = { orders: [], qty: { '375': 0, '750': 0 }, paid: { '375': 0, '750': 0 }, rebates: 0, from: '', start: '', late: 0 };
   if (!c || !date) return out;
   var prev = ordersOfCustomer(c).filter(function (o) {
-    return o.channel === 'b2b' && String(o.id) !== String(excludeId || '') && o.date && String(o.date) <= String(date);
+    return o.channel === 'b2b' && !o.complimentary && String(o.id) !== String(excludeId || '') && o.date && String(o.date) <= String(date);
   });
   var start = b2bPeriodStart(prev, date);
   if (!start) return out;
@@ -8781,7 +8785,7 @@ function renderSales() {
 function crmDiscountDue() {
   var today = todayISO();
   return customers.map(function (c) {
-    var list = ordersOfCustomer(c).filter(function (o) { return o.channel === 'b2b' && o.date && o.date <= today; });
+    var list = ordersOfCustomer(c).filter(function (o) { return o.channel === 'b2b' && !o.complimentary && o.date && o.date <= today; });
     if (!list.length) return null;
     var last = list[list.length - 1], start = b2bPeriodStart(list, today), since = daysBetween(start, today);
     if (since == null || since < B2B_REMIND_DAY || since > B2B_WINDOW_DAYS) return null;
@@ -8843,8 +8847,9 @@ function crmNudgeHtml() {
 }
 function crmOrdersHtml() {
   var list = ordersForPeriod(salesPeriod);
-  var revenue = 0, bottles = 0, b750 = 0, b375 = 0, unpaid = 0, unpaidN = 0, b2b = 0, b2c = 0;
+  var revenue = 0, bottles = 0, b750 = 0, b375 = 0, unpaid = 0, unpaidN = 0, b2b = 0, b2c = 0, compBottles = 0, compN = 0;
   list.forEach(function (o) {
+    if (o.complimentary) { compBottles += orderBottles(o); compN++; return; }   // given away: not in the sales figures
     var t = orderTotal(o);
     revenue += t; bottles += orderBottles(o);
     (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') b375 += q; else if (String(l.size) === '750') b750 += q; });
@@ -8856,9 +8861,9 @@ function crmOrdersHtml() {
   }).join('') + '</div>';
   h += '<div class="sales-stats">'
     + '<div class="sales-stat"><div class="sales-stat-label">Revenue</div><div class="sales-stat-val">' + saleMoney(revenue) + '</div>'
-    + '<div class="sales-stat-note">' + list.length + ' order' + (list.length === 1 ? '' : 's') + '</div></div>'
+    + '<div class="sales-stat-note">' + (list.length - compN) + ' order' + (list.length - compN === 1 ? '' : 's') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Bottles sold</div><div class="sales-stat-val">' + fmtNum(bottles) + '</div>'
-    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml</div></div>'
+    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' complimentary' : '') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Still to be paid</div><div class="sales-stat-val' + (unpaid > 0 ? ' warn' : '') + '">' + saleMoney(unpaid) + '</div>'
     + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid order' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Average per bottle</div><div class="sales-stat-val">' + saleMoney(bottles ? revenue / bottles : 0) + '</div>'
@@ -8883,7 +8888,8 @@ function crmOrdersHtml() {
       + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
       + '<td class="mono"><strong>' + saleMoney(orderTotal(o)) + '</strong></td>'
-      + '<td><button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button></td>'
+      + '<td>' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
+        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button>') + '</td>'
       + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
       + '<td class="row-actions"><button type="button" class="icon-btn" title="Invoice PDF" onclick="openInvoice(\'' + esc(o.id) + '\')">' + crmInvoiceIcon() + '</button>'
       + '<button type="button" class="icon-btn" title="Edit order" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
@@ -8976,7 +8982,21 @@ function orderB2bWindow() {
   var ex = document.getElementById('o-exception');
   return b2bWindow(c, val('o-date'), editingOrderId, !!(ex && ex.checked));
 }
+function isOrderComp() { var el = document.getElementById('o-comp'); return !!(el && el.checked); }
+// Complimentary order: free. Every price is 0, no discount, nothing to pay;
+// the bottles still leave stock as "sold", but the order stays out of the
+// sales figures and the 30-day volume discount.
+function onOrderCompChange() {
+  var comp = isOrderComp();
+  [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
+    if (comp) { r.querySelector('.ol-price').value = '0.00'; r.removeAttribute('data-edited'); }
+  });
+  document.getElementById('o-paid-group').style.display = comp ? 'none' : '';
+  if (!comp) applyAllLinePrices();
+  updateOrderTotal();
+}
 function applyLinePrice(row) {
+  if (isOrderComp()) { row.querySelector('.ol-price').value = '0.00'; return; }
   if (row.getAttribute('data-edited')) return;
   var size = row.querySelector('.ol-size').value, n = orderSizeQty(size);
   var p = val('o-channel') === 'b2b' ? b2bBottlePrice(size, n + (orderB2bWindow().qty[size] || 0)) : b2cBottlePrice(size, n);
@@ -8990,7 +9010,7 @@ function updateOrderDiscount() {
   var box = document.getElementById('o-discount');
   if (!box) return;
   var isB2B = val('o-channel') === 'b2b', c = customerByName(val('o-customer'));
-  if (!isB2B || !c) { box.style.display = 'none'; return; }
+  if (!isB2B || !c || isOrderComp()) { box.style.display = 'none'; return; }
   var exEl = document.getElementById('o-exception');
   var normal = b2bWindow(c, val('o-date'), editingOrderId, false);
   // The exception is offered when this order falls after the last 30-day period.
@@ -9081,6 +9101,8 @@ function openOrderDrawer(id) {
   document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
   document.getElementById('o-channel').value = o ? (o.channel || 'b2c') : 'b2c';
   document.getElementById('o-paid').checked = o ? !!o.paid : true;
+  document.getElementById('o-comp').checked = !!(o && o.complimentary);
+  document.getElementById('o-paid-group').style.display = (o && o.complimentary) ? 'none' : '';
   document.getElementById('o-deduct').checked = o ? !!o.deductStock : true;
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
   // New orders get their number automatically; an existing order's number
@@ -9132,7 +9154,7 @@ function postOrder(o, newCustomer, onFail) {
 // The discount line to save with the order (B2B, rebate above 0).
 function orderRebateLines() {
   var box = document.getElementById('o-discount'), r = parseFloat(val('o-rebate')) || 0;
-  if (val('o-channel') !== 'b2b' || !box || box.style.display === 'none' || r <= 0) return [];
+  if (val('o-channel') !== 'b2b' || !box || box.style.display === 'none' || r <= 0 || isOrderComp()) return [];
   var ex = document.getElementById('o-exception');
   return [{ size: 'rebate', flavour: '30-day volume discount' + (ex && ex.checked ? ' (exception)' : ''), qty: 0, unitPrice: Math.round(r * 100) / 100, bottling: '' }];
 }
@@ -9159,11 +9181,12 @@ function saveOrder() {
     invoiceNo: invNo,
     date: date, customerId: c.id, customerName: c.name,
     channel: val('o-channel'),
-    paid: document.getElementById('o-paid').checked,
+    paid: isOrderComp() ? true : document.getElementById('o-paid').checked,
+    complimentary: isOrderComp(),
     paidDate: prev ? (prev.paidDate || '') : '',
     deductStock: document.getElementById('o-deduct').checked,
     notes: val('o-notes').trim(),
-    lines: lines.concat(orderRebateLines()),
+    lines: isOrderComp() ? lines.map(function (l) { l.unitPrice = 0; return l; }) : lines.concat(orderRebateLines()),
     _hadStock: prev ? !!prev.deductStock : false
   };
   if (o.paid && !o.paidDate) o.paidDate = todayISO();
@@ -9376,7 +9399,7 @@ function invoiceHtml(o) {
     + '<div class="head">' + (logo ? '<img class="logo" src="' + logo + '" alt="toka">' : '')
     + '<div class="contact">' + (contact ? '<div class="lbl">contact</div>' + contact : '') + '</div></div>'
     + '<div class="meta"><span class="ml">Invoice number:</span> ' + esc(o.invoiceNo || '—') + '<br><span class="ml">Invoice date:</span> ' + esc(fmtDate(o.date)) + '<br>'
-    + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div>'
+    + '<span class="status' + (o.paid ? ' paid' : '') + '">' + (o.complimentary ? 'Complimentary' : o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Payment due') + '</span></div>'
     + '<div class="parties"><div><div class="lbl">Issued by</div><div class="who">' + esc(s.businessName || 'toka') + '</div>' + (s.address ? '<div>' + nl(s.address) + '</div>' : '') + (s.area ? '<div>' + esc(s.area) + '</div>' : '')
     + (s.phone ? '<div>' + esc(fmtPhone(s.phone)) + '</div>' : '') + (s.email ? '<div>' + esc(s.email) + '</div>' : '') + (s.taxId ? '<div class="muted">Reg./tax no. ' + esc(s.taxId) + '</div>' : '') + '</div>'
     + '<div class="to"><div class="lbl">Invoiced to</div><div class="who">' + esc(c.name || '') + '</div>'
