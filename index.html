@@ -1625,6 +1625,8 @@
   /* Batch, infusion and bottle IDs (F1-…, INF-…, BTL-…) always show as saved,
      wherever they appear (daily operations, timelines, tooltips, pickers). */
   .id-cell, .task-id, .ftl-batch-id, .tt-head, .biv-batch-ref, .biv-btl-id, .cmp-opt-id, .cmp-link, .ov-node-label, .src-cell, .id-ref { text-transform: none; }
+  .price-calc { font-style: italic; color: var(--ink-faint); font-size: 0.86em; margin-top: 1px; white-space: nowrap; }
+  .price-net { font-weight: 500; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border); display: inline-block; min-width: 100%; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -8565,6 +8567,37 @@ function mergedOrderLines(o) {
   });
   return out;
 }
+// The list price of one bottle before any discount: the single-bottle
+// price (b2c) or the first wholesale tier (b2b).
+function listBottlePrice(channel, size) {
+  return channel === 'b2b' ? b2bBottlePrice(String(size), 0) : b2cBottlePrice(String(size), 1);
+}
+// Per line: list price and, when the line was charged less, the discount
+// per bottle with what it is (bundle, volume price, complimentary).
+function orderLineBreakdown(o, l) {
+  var q = parseFloat(l.qty) || 0, paid = parseFloat(l.unitPrice) || 0;
+  var base = listBottlePrice(o.channel, l.size);
+  if (!(base > paid + 0.004)) return { base: paid, baseAmt: q * paid, disc: 0, discAmt: 0, label: '' };
+  var label = o.complimentary ? 'complimentary' : (o.channel === 'b2b' ? 'volume price' : 'bundle price');
+  return { base: base, baseAmt: q * base, disc: Math.round((base - paid) * 100) / 100, discAmt: Math.round(q * (base - paid) * 100) / 100, label: label };
+}
+// Whole order: list-price total, all discounts (lines + 30-day rebates) and
+// what's actually due.
+function orderPriceSummary(o) {
+  var gross = 0, disc = 0;
+  mergedOrderLines(o).forEach(function (l) {
+    if (isRebateLine(l)) { disc += parseFloat(l.unitPrice) || 0; return; }
+    var b = orderLineBreakdown(o, l); gross += b.baseAmt; disc += b.discAmt;
+  });
+  return { gross: Math.round(gross * 100) / 100, disc: Math.round(disc * 100) / 100, net: orderTotal(o) };
+}
+// Sales table: the list price, and underneath in italics the discount and
+// what's due ("− $ 12.00 discount = $ 42.00").
+function orderTotalCellHtml(o) {
+  var p = orderPriceSummary(o);
+  if (!p.disc) return '<strong>' + saleMoney(p.net) + '</strong>';
+  return '<div>' + saleMoney(p.gross) + '</div><div class="price-calc">\u2212 ' + saleMoney(p.disc) + (o.complimentary ? ' free' : ' discount') + '</div><div class="price-net">' + saleMoney(p.net) + '</div>';
+}
 function orderItemsText(o) {
   return mergedOrderLines(o).map(function (l) {
     if (isRebateLine(l)) return (l.flavour || 'Discount') + ' −' + saleMoney(parseFloat(l.unitPrice) || 0);
@@ -8574,7 +8607,7 @@ function orderItemsText(o) {
 // One product per line (orders table, customer history).
 function orderItemsHtml(o) {
   return mergedOrderLines(o).map(function (l) {
-    if (isRebateLine(l)) return '<div class="crm-item crm-item-rebate">' + esc((l.flavour || 'Discount') + ' −' + saleMoney(parseFloat(l.unitPrice) || 0)) + '</div>';
+    if (isRebateLine(l)) return '';   // discounts are worked out in the Total column
     return '<div class="crm-item">' + esc(fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '')) + '</div>';
   }).join('');
 }
@@ -8887,7 +8920,7 @@ function crmOrdersHtml() {
         + ' <span class="crm-chan">' + esc(o.channel || '') + '</span></td>'
       + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
-      + '<td class="mono"><strong>' + saleMoney(orderTotal(o)) + '</strong></td>'
+      + '<td class="mono">' + orderTotalCellHtml(o) + '</td>'
       + '<td>' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
         : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button>') + '</td>'
       + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
@@ -9350,13 +9383,19 @@ function invoiceHtml(o) {
   var s = invoiceSettings || {};
   var logoEl = document.querySelector('#main-header img');
   var logo = logoEl ? logoEl.getAttribute('src') : '';
+  var psum = orderPriceSummary(o);
   var sub = orderTotal(o), rate = parseFloat(s.taxRate) || 0, tax = Math.round(sub * rate) / 100, total = sub + tax;
   function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
   function money(n) { return '$ ' + fmtUSD(n); }
+  // Each product at its list price, with the discount worked out on an
+  // italic line underneath; 30-day rebates are italic discount lines too.
   var rows = mergedOrderLines(o).map(function (l) {
-    if (isRebateLine(l)) return '<tr><td>' + esc(String(l.flavour || 'Discount').replace(/ \(exception\)$/, '')) + '</td><td class="r"></td><td class="r"></td><td class="r">\u2212 ' + money(parseFloat(l.unitPrice) || 0) + '</td></tr>';
-    return '<tr><td>' + esc(l.flavour || 'Kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
-      + '<td class="r">' + fmtNum(parseFloat(l.qty) || 0) + '</td><td class="r">' + money(parseFloat(l.unitPrice) || 0) + '</td><td class="r">' + money(lineTotal(l)) + '</td></tr>';
+    if (isRebateLine(l)) return '<tr class="disc"><td>' + esc(String(l.flavour || 'discount').replace(/ \(exception\)$/, '').toLowerCase()) + ' (earlier orders)</td><td class="r"></td><td class="r"></td><td class="r">\u2212 ' + money(parseFloat(l.unitPrice) || 0) + '</td></tr>';
+    var b = orderLineBreakdown(o, l), q = parseFloat(l.qty) || 0;
+    var h = '<tr' + (b.disc ? ' class="has-disc"' : '') + '><td>' + esc(l.flavour || 'kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
+      + '<td class="r">' + fmtNum(q) + '</td><td class="r">' + money(b.base) + '</td><td class="r">' + money(b.baseAmt) + '</td></tr>';
+    if (b.disc) h += '<tr class="disc"><td>' + esc(b.label) + ' \u00b7 ' + money(b.disc) + ' off per bottle</td><td class="r"></td><td class="r">\u2212 ' + money(b.disc) + '</td><td class="r">\u2212 ' + money(b.discAmt) + '</td></tr>';
+    return h;
   }).join('');
   // Thank-you note, same words as on the price lists (B2B or B2C).
   var isB2B = (o.channel === 'b2b') || (c && c.type === 'b2b');
@@ -9387,6 +9426,7 @@ function invoiceHtml(o) {
     + 'th{font-size:6.6pt;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--grey);text-align:left;background:var(--card);border-bottom:1px solid var(--parch);padding:10px 14px 9px}'
     + 'td{padding:10px 14px;border-bottom:1px solid #efeadf;font-weight:400}tr:last-child td{border-bottom:none}th.r,.r{text-align:right}.muted{color:var(--grey);font-weight:300}'
     + '.tot{margin-left:auto;width:240px;margin-top:5mm}.tot div{display:flex;justify-content:space-between;padding:4px 14px}.tot .big{border-top:1px solid var(--parch);margin-top:5px;padding-top:9px;align-items:baseline}.tot .big span:first-child{font-weight:400}.tot .big span:last-child{font-family:"DM Serif Display",Georgia,serif;font-size:18px;color:var(--amber)}'
+    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
     + '.foot{margin-top:7mm;display:flex;gap:40px;line-height:1.65}.foot>div{flex:1}.foot .lbl{margin-bottom:6px;color:var(--grey)}'
     + '.thanks{margin:auto 0 0;padding-top:8mm;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:11.5px;line-height:1.6;color:var(--amber);text-align:justify;text-align-last:left;hyphens:none}'
     + '.bottom{position:relative;height:33.8mm;border-top:1px solid var(--parch);margin-top:8mm;flex:0 0 auto}'
@@ -9406,7 +9446,8 @@ function invoiceHtml(o) {
     + (c.address ? '<div>' + nl(c.address) + '</div>' : '') + (c.area ? '<div>' + esc(c.area) + '</div>' : '') + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
     + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '') + '</div></div>'
     + '<div class="card"><table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-    + '<div class="tot"><div><span class="muted">Subtotal</span><span>' + money(sub) + '</span></div>'
+    + '<div class="tot">' + (psum.disc ? '<div><span class="muted">List price</span><span>' + money(psum.gross) + '</span></div><div class="disc"><span>Discount</span><span>\u2212 ' + money(psum.disc) + '</span></div>' : '')
+    + '<div><span class="muted">Subtotal</span><span>' + money(sub) + '</span></div>'
     + (rate ? '<div><span class="muted">Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
     + '<div class="big"><span>Total (USD)</span><span>' + money(total) + '</span></div></div>'
     + '<div class="foot">' + (s.payment ? '<div><div class="lbl">Payment</div>' + nl(s.payment) + '</div>' : '') + (o.notes ? '<div><div class="lbl">Notes</div>' + nl(o.notes) + '</div>' : '') + '</div>'
