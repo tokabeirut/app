@@ -8571,11 +8571,11 @@ function mergedOrderLines(o) {
 function orderQtyOfSize(o, size) {
   return (o.lines || []).reduce(function (t, l) { return t + (!isRebateLine(l) && String(l.size) === String(size) ? (parseFloat(l.qty) || 0) : 0); }, 0);
 }
-// The normal price of one bottle on this order, before any discount:
-// b2c = the single-bottle price; b2b = the wholesale tier for this order's
-// own quantity (e.g. 24 small in one order = $ 4.00).
+// The normal price of one bottle, before any discount: b2c = the
+// single-bottle price; b2b = the full wholesale price (first tier, e.g.
+// $ 4.50 small / $ 7.00 big). Every lower price shows as a discount line.
 function orderBasePrice(o, size) {
-  return o.channel === 'b2b' ? b2bBottlePrice(String(size), orderQtyOfSize(o, size)) : b2cBottlePrice(String(size), 1);
+  return o.channel === 'b2b' ? b2bBottlePrice(String(size), 0) : b2cBottlePrice(String(size), 1);
 }
 // The 30-day period an order belongs to (b2b only), as it stood for this order.
 function orderWindow(o) {
@@ -8594,8 +8594,8 @@ function orderLineBreakdown(o, l, win) {
   var label;
   if (o.complimentary) label = 'complimentary';
   else if (o.channel === 'b2b') {
-    var n = orderQtyOfSize(o, l.size) + ((win && win.qty[String(l.size)]) || 0);
-    label = '30-day volume price (' + fmtNum(n) + ' bottles)';
+    var prevN = (win && win.qty[String(l.size)]) || 0, n = orderQtyOfSize(o, l.size) + prevN;
+    label = (prevN ? '30-day volume price (' : 'volume price (') + fmtNum(n) + ' bottles)';
   } else label = 'bundle price';
   return { base: base, baseAmt: q * base, disc: Math.round((base - paid) * 100) / 100, discAmt: Math.round(q * (base - paid) * 100) / 100, label: label };
 }
@@ -9841,26 +9841,33 @@ function bivBottlingByKey(key, flavour) {
 var BIV_SIZES = ['small (375ml)', 'big (750ml)'];
 function bivSizeShort(sizeLabel) { var m = /(\d+)\s*ml/i.exec(String(sizeLabel || '')); return m ? m[1] + ' ml' : String(sizeLabel || ''); }
 function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
-  if (!selBottling && !selFlavour) { selFlavour = 'Cardamom Sumac'; selSize = selSize || BIV_SIZES[0]; }   // default: Cardamom Sumac 375 ml, any batch
+  if (!selBottling && !selFlavour) { selFlavour = 'cardamom sumac'; selSize = selSize || BIV_SIZES[0]; }   // default: cardamom sumac 375 ml, any batch
   var cur = (selBottling || '') + '||' + (selFlavour || '') + '||' + (selSize || '');
+  // Matched without caring about capitals ("Sumac" = "sumac"), so an older
+  // line always finds its own batch again.
+  var curL = cur.toLowerCase(), matched = false;
+  function isCur(v) { if (!matched && v.toLowerCase() === curL) { matched = true; return true; } return false; }
   var h = '', flavours = bivActiveFlavours().slice();
   bivBottlings().forEach(function (g) {
     Object.keys(g.made).forEach(function (sz) {
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
-      if ((g.made[sz] || 0) <= 0 && v !== cur) return;
-      h += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + bivFlavourDisplay(g.flavour) + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
+      if ((g.made[sz] || 0) <= 0 && v.toLowerCase() !== curL) return;
+      h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + bivFlavourDisplay(g.flavour) + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
-  if (selFlavour && flavours.indexOf(selFlavour) === -1) flavours.push(selFlavour);
+  if (selFlavour && !flavours.some(function (f) { return String(f).toLowerCase() === String(selFlavour).toLowerCase(); })) flavours.push(selFlavour);
   var any = '';
   flavours.forEach(function (f) {
     BIV_SIZES.forEach(function (sz) {
       var v = '||' + f + '||' + sz;
-      any += '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(bivFlavourDisplay(f) + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
+      any += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivFlavourDisplay(f) + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
     });
   });
-  return (h ? '<optgroup label="Batch">' + h + '</optgroup>' : '') + '<optgroup label="Any batch (oldest counted first)">' + any + '</optgroup>';
+  // Never fall back to the first batch in the list: if the saved batch isn't
+  // offered any more, keep it as it is.
+  var keep = (!matched && (selBottling || selFlavour)) ? '<option value="' + esc(cur) + '" selected>' + esc(bivFlavourDisplay(selFlavour || '') + ' ' + bivSizeShort(selSize || '') + (selBottling ? ' · ' + bivBottlingRefName(selBottling) : ' — any batch') + ' (as saved)') + '</option>' : '';
+  return keep + (h ? '<optgroup label="Batch">' + h + '</optgroup>' : '') + '<optgroup label="Any batch (oldest counted first)">' + any + '</optgroup>';
 }
 function bivParseBatch(v) {
   var p = String(v || '').split('||');
