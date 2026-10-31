@@ -1942,9 +1942,6 @@
     <div class="form-group" id="o-paid-group">
       <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" /> <span>Paid</span></label>
     </div>
-    <div class="form-group">
-      <label class="sale-paid-label"><input type="checkbox" id="o-deduct" class="task-check" /> <span>Take these bottles out of Bottle inventory</span></label>
-    </div>
     <div class="form-section">
       <div class="form-section-title">Notes</div>
       <div class="form-group">
@@ -9136,7 +9133,6 @@ function openOrderDrawer(id) {
   document.getElementById('o-paid').checked = o ? !!o.paid : true;
   document.getElementById('o-comp').checked = !!(o && o.complimentary);
   document.getElementById('o-paid-group').style.display = (o && o.complimentary) ? 'none' : '';
-  document.getElementById('o-deduct').checked = o ? !!o.deductStock : true;
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
   // New orders get their number automatically; an existing order's number
   // can be changed here (its lines and "sold" inventory rows follow on save).
@@ -9217,7 +9213,7 @@ function saveOrder() {
     paid: isOrderComp() ? true : document.getElementById('o-paid').checked,
     complimentary: isOrderComp(),
     paidDate: prev ? (prev.paidDate || '') : '',
-    deductStock: document.getElementById('o-deduct').checked,
+    deductStock: true,   // an order's bottles always leave Bottle inventory
     notes: val('o-notes').trim(),
     lines: isOrderComp() ? lines.map(function (l) { l.unitPrice = 0; return l; }) : lines.concat(orderRebateLines()),
     _hadStock: prev ? !!prev.deductStock : false
