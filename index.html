@@ -1885,8 +1885,8 @@
     <!-- price lists: PDFs in the price-lists/ folder next to this page;
          laid out like the caisse / spent / remaining figures on Expenses -->
     <div class="pl-dl">
-      <a class="crm-text-btn" href="price-lists/toka_prices_b2b.pdf" download="toka_prices_b2b.pdf" title="Wholesale price list (PDF)">&darr; download price list b2b</a>
-      <a class="crm-text-btn" href="price-lists/toka_prices_b2c.pdf" download="toka_prices_b2c.pdf" title="Customer price list (PDF)">&darr; download price list b2c</a>
+      <button type="button" class="crm-text-btn" onclick="openPriceList('b2b')" title="Open the wholesale price list">price list b2b</button>
+      <button type="button" class="crm-text-btn" onclick="openPriceList('b2c')" title="Open the customer price list">price list b2c</button>
       <button class="crm-text-btn" onclick="openInvoiceSettings()" title="Your details as they appear on invoices">Invoice details</button>
     </div>
   </div>
@@ -1932,7 +1932,7 @@
         <div class="o-discount-head">30-day volume discount</div>
         <div class="hint" id="o-discount-info"></div>
         <label class="sale-paid-label" id="o-exception-row" style="display:none"><input type="checkbox" id="o-exception" class="task-check" onchange="document.getElementById('o-rebate').removeAttribute('data-edited'); applyAllLinePrices(); updateOrderTotal();" /> <span id="o-exception-label"></span></label>
-        <div class="o-rebate-row"><span>Rebate on the earlier orders</span><span class="o-rebate-input">&minus; $ <input type="number" id="o-rebate" min="0" step="0.01" placeholder="0.00" oninput="this.setAttribute('data-edited','1'); updateOrderTotalOnly()" /></span></div>
+        <div class="o-rebate-row"><span>Rebate on the earlier orders</span><span class="o-rebate-input">&minus; $ <input type="number" id="o-rebate" min="0" step="0.01" placeholder="0.00" oninput="this.setAttribute('data-edited','1'); this.setAttribute('data-manual','1'); updateOrderTotalOnly()" /></span></div>
       </div>
       <div class="sale-total-line">Total <strong id="o-total">$ 0.00</strong></div>
     </div>
@@ -7353,6 +7353,7 @@ function commitInline(type, uidv, field, value) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); reloadType(type); return; }
     setSyncStatus('live', 'connected \u00b7 google sheets');
     if (type === 'infusion' && oldInfusionSnapshot) maybeCascadeInfusionChange(uidv, oldInfusionSnapshot, rec);
+    if (type === 'order' && rec.channel === 'b2b') recalcB2bOrders(customerForOrder(rec));
   });
 }
 // Writes ONE field's new value to every bottle in a group, and only that
@@ -9015,11 +9016,11 @@ function refreshCrmDatalists() {
 function orderLineRowHtml(l) {
   l = l || {};
   var size = String(l.size || '375');
-  return '<div class="ol-row"' + (l.priceEdited ? ' data-edited="1"' : '') + '>'
+  return '<div class="ol-row"' + (l.priceEdited ? ' data-edited="1"' : '') + (l.manualPrice ? ' data-manual="1"' : '') + '>'
     + '<select class="ol-flavour" onchange="onOrderBatchChange(this)">' + bivBatchOptionsHtml(l.bottling || '', l.flavour || '', bottleInvSizeLabel(size)) + '</select>'
     + '<select class="ol-size" onchange="onOrderLineChange(this, true)"><option value="375"' + (size === '375' ? ' selected' : '') + '>375 ml</option><option value="750"' + (size === '750' ? ' selected' : '') + '>750 ml</option></select>'
     + '<input type="number" class="ol-qty" min="0" step="1" placeholder="bottles" value="' + esc(l.qty == null ? '' : l.qty) + '" oninput="onOrderLineChange(this)" />'
-    + '<input type="number" class="ol-price" min="0" step="0.01" placeholder="$ / bottle" value="' + esc(l.unitPrice == null ? '' : l.unitPrice) + '" oninput="this.closest(\'.ol-row\').setAttribute(\'data-edited\',\'1\'); onOrderLineChange(this)" />'
+    + '<input type="number" class="ol-price" min="0" step="0.01" placeholder="$ / bottle" value="' + esc(l.unitPrice == null ? '' : l.unitPrice) + '" oninput="var r = this.closest(\'.ol-row\'); r.setAttribute(\'data-edited\',\'1\'); r.setAttribute(\'data-manual\',\'1\'); onOrderLineChange(this)" />'
     + '<span class="ol-total"></span>'
     + '<button type="button" class="fl-rm" onclick="removeOrderLine(this)" title="Remove">&times;</button>'
     + '</div>';
@@ -9141,7 +9142,8 @@ function readOrderLines() {
   return [].map.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
     var pb = bivParseBatch(r.querySelector('.ol-flavour').value);
     return { flavour: pb.flavour, bottling: pb.bottling, size: r.querySelector('.ol-size').value,
-      qty: parseFloat(r.querySelector('.ol-qty').value) || 0, unitPrice: parseFloat(r.querySelector('.ol-price').value) || 0 };
+      qty: parseFloat(r.querySelector('.ol-qty').value) || 0, unitPrice: parseFloat(r.querySelector('.ol-price').value) || 0,
+      manualPrice: !!r.getAttribute('data-manual') };
   }).filter(function (l) { return l.qty > 0; });
 }
 function updateOrderTotal() { updateOrderDiscount(); updateOrderTotalOnly(); }
@@ -9183,8 +9185,9 @@ function openOrderDrawer(id) {
   var rIn = document.getElementById('o-rebate');
   rIn.value = reb ? (parseFloat(reb.unitPrice) || 0).toFixed(2) : '';
   if (o) rIn.setAttribute('data-edited', '1'); else rIn.removeAttribute('data-edited');
+  if (reb && reb.manualPrice) rIn.setAttribute('data-manual', '1'); else rIn.removeAttribute('data-manual');
   document.getElementById('o-exception').checked = !!(reb && /exception/i.test(reb.flavour || ''));
-  if (o && o.lines && o.lines.length) o.lines.filter(function (l) { return !isRebateLine(l); }).forEach(function (l) { addOrderLine({ flavour: l.flavour, bottling: l.bottling || '', size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true }); });
+  if (o && o.lines && o.lines.length) o.lines.filter(function (l) { return !isRebateLine(l); }).forEach(function (l) { addOrderLine({ flavour: l.flavour, bottling: l.bottling || '', size: l.size, qty: l.qty, unitPrice: l.unitPrice, priceEdited: true, manualPrice: !!l.manualPrice }); });
   else addOrderLine();
   if (o) onOrderCustomerInput();
   updateOrderTotal();
@@ -9196,7 +9199,7 @@ function closeOrderDrawer() {
   document.getElementById('order-overlay').classList.remove('open');
 }
 // Sends one order (and, for a brand-new customer, that customer) to the sheet.
-function postOrder(o, newCustomer, onFail) {
+function postOrder(o, newCustomer, onFail, onOk) {
   setSyncStatus('saving', 'saving…');
   var payload = {};
   for (var k in o) if (k !== '_hadStock') payload[k] = o[k];
@@ -9213,14 +9216,62 @@ function postOrder(o, newCustomer, onFail) {
     setSyncStatus('live', 'connected · google sheets');
     renderSales();
     if (o.deductStock || o._hadStock) loadBottleInventory();
+    if (onOk) onOk();
   });
+}
+// After a b2b order changes (saved, deleted, made complimentary, date moved),
+// that business's unpaid b2b orders are recalculated in date order: tier
+// price for the 30 days and the rebate on earlier orders. Paid orders stay as
+// they were (but still count for the periods); hand-typed prices and
+// rebates (manualPrice) are kept.
+function orderLinesSig(lines) {
+  return JSON.stringify((lines || []).map(function (l) { return [String(l.size), String(l.flavour || ''), parseFloat(l.qty) || 0, Math.round((parseFloat(l.unitPrice) || 0) * 100), String(l.bottling || '')]; }));
+}
+function recalcB2bOrders(c) {
+  if (!c) return;
+  var list = ordersOfCustomer(c).filter(function (o) { return o.channel === 'b2b' && !o.complimentary; })
+    .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)) || String(a.invoiceNo || '').localeCompare(String(b.invoiceNo || '')); });
+  var changed = [];
+  list.forEach(function (o) {
+    if (o.paid) return;
+    var oldReb = (o.lines || []).filter(isRebateLine)[0] || null;
+    var ex = !!(oldReb && /exception/i.test(oldReb.flavour || ''));
+    var win = b2bWindow(c, o.date, o.id, ex);
+    var lines = (o.lines || []).filter(function (l) { return !isRebateLine(l); }).map(function (l) { return JSON.parse(JSON.stringify(l)); });
+    var thisQty = { '375': 0, '750': 0 };
+    lines.forEach(function (l) { if (thisQty[String(l.size)] != null) thisQty[String(l.size)] += parseFloat(l.qty) || 0; });
+    lines.forEach(function (l) {
+      var sz = String(l.size);
+      if (!l.manualPrice && thisQty[sz] != null) l.unitPrice = b2bBottlePrice(sz, (win.qty[sz] || 0) + thisQty[sz]);
+    });
+    var reb = [];
+    if (oldReb && oldReb.manualPrice) reb = [oldReb];
+    else {
+      var r = win.orders.length ? b2bRebate(win, thisQty) : 0;
+      if (r > 0) reb = [{ size: 'rebate', flavour: '30-day volume discount' + (ex ? ' (exception)' : ''), qty: 0, unitPrice: r, bottling: '' }];
+    }
+    var next = lines.concat(reb);
+    if (orderLinesSig(next) !== orderLinesSig(o.lines)) { o.lines = next; changed.push(o); }
+  });
+  if (!changed.length) return;
+  renderSales();
+  (function save(i) {
+    if (i >= changed.length) {
+      setSyncStatus('live', 'updated ' + changed.length + ' order' + (changed.length === 1 ? '' : 's') + ' of ' + customerDisplayName(c) + ' (30-day prices)');
+      return;
+    }
+    var o = changed[i], payload = {};
+    for (var k in o) if (k !== '_hadStock') payload[k] = o[k];
+    payload.customerLabel = orderCustomerName(o);
+    apiPost({ action: 'saveOrder', order: payload, customer: null }, function () { save(i + 1); });
+  })(0);
 }
 // The discount line to save with the order (B2B, rebate above 0).
 function orderRebateLines() {
   var box = document.getElementById('o-discount'), r = parseFloat(val('o-rebate')) || 0;
   if (val('o-channel') !== 'b2b' || !box || box.style.display === 'none' || r <= 0 || isOrderComp()) return [];
   var ex = document.getElementById('o-exception');
-  return [{ size: 'rebate', flavour: '30-day volume discount' + (ex && ex.checked ? ' (exception)' : ''), qty: 0, unitPrice: Math.round(r * 100) / 100, bottling: '' }];
+  return [{ size: 'rebate', flavour: '30-day volume discount' + (ex && ex.checked ? ' (exception)' : ''), qty: 0, unitPrice: Math.round(r * 100) / 100, bottling: '', manualPrice: !!document.getElementById('o-rebate').getAttribute('data-manual') }];
 }
 function saveOrder() {
   var date = val('o-date');
@@ -9264,6 +9315,9 @@ function saveOrder() {
     else orders = orders.filter(function (x) { return x !== o; });
     if (newCustomer) customers = customers.filter(function (x) { return x !== newCustomer; });
     renderSales();
+  }, function () {
+    recalcB2bOrders(customerForOrder(o));
+    if (prev && customerForOrder(prev) !== customerForOrder(o)) recalcB2bOrders(customerForOrder(prev));
   });
 }
 function toggleOrderPaid(id) {
@@ -9284,6 +9338,7 @@ function deleteOrder(id) {
   apiPost({ action: 'deleteOrder', id: id }, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'delete failed'); orders.push(o); renderSales(); return; }
     if (o.deductStock) loadBottleInventory();
+    if (o.channel === 'b2b') recalcB2bOrders(customerForOrder(o));
   });
 }
 
@@ -9496,6 +9551,12 @@ function invoiceHtml(o) {
     + '<p class="thanks">' + esc(thanks) + '</p>'
     + '<div class="bottom"><div class="lbl">storage</div><div class="row"><div class="txt">keep refrigerated at all times, 1–4°C, and store upright. naturally carbonated, so open it chilled.</div><div class="sign">drink alive.</div></div></div>'
     + '</div></body></html>';
+}
+// Price lists open in their own page, like invoices (price-lists/view.html):
+// the sheet with a bar on top to download the PDF or close.
+function openPriceList(kind) {
+  var w = window.open('price-lists/view.html?' + kind, '_blank');
+  if (!w) alert('Your browser blocked the new window — allow pop-ups for this page and try again.');
 }
 function openInvoice(id) {
   var o = findOrder(id);

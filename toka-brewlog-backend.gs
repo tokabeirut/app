@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '48 (complimentary orders)';
+var VERSION = '49 (hand-typed prices kept on recalculation)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -667,7 +667,7 @@ var SALES_SHEET = 'Sales';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
 var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary'];
-var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
+var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling', 'manual_price'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
 
 function rowFrom_(obj, ncols, map) {
@@ -728,7 +728,7 @@ function readAllOrders_() {
   var lines = {};
   readSheetObjects_(getSalesLinesSheet_(), 'line_pk').forEach(function (l) {
     var k = String(l.order_fk);
-    (lines[k] = lines[k] || []).push({ id: String(l.line_pk), size: String(l.size || ''), flavour: String(l.flavour || ''), qty: l.qty, unitPrice: l.unit_price, bottling: String(l.bottling || '') });
+    (lines[k] = lines[k] || []).push({ id: String(l.line_pk), size: String(l.size || ''), flavour: String(l.flavour || ''), qty: l.qty, unitPrice: l.unit_price, bottling: String(l.bottling || ''), manualPrice: truthy_(l.manual_price) });
   });
   return readSheetObjects_(osh, 'order_pk').map(function (o) {
     return {
@@ -778,7 +778,7 @@ function saveOrder_(o, customer) {
     var lsh = getSalesLinesSheet_(), lmap = headerMap_(lsh), ln = lsh.getLastColumn();
     deleteRowsWhere_(lsh, 'order_fk', o.id);
     var lrows = (o.lines || []).map(function (l) {
-      return rowFrom_({ line_pk: l.id || Utilities.getUuid(), order_fk: o.id, size: l.size || '', flavour: l.flavour || '', qty: l.qty, unit_price: l.unitPrice, bottling: l.bottling || '' }, ln, lmap);
+      return rowFrom_({ line_pk: l.id || Utilities.getUuid(), order_fk: o.id, size: l.size || '', flavour: l.flavour || '', qty: l.qty, unit_price: l.unitPrice, bottling: l.bottling || '', manual_price: l.manualPrice ? 'yes' : '' }, ln, lmap);
     });
     if (lrows.length) lsh.getRange(lsh.getLastRow() + 1, 1, lrows.length, ln).setValues(lrows);
 
