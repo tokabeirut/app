@@ -8566,34 +8566,69 @@ function mergedOrderLines(o) {
 }
 // The list price of one bottle before any discount: the single-bottle
 // price (b2c) or the first wholesale tier (b2b).
-function listBottlePrice(channel, size) {
-  return channel === 'b2b' ? b2bBottlePrice(String(size), 0) : b2cBottlePrice(String(size), 1);
+// Bottles of one size on an order (rebate lines don't count).
+function orderQtyOfSize(o, size) {
+  return (o.lines || []).reduce(function (t, l) { return t + (!isRebateLine(l) && String(l.size) === String(size) ? (parseFloat(l.qty) || 0) : 0); }, 0);
 }
-// Per line: list price and, when the line was charged less, the discount
-// per bottle with what it is (bundle, volume price, complimentary).
-function orderLineBreakdown(o, l) {
+// The normal price of one bottle on this order, before any discount:
+// b2c = the single-bottle price; b2b = the wholesale tier for this order's
+// own quantity (e.g. 24 small in one order = $ 4.00).
+function orderBasePrice(o, size) {
+  return o.channel === 'b2b' ? b2bBottlePrice(String(size), orderQtyOfSize(o, size)) : b2cBottlePrice(String(size), 1);
+}
+// The 30-day period an order belongs to (b2b only), as it stood for this order.
+function orderWindow(o) {
+  if (o.channel !== 'b2b' || o.complimentary) return null;
+  var c = customerForOrder(o);
+  if (!c) return null;
+  var ex = (o.lines || []).some(function (l) { return isRebateLine(l) && /exception/i.test(l.flavour || ''); });
+  return b2bWindow(c, o.date, o.id, ex);
+}
+// Per line: normal price and, when the line was charged less, the discount
+// per bottle with what it is (bundle, 30-day volume price, complimentary).
+function orderLineBreakdown(o, l, win) {
   var q = parseFloat(l.qty) || 0, paid = parseFloat(l.unitPrice) || 0;
-  var base = listBottlePrice(o.channel, l.size);
+  var base = orderBasePrice(o, l.size);
   if (!(base > paid + 0.004)) return { base: paid, baseAmt: q * paid, disc: 0, discAmt: 0, label: '' };
-  var label = o.complimentary ? 'complimentary' : (o.channel === 'b2b' ? 'volume price' : 'bundle price');
+  var label;
+  if (o.complimentary) label = 'complimentary';
+  else if (o.channel === 'b2b') {
+    var n = orderQtyOfSize(o, l.size) + ((win && win.qty[String(l.size)]) || 0);
+    label = '30-day volume price (' + fmtNum(n) + ' bottles)';
+  } else label = 'bundle price';
   return { base: base, baseAmt: q * base, disc: Math.round((base - paid) * 100) / 100, discAmt: Math.round(q * (base - paid) * 100) / 100, label: label };
 }
-// Whole order: list-price total, all discounts (lines + 30-day rebates) and
-// what's actually due.
-function orderPriceSummary(o) {
-  var gross = 0, disc = 0;
-  mergedOrderLines(o).forEach(function (l) {
-    if (isRebateLine(l)) { disc += parseFloat(l.unitPrice) || 0; return; }
-    var b = orderLineBreakdown(o, l); gross += b.baseAmt; disc += b.discAmt;
+// What a rebate line gives back, per size: the earlier orders of the period
+// were paid at an average price; with this order the period price is lower.
+function orderRebateDetail(o, win) {
+  if (!win || !win.orders.length) return [];
+  var out = [];
+  ['375', '750'].forEach(function (sz) {
+    var prevQ = win.qty[sz];
+    if (!prevQ) return;
+    var was = win.paid[sz] / prevQ, now = b2bBottlePrice(sz, prevQ + orderQtyOfSize(o, sz));
+    if (was > now + 0.004) out.push(fmtNum(prevQ) + ' × ' + sz + ' ml paid at ' + saleMoney(was) + ', now ' + saleMoney(now) + ' · ' + saleMoney(was - now) + ' back per bottle');
   });
-  return { gross: Math.round(gross * 100) / 100, disc: Math.round(disc * 100) / 100, net: orderTotal(o) };
+  return out;
 }
-// Sales table: the list price, and underneath in italics the discount and
-// what's due ("− $ 12.00 discount = $ 42.00").
+// Whole order: normal-price total, rebate on earlier orders, discount on this
+// order, and what's actually due.
+function orderPriceSummary(o) {
+  var win = orderWindow(o), gross = 0, disc = 0, rebate = 0;
+  mergedOrderLines(o).forEach(function (l) {
+    if (isRebateLine(l)) { rebate += parseFloat(l.unitPrice) || 0; return; }
+    var b = orderLineBreakdown(o, l, win); gross += b.baseAmt; disc += b.discAmt;
+  });
+  return { gross: Math.round(gross * 100) / 100, rebate: Math.round(rebate * 100) / 100, disc: Math.round(disc * 100) / 100, net: orderTotal(o) };
+}
+// Sales table: the normal price, then in italics the rebate and discount, then what's due.
 function orderTotalCellHtml(o) {
   var p = orderPriceSummary(o);
-  if (!p.disc) return '<strong>' + saleMoney(p.net) + '</strong>';
-  return '<div>' + saleMoney(p.gross) + '</div><div class="price-calc">\u2212 ' + saleMoney(p.disc) + (o.complimentary ? ' free' : ' discount') + '</div><div class="price-net">' + saleMoney(p.net) + '</div>';
+  if (!p.disc && !p.rebate) return '<strong>' + saleMoney(p.net) + '</strong>';
+  return '<div>' + saleMoney(p.gross) + '</div>'
+    + (p.rebate ? '<div class="price-calc">− ' + saleMoney(p.rebate) + ' rebate</div>' : '')
+    + (p.disc ? '<div class="price-calc">− ' + saleMoney(p.disc) + (o.complimentary ? ' free' : ' discount') + '</div>' : '')
+    + '<div class="price-net">' + saleMoney(p.net) + '</div>';
 }
 function orderItemsText(o) {
   return mergedOrderLines(o).map(function (l) {
@@ -9383,14 +9418,23 @@ function invoiceHtml(o) {
   var sub = orderTotal(o), rate = parseFloat(s.taxRate) || 0, tax = Math.round(sub * rate) / 100, total = sub + tax;
   function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
   function money(n) { return '$ ' + fmtUSD(n); }
-  // Each product at its list price, with the discount worked out on an
-  // italic line underneath; 30-day rebates are italic discount lines too.
-  var rows = mergedOrderLines(o).map(function (l) {
-    if (isRebateLine(l)) return '<tr class="disc"><td>' + esc(String(l.flavour || 'discount').replace(/ \(exception\)$/, '').toLowerCase()) + ' (earlier orders)</td><td class="r"></td><td class="r"></td><td class="r">\u2212 ' + money(parseFloat(l.unitPrice) || 0) + '</td></tr>';
-    var b = orderLineBreakdown(o, l), q = parseFloat(l.qty) || 0;
+  // 1. Rebate on the earlier orders of the 30-day period (worked out per
+  //    size in italics), 2. each product at its normal price, with the
+  //    discount down to the 30-day / bundle price on an italic line underneath.
+  var win = orderWindow(o), merged = mergedOrderLines(o);
+  var rebRows = merged.filter(isRebateLine).map(function (l) {
+    var refs = win ? win.orders.map(function (x) { return x.invoiceNo; }).filter(Boolean).join(', ') : '';
+    var h = '<tr class="has-disc"><td>rebate on earlier orders this period' + (refs ? ' (' + esc(refs) + ')' : '') + (/exception/i.test(l.flavour || '') ? ' · exception' : '') + '</td><td class="r"></td><td class="r"></td><td class="r">− ' + money(parseFloat(l.unitPrice) || 0) + '</td></tr>';
+    var det = orderRebateDetail(o, win);
+    det.forEach(function (d, k) { h += '<tr class="disc' + (k < det.length - 1 ? ' mid' : '') + '"><td colspan="4">' + esc(d) + '</td></tr>'; });
+    if (!det.length) h = h.replace('<tr class="has-disc">', '<tr>');
+    return h;
+  }).join('');
+  var rows = rebRows + merged.filter(function (l) { return !isRebateLine(l); }).map(function (l) {
+    var b = orderLineBreakdown(o, l, win), q = parseFloat(l.qty) || 0;
     var h = '<tr' + (b.disc ? ' class="has-disc"' : '') + '><td>' + esc(l.flavour || 'kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
       + '<td class="r">' + fmtNum(q) + '</td><td class="r">' + money(b.base) + '</td><td class="r">' + money(b.baseAmt) + '</td></tr>';
-    if (b.disc) h += '<tr class="disc"><td>' + esc(b.label) + ' \u00b7 ' + money(b.disc) + ' off per bottle</td><td class="r"></td><td class="r">\u2212 ' + money(b.disc) + '</td><td class="r">\u2212 ' + money(b.discAmt) + '</td></tr>';
+    if (b.disc) h += '<tr class="disc"><td>' + esc(b.label) + ' · ' + money(b.disc) + ' off per bottle</td><td class="r"></td><td class="r">− ' + money(b.disc) + '</td><td class="r">− ' + money(b.discAmt) + '</td></tr>';
     return h;
   }).join('');
   // Thank-you note, same words as on the price lists (B2B or B2C).
@@ -9422,7 +9466,7 @@ function invoiceHtml(o) {
     + 'th{font-size:6.6pt;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--grey);text-align:left;background:var(--card);border-bottom:1px solid var(--parch);padding:10px 14px 9px}'
     + 'td{padding:10px 14px;border-bottom:1px solid #efeadf;font-weight:400}tr:last-child td{border-bottom:none}th.r,.r{text-align:right}.muted{color:var(--grey);font-weight:300}'
     + '.tot{margin-left:auto;width:240px;margin-top:5mm}.tot div{display:flex;justify-content:space-between;padding:4px 14px}.tot .big{border-top:1px solid var(--parch);margin-top:5px;padding-top:9px;align-items:baseline}.tot .big span:first-child{font-weight:400}.tot .big span:last-child{font-family:"DM Serif Display",Georgia,serif;font-size:18px;color:var(--amber)}'
-    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
+    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}tr.disc.mid td{border-bottom:none;padding-bottom:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
     + '.foot{margin-top:7mm;display:flex;gap:40px;line-height:1.65}.foot>div{flex:1}.foot .lbl{margin-bottom:6px;color:var(--grey)}'
     + '.thanks{margin:auto 0 0;padding-top:8mm;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:11.5px;line-height:1.6;color:var(--amber);text-align:justify;text-align-last:left;hyphens:none}'
     + '.bottom{position:relative;height:33.8mm;border-top:1px solid var(--parch);margin-top:8mm;flex:0 0 auto}'
@@ -9442,7 +9486,9 @@ function invoiceHtml(o) {
     + (c.address ? '<div>' + nl(c.address) + '</div>' : '') + (c.area ? '<div>' + esc(c.area) + '</div>' : '') + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
     + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '') + '</div></div>'
     + '<div class="card"><table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
-    + '<div class="tot">' + (psum.disc ? '<div><span class="muted">List price</span><span>' + money(psum.gross) + '</span></div><div class="disc"><span>Discount</span><span>\u2212 ' + money(psum.disc) + '</span></div>' : '')
+    + '<div class="tot">' + ((psum.disc || psum.rebate) ? '<div><span class="muted">Normal price</span><span>' + money(psum.gross) + '</span></div>'
+      + (psum.rebate ? '<div class="disc"><span>Rebate</span><span>\u2212 ' + money(psum.rebate) + '</span></div>' : '')
+      + (psum.disc ? '<div class="disc"><span>Discount</span><span>\u2212 ' + money(psum.disc) + '</span></div>' : '') : '')
     + '<div><span class="muted">Subtotal</span><span>' + money(sub) + '</span></div>'
     + (rate ? '<div><span class="muted">Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
     + '<div class="big"><span>Total (USD)</span><span>' + money(total) + '</span></div></div>'
