@@ -1603,6 +1603,8 @@
   .price-calc { font-style: italic; color: var(--ink-faint); font-size: 0.86em; margin-top: 1px; white-space: nowrap; }
   .price-net { font-weight: 500; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border); display: inline-block; min-width: 100%; }
   .biv-labels { margin-top: 36px; }
+  .biv-labels .biv-stat-row.biv-labels-total { margin-top: 14px; border-top: 1px solid var(--ink-faint); padding-top: 12px; }
+  .biv-labels-total .biv-stat-val { font-size: 1.1em; font-weight: 500; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -10494,7 +10496,7 @@ function renderBottleInventory() {
 // on used one pair of its size (1 small bottle = 1 small pair, 1 big = 1 big
 // pair); aphrometer bottles don't get labels, so they're left out. Add a
 // purchase here when new labels arrive.
-var LABEL_STOCK = { since: '2026-10-05', flavour: 'cardamom sumac', bought: { 'small (375ml)': 1333, 'big (750ml)': 667 } };
+var LABEL_STOCK = { since: '2026-10-05', purchased: '2026-10-28', flavour: 'cardamom sumac', bought: { 'small (375ml)': 1333, 'big (750ml)': 36 } };
 function bivLabelsHtml() {
   var used = {}, left = {}, sizes = BIV_SIZES;
   bottleInventory.forEach(function (e) {
@@ -10509,9 +10511,11 @@ function bivLabelsHtml() {
   var h = '<div class="an-section biv-labels"><div class="sec-title">Label count</div>';
   h += '<div class="biv-stat-table">';
   h += bivStatRowHtml('', sizes, {}, true);
-  h += bivStatRowHtml('label pairs bought (front + back)', sizes, LABEL_STOCK.bought);
-  h += bivStatRowHtml('used — cardamom sumac bottled since ' + fmtDate(LABEL_STOCK.since) + ', without aphrometer bottles', sizes, used);
-  h += bivStatRowHtml('labels left', sizes, left);
+  // "+1333" in, "−24" out, then the stock on its own line underneath.
+  function signed(map, sign) { var m = {}; sizes.forEach(function (sz) { m[sz] = map[sz] || 0; }); return bivStatRowHtml('', sizes, m).replace(/(<div class="biv-stat-val">)([^<]*)/g, function (all, a, n) { return a + (n === '0' ? '0' : sign + n); }); }
+  h += signed(LABEL_STOCK.bought, '+').replace('<div class="biv-stat-label"></div>', '<div class="biv-stat-label">labels purchased on ' + esc(fmtDate(LABEL_STOCK.purchased)) + ' (front + back)</div>');
+  h += signed(used, '\u2212').replace('<div class="biv-stat-label"></div>', '<div class="biv-stat-label">used labels (front + back)</div>');
+  h += bivStatRowHtml('labels still in stock', sizes, left).replace('biv-stat-row"', 'biv-stat-row biv-labels-total"');
   h += '</div></div>';
   return h;
 }
