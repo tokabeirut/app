@@ -957,8 +957,6 @@
 
   /* -- BOTTLE COMPARISON -- */
   .cmp-top { padding: 0 48px 22px; display: -webkit-flex; display: flex; -webkit-align-items: flex-end; align-items: flex-end; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px 16px; }
-  .cmp-pickers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 16px; -webkit-flex: 1 1 600px; flex: 1 1 600px; max-width: 1100px; }
-  .cmp-pickers .form-group { margin-bottom: 0; }
   #cmp-diff-btn { margin-bottom: 6px; }
   .cmp-table { table-layout: fixed; min-width: 560px; }
   .cmp-table col.cmp-lcol { width: 190px; }
@@ -972,25 +970,6 @@
   .cmp-none { color: var(--ink-faint); }
   .cmp-link { cursor: pointer; }
   .cmp-table .src-amt-tag { margin-left: 4px; }
-  .cmp-pick { position: relative; }
-  .cmp-pick-btn { width: 100%; text-align: left; cursor: pointer; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 30px 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.96rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239a9088'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
-  .cmp-pick.open .cmp-pick-btn { border-color: var(--terra); background-color: var(--surface); }
-  .cmp-pick-btn .cmp-opt-id { font-size: 0.8rem; }
-  .cmp-btn-sp { margin-left: 10px; }
-  .cmp-btn-empty { color: var(--ink-faint); }
-  .cmp-pick-menu { display: none; position: absolute; z-index: 60; top: calc(100% + 4px); left: 0; min-width: 100%; max-width: calc(100vw - 40px); max-height: 380px; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-lg); padding: 4px 0; }
-  .cmp-pick.open .cmp-pick-menu { display: block; }
-  .cmp-pickers .form-group:last-child .cmp-pick-menu { left: auto; right: 0; }
-  .cmp-pick-menu table { width: 100%; font-size: 0.9rem; }
-  .cmp-pick-menu td { border: none; padding: 7px 12px; white-space: nowrap; }
-  .cmp-opt { cursor: pointer; }
-  .cmp-opt:hover td { background: var(--terra-pale); }
-  .cmp-opt.sel td { color: var(--terra); }
-  .cmp-opt-id { font-family: 'DM Sans', sans-serif; font-size: 0.89rem; }
-  .cmp-opt-sp { width: 100%; }
-  .cmp-opt-none td { color: var(--ink-faint); }
-  .cmp-opt-grp td { font-family: 'DM Sans', sans-serif; font-size: 0.71rem; text-transform: lowercase; letter-spacing: 0.02em; color: var(--ink-faint); padding: 12px 12px 4px; cursor: default; }
-  .cmp-opt-grp:hover td { background: none; }
   .cmp-link:hover { text-decoration: underline; }
   @media (max-width: 640px) {
     header { padding: 0 16px; flex-wrap: wrap; gap: 10px; min-height: unset; padding-top: 12px; padding-bottom: 12px; }
@@ -1009,10 +988,6 @@
     .page-eyebrow { margin-bottom: 18px; gap: 4px 20px; }
     .table-wrap { padding: 0 20px 28px; }
     .cmp-top { padding: 0 20px 18px; }
-    .cmp-pickers { grid-template-columns: 1fr; gap: 10px; }
-    .cmp-pickers .form-group:last-child .cmp-pick-menu { left: 0; right: auto; }
-    .cmp-pick-menu { max-width: 100%; }
-    .cmp-pick-menu td.cmp-opt-sp { white-space: normal; }
     .cmp-table col.cmp-lcol { width: 120px; }
     .cmp-table { min-width: 0; }
     #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix, #view-sales .crm-tabs { padding-left: 20px; padding-right: 20px; }
@@ -1593,9 +1568,9 @@
   /* Brand kit: small DM Sans labels in widely-spaced CAPITALS (tab bar,
      table headers, field/figure labels, tags & status pills). Titles,
      headings, buttons and data stay lowercase / as typed. */
-  .view-tab, #view-sales .crm-tab, thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .cmp-opt-grp td, .r-inherited-head td, label, .config-box label, #view-expenses label, #view-expenses .currency-bar label, .plan-vol label, .plan-field-row .plan-field-label, .home-section-title, .header-page-title, #sync-bar, .sync-reconfig, .config-section, .config-sub, #cell-tip .tt-subhead, .kpi .k-lab, #view-sales .sales-stat-label, #view-expenses .exp-stat-label, #view-expenses .sum-card-label, #view-expenses .curr-label, #view-bottlemath .bm-summary-label, #view-bottlemath .bm-card-label, #view-bottlemath .bm-result-label, #view-bottlemath .bm-price-row-label, #view-faucet .ft-rate-label, #view-faucet .ft-panel-head, #view-faucet .ft-result-label, .o-discount-head, .pt-col-title, .ov-chart-label, .caps-label, .soon-tag, .open-tag, .rgroup-tag, .biv-auto-tag, .pt-cat-badge, .pt-card-cat, .pt-card-late, #view-sales .sale-paid-cell, #view-sales .paid-pill, #customer-drawer .paid-pill, .crm-nostock, #view-expenses .badge { text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 400; }
+  .view-tab, #view-sales .crm-tab, thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .r-inherited-head td, label, .config-box label, #view-expenses label, #view-expenses .currency-bar label, .plan-vol label, .plan-field-row .plan-field-label, .home-section-title, .header-page-title, #sync-bar, .sync-reconfig, .config-section, .config-sub, #cell-tip .tt-subhead, .kpi .k-lab, #view-sales .sales-stat-label, #view-expenses .exp-stat-label, #view-expenses .sum-card-label, #view-expenses .curr-label, #view-bottlemath .bm-summary-label, #view-bottlemath .bm-card-label, #view-bottlemath .bm-result-label, #view-bottlemath .bm-price-row-label, #view-faucet .ft-rate-label, #view-faucet .ft-panel-head, #view-faucet .ft-result-label, .o-discount-head, .pt-col-title, .ov-chart-label, .caps-label, .soon-tag, .open-tag, .rgroup-tag, .biv-auto-tag, .pt-cat-badge, .pt-card-cat, .pt-card-late, #view-sales .sale-paid-cell, #view-sales .paid-pill, #customer-drawer .paid-pill, .crm-nostock, #view-expenses .badge { text-transform: uppercase; font-family: 'DM Sans', sans-serif; font-weight: 400; }
   .view-tab, #view-sales .crm-tab { font-size: 0.64rem; letter-spacing: 0.16em; }
-  thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .cmp-opt-grp td, .r-inherited-head td { font-size: 0.6rem; letter-spacing: 0.16em; }
+  thead th, #view-expenses thead th, .need-tbl th, #view-faucet .ft-chart-table thead th, .biv-stat-row.biv-stat-head, .biv-stat-colhead, .cmp-table tr.cmp-sec td, .r-inherited-head td { font-size: 0.6rem; letter-spacing: 0.16em; }
   label, .config-box label, #view-expenses label, #view-expenses .currency-bar label, .plan-vol label, .plan-field-row .plan-field-label, .home-section-title, .header-page-title, #sync-bar, .sync-reconfig, .config-section, .config-sub, #cell-tip .tt-subhead, .kpi .k-lab, #view-sales .sales-stat-label, #view-expenses .exp-stat-label, #view-expenses .sum-card-label, #view-expenses .curr-label, #view-bottlemath .bm-summary-label, #view-bottlemath .bm-card-label, #view-bottlemath .bm-result-label, #view-bottlemath .bm-price-row-label, #view-faucet .ft-rate-label, #view-faucet .ft-panel-head, #view-faucet .ft-result-label, .o-discount-head, .pt-col-title, .ov-chart-label, .caps-label { font-size: 0.6rem; letter-spacing: 0.18em; }
   .soon-tag, .open-tag, .rgroup-tag, .biv-auto-tag, .pt-cat-badge, .pt-card-cat, .pt-card-late, #view-sales .sale-paid-cell, #view-sales .paid-pill, #customer-drawer .paid-pill, .crm-nostock, #view-expenses .badge { font-size: 0.56rem; letter-spacing: 0.14em; }
   /* Numbers (brand font DM Sans): same size as the text, a touch heavier than
@@ -1618,13 +1593,13 @@
   /* Buttons don't inherit text-transform by default; make them follow the
      lowercase interface. Buttons that show data (names, IDs) keep their case. */
   button { text-transform: inherit; }
-  button.crm-link, button.cmp-pick-btn { text-transform: none; }
+  button.crm-link { text-transform: none; }
   ::placeholder { text-transform: lowercase; }
   td.empty { text-transform: lowercase; }
   .biv-table tr.biv-sub-row.biv-sub-mid td { border-bottom: none; padding-bottom: 2px; }
   /* Batch, infusion and bottle IDs (F1-…, INF-…, BTL-…) always show as saved,
      wherever they appear (daily operations, timelines, tooltips, pickers). */
-  .id-cell, .task-id, .ftl-batch-id, .tt-head, .biv-batch-ref, .biv-btl-id, .cmp-opt-id, .cmp-link, .ov-node-label, .src-cell, .id-ref { text-transform: none; }
+  .id-cell, .task-id, .ftl-batch-id, .tt-head, .biv-batch-ref, .biv-btl-id, .cmp-link, .ov-node-label, .src-cell, .id-ref { text-transform: none; }
   .price-calc { font-style: italic; color: var(--ink-faint); font-size: 0.86em; margin-top: 1px; white-space: nowrap; }
   .price-net { font-weight: 500; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border); display: inline-block; min-width: 100%; }
   .biv-labels { margin-top: 36px; }
@@ -9871,10 +9846,14 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   var curL = cur.toLowerCase(), matched = false;
   function isCur(v) { if (!matched && v.toLowerCase() === curL) { matched = true; return true; } return false; }
   var h = '', flavours = bivActiveFlavours().slice();
-  bivBottlings().forEach(function (g) {
+  var gl = bivBottlings().slice();
+  // Orders: oldest batch first.
+  if (sellOnly) gl.sort(function (a, b) { return String(a.date || '') < String(b.date || '') ? -1 : String(a.date || '') > String(b.date || '') ? 1 : 0; });
+  gl.forEach(function (g) {
     Object.keys(g.made).forEach(function (sz) {
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
       if ((g.made[sz] || 0) <= 0 && v.toLowerCase() !== curL) return;
+      if (sellOnly && left <= 0 && v.toLowerCase() !== curL) return;   // orders: only batches with bottles left
       if (sellOnly && !isSellFlavour(g.flavour) && v.toLowerCase() !== curL) return;   // orders: only flavours we sell
       // Orders (one flavour on sale): "BTL-20261030-375-CS · 30 Oct 2026 · 94 left";
       // elsewhere the flavour is named too.
@@ -12790,22 +12769,6 @@ function cmpUnits() {
 function cmpUnitSpices(u) {
   return (u.head.flavours || []).map(function (f) { return f.name || ''; }).filter(Boolean).join(' + ');
 }
-// Custom picker (a native <select> can't line the spices up in a column):
-// a button that opens a list with the bottle IDs in one column and the
-// spices, after a "•", in the next.
-var cmpOpenSlot = -1;
-function cmpTogglePick(i, ev) {
-  if (ev) ev.stopPropagation();
-  cmpOpenSlot = (cmpOpenSlot === i) ? -1 : i;
-  var menus = document.querySelectorAll('#cmp-pickers .cmp-pick');
-  for (var k = 0; k < menus.length; k++) menus[k].classList.toggle('open', k === cmpOpenSlot);
-}
-function cmpPick(i, key) { cmpOpenSlot = -1; cmpSetSlot(i, key); }
-document.addEventListener('click', function (e) {
-  if (cmpOpenSlot < 0 || (e.target.closest && e.target.closest('.cmp-pick.open'))) return;
-  cmpTogglePick(cmpOpenSlot);
-});
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && cmpOpenSlot >= 0) cmpTogglePick(cmpOpenSlot); });
 function cmpGetSel() {
   var s = [];
   try { s = JSON.parse(lsGet('toka_cmp_sel') || '[]') || []; } catch (e) { s = []; }
@@ -13004,22 +12967,17 @@ function renderCompare() {
   for (var i = 0; i < CMP_SLOTS; i++) {
     var cur = sel[i] && byKey[sel[i]];
     var emptyTxt = i < 2 ? '\u2014 pick a bottle \u2014' : '\u2014 none \u2014';
-    var optRow = function (key, idTxt, spTxt, extraCls) {
-      return '<tr class="cmp-opt' + (sel[i] === key ? ' sel' : '') + (extraCls || '') + '" onclick="cmpPick(' + i + ', \'' + esc(key) + '\')">'
-        + '<td class="cmp-opt-id">' + esc(idTxt) + '</td><td class="cmp-opt-sp">' + (spTxt ? esc(spTxt) : '') + '</td></tr>';
+    var opt = function (u) {
+      var sp = cmpUnitSpices(u);
+      return '<option value="' + esc(u.key) + '"' + (sel[i] === u.key ? ' selected' : '') + '>' + esc(u.id + (sp ? ' \u00b7 ' + sp : '')) + '</option>';
     };
-    var rows = optRow('', emptyTxt, '', ' cmp-opt-none'), act = '', arc = '';
-    units.forEach(function (u) { var r = optRow(u.key, u.id, cmpUnitSpices(u)); if (u.archived) arc += r; else act += r; });
-    if (act) rows += '<tr class="cmp-opt-grp"><td colspan="2">Active</td></tr>' + act;
-    if (arc) rows += '<tr class="cmp-opt-grp"><td colspan="2">Archived</td></tr>' + arc;
-    var btnTxt = cur
-      ? '<span class="cmp-opt-id">' + esc(cur.id) + '</span>' + (cmpUnitSpices(cur) ? '<span class="cmp-btn-sp">' + esc(cmpUnitSpices(cur)) + '</span>' : '')
-      : '<span class="cmp-btn-empty">' + emptyTxt + '</span>';
+    var act = '', arc = '';
+    units.forEach(function (u) { if (u.archived) arc += opt(u); else act += opt(u); });
+    var opts = '<option value=""' + (cur ? '' : ' selected') + '>' + emptyTxt + '</option>'
+      + (act ? '<optgroup label="active">' + act + '</optgroup>' : '')
+      + (arc ? '<optgroup label="archived">' + arc + '</optgroup>' : '');
     ph += '<div class="form-group"><label>Bottle ' + (i + 1) + (i === 2 ? ' (optional)' : '') + '</label>'
-      + '<div class="cmp-pick' + (cmpOpenSlot === i ? ' open' : '') + '">'
-      + '<button type="button" class="cmp-pick-btn" onclick="cmpTogglePick(' + i + ', event)">' + btnTxt + '</button>'
-      + '<div class="cmp-pick-menu"><table>' + rows + '</table></div>'
-      + '</div></div>';
+      + '<select class="cmp-select" onchange="cmpSetSlot(' + i + ', this.value)">' + opts + '</select></div>';
   }
   pick.innerHTML = ph;
 
