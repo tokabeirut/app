@@ -9033,7 +9033,7 @@ function orderLineRowHtml(l) {
   l = l || {};
   var size = String(l.size || '375');
   return '<div class="ol-row"' + (l.priceEdited ? ' data-edited="1"' : '') + (l.manualPrice ? ' data-manual="1"' : '') + '>'
-    + '<select class="ol-flavour" onchange="onOrderBatchChange(this)">' + bivBatchOptionsHtml(l.bottling || '', l.flavour || '', bottleInvSizeLabel(size)) + '</select>'
+    + '<select class="ol-flavour" onchange="onOrderBatchChange(this)">' + bivBatchOptionsHtml(l.bottling || '', l.flavour || '', bottleInvSizeLabel(size), true) + '</select>'
     + '<select class="ol-size" onchange="onOrderLineChange(this, true)"><option value="375"' + (size === '375' ? ' selected' : '') + '>375 ml</option><option value="750"' + (size === '750' ? ' selected' : '') + '>750 ml</option></select>'
     + '<input type="number" class="ol-qty" min="0" step="1" placeholder="bottles" value="' + esc(l.qty == null ? '' : l.qty) + '" oninput="onOrderLineChange(this)" />'
     + '<input type="number" class="ol-price" min="0" step="0.01" placeholder="$ / bottle" value="' + esc(l.unitPrice == null ? '' : l.unitPrice) + '" oninput="var r = this.closest(\'.ol-row\'); r.setAttribute(\'data-edited\',\'1\'); r.setAttribute(\'data-manual\',\'1\'); onOrderLineChange(this)" />'
@@ -9729,13 +9729,20 @@ function bivStatSubRowHtml(label, sizes, map, tipFn) {
   h += '</div>';
   return h;
 }
+// The flavours we sell right now. "Filled bottles at atelier" and the
+// order form only show these; other flavours (trials) stay in the log.
+var SELL_FLAVOURS = ['cardamom sumac'];
+function isSellFlavour(f) { return SELL_FLAVOURS.indexOf(String(f || '').trim().toLowerCase()) >= 0; }
 function bivKpisHtml() {
   var b = bivBalances();
   var sizes = bivSizeList(b);
   var filledAtelierNet = {}, i;
   for (i = 0; i < sizes.length; i++) {
     var s = sizes[i];
-    filledAtelierNet[s] = (b.filledEvents[s] || 0) - (b.consumed[s] || 0) - (b.sold[s] || 0);
+    filledAtelierNet[s] = 0;
+    SELL_FLAVOURS.forEach(function (f) {
+      filledAtelierNet[s] += ((b.filledByFlavourSize[f] || {})[s] || 0) - ((b.consumedByFlavourSize[f] || {})[s] || 0) - ((b.soldByFlavourSize[f] || {})[s] || 0);
+    });
   }
   var h = '<div class="an-section"><div class="sec-title">Bottle count</div>';
   h += bivProgressRowHtml(sizes, b);
@@ -9752,7 +9759,7 @@ function bivKpisHtml() {
   // Remaining filled stock by flavour (fills minus consumption), split into
   // the same Small/Big columns as every other row so it lines up under
   // "Filled bottles at atelier" — the row it's a breakdown of.
-  var flavours = Object.keys(b.filledEventsByFlavour).sort(function (a, c) { return bivFlavourRank(a) - bivFlavourRank(c); });
+  var flavours = Object.keys(b.filledEventsByFlavour).filter(isSellFlavour).sort(function (a, c) { return bivFlavourRank(a) - bivFlavourRank(c); });
   for (var j = 0; allOpen && j < flavours.length; j++) {
     var fl = flavours[j];
     var filledBySize = b.filledByFlavourSize[fl] || {};
@@ -9856,7 +9863,7 @@ function bivBottlingByKey(key, flavour) {
 // Values: "<bottling key>||<flavour>||<size>", or "||<flavour>||<size>".
 var BIV_SIZES = ['small (375ml)', 'big (750ml)'];
 function bivSizeShort(sizeLabel) { var m = /(\d+)\s*ml/i.exec(String(sizeLabel || '')); return m ? m[1] + ' ml' : String(sizeLabel || ''); }
-function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
+function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   if (!selBottling && !selFlavour) { selFlavour = 'cardamom sumac'; selSize = selSize || BIV_SIZES[0]; }   // default: cardamom sumac 375 ml, any batch
   var cur = (selBottling || '') + '||' + (selFlavour || '') + '||' + (selSize || '');
   // Matched without caring about capitals ("Sumac" = "sumac"), so an older
@@ -9868,10 +9875,15 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize) {
     Object.keys(g.made).forEach(function (sz) {
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
       if ((g.made[sz] || 0) <= 0 && v.toLowerCase() !== curL) return;
+      if (sellOnly && !isSellFlavour(g.flavour) && v.toLowerCase() !== curL) return;   // orders: only flavours we sell
       h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + bivFlavourDisplay(g.flavour) + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
+  if (sellOnly) flavours = flavours.filter(isSellFlavour);
+  // One option per flavour, whatever its capitals (lowercase wins).
+  var seenF = {};
+  flavours = flavours.map(function (f) { return String(f || '').toLowerCase(); }).filter(function (f) { if (seenF[f]) return false; seenF[f] = 1; return true; });
   if (selFlavour && !flavours.some(function (f) { return String(f).toLowerCase() === String(selFlavour).toLowerCase(); })) flavours.push(selFlavour);
   var any = '';
   flavours.forEach(function (f) {
