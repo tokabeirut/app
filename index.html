@@ -6326,7 +6326,7 @@ function bottleSourceOptionsHtml(selectedUid) {
     if (b.archived && String(b.uid) !== String(selectedUid || '')) continue;
     f1opts += '<option value="' + esc(b.uid) + '"' + (String(b.uid) === String(selectedUid || '') ? ' selected' : '') + '>' + esc(f1Label(b)) + (b.archived ? ' (archived)' : '') + '</option>';
   }
-  if (f1opts) opts += '<optgroup label="First Fermentation">' + f1opts + '</optgroup>';
+  if (f1opts) opts += '<optgroup label="first fermentation">' + f1opts + '</optgroup>';
   var sortedI = infusions.slice().sort(cmpInfusions);
   var iopts = '';
   for (var j = 0; j < sortedI.length; j++) {
@@ -6335,7 +6335,7 @@ function bottleSourceOptionsHtml(selectedUid) {
     var lbl = inf.id || ((inf.vessel || '?') + ' \u00b7 ' + (inf.startDate || '?'));
     iopts += '<option value="' + esc(inf.uid) + '"' + (String(inf.uid) === String(selectedUid || '') ? ' selected' : '') + '>' + esc(lbl) + (inf.archived ? ' (archived)' : '') + '</option>';
   }
-  if (iopts) opts += '<optgroup label="Infusion">' + iopts + '</optgroup>';
+  if (iopts) opts += '<optgroup label="infusion">' + iopts + '</optgroup>';
   return opts;
 }
 function sourceRowHtml(selectedUid, amount) {
@@ -9876,7 +9876,10 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
       if ((g.made[sz] || 0) <= 0 && v.toLowerCase() !== curL) return;
       if (sellOnly && !isSellFlavour(g.flavour) && v.toLowerCase() !== curL) return;   // orders: only flavours we sell
-      h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + bivFlavourDisplay(g.flavour) + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left (estimate)')) + '</option>';
+      // Orders (one flavour on sale): "BTL-20261030-375-CS · 30 Oct 2026 · 94 left";
+      // elsewhere the flavour is named too.
+      var showFl = !(sellOnly && SELL_FLAVOURS.length === 1);
+      h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + (showFl ? ' · ' + bivFlavourDisplay(g.flavour) : '') + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
@@ -9895,7 +9898,7 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   // Never fall back to the first batch in the list: if the saved batch isn't
   // offered any more, keep it as it is.
   var keep = (!matched && (selBottling || selFlavour)) ? '<option value="' + esc(cur) + '" selected>' + esc(bivFlavourDisplay(selFlavour || '') + ' ' + bivSizeShort(selSize || '') + (selBottling ? ' · ' + bivBottlingRefName(selBottling) : ' — any batch') + ' (as saved)') + '</option>' : '';
-  return keep + (h ? '<optgroup label="Batch">' + h + '</optgroup>' : '') + '<optgroup label="Any batch (oldest counted first)">' + any + '</optgroup>';
+  return keep + '<optgroup label="any batch (oldest first)">' + any + '</optgroup>' + (h ? '<optgroup label="batches">' + h + '</optgroup>' : '');
 }
 function bivParseBatch(v) {
   var p = String(v || '').split('||');
@@ -10134,7 +10137,7 @@ function bivFlavourDisplay(fl) {
     parts.push(hit);
     rest = rest.slice(hit.length).replace(/^\s+/, '');
   }
-  return parts.join(' \u2022 ');
+  return parts.join(' ');
 }
 // Spices of a bottling, named the way inventory rows store a flavour.
 function bivBottleFlavourName(b) {
@@ -10577,7 +10580,7 @@ function fillReadingBatchSelect(selectedUid) {
     if (b.archived && String(b.uid) !== selU) continue;
     vOpts += '<option value="' + esc(b.uid) + '">' + esc(b.id || f1Label(b)) + (b.archived ? ' (archived)' : '') + '</option>';
   }
-  if (vOpts) opts += '<optgroup label="First fermentations">' + vOpts + '</optgroup>';
+  if (vOpts) opts += '<optgroup label="first fermentations">' + vOpts + '</optgroup>';
   // infusions — active only, keep a linked archived one when editing
   var si = infusions.slice().sort(cmpInfusions), iOpts = '';
   for (var m = 0; m < si.length; m++) {
@@ -10585,7 +10588,7 @@ function fillReadingBatchSelect(selectedUid) {
     if (inf.archived && String(inf.uid) !== selU) continue;
     iOpts += '<option value="' + esc(inf.uid) + '">' + esc(inf.id || 'infusion') + (inf.archived ? ' (archived)' : '') + '</option>';
   }
-  if (iOpts) opts += '<optgroup label="Infusions">' + iOpts + '</optgroup>';
+  if (iOpts) opts += '<optgroup label="infusions">' + iOpts + '</optgroup>';
   // bottles (second fermentation) — active only, keep a linked archived one when editing.
   // Same comparator the Bottling table itself uses (date, then bottle number).
   var so = bottles.slice().sort(cmpBottles);
@@ -10595,7 +10598,7 @@ function fillReadingBatchSelect(selectedUid) {
     if (o.archived && String(o.uid) !== selU) continue;
     oOpts += '<option value="' + esc(o.uid) + '">' + esc(o.bottleId || 'bottle') + (o.archived ? ' (archived)' : '') + '</option>';
   }
-  if (oOpts) opts += '<optgroup label="Bottles">' + oOpts + '</optgroup>';
+  if (oOpts) opts += '<optgroup label="bottles">' + oOpts + '</optgroup>';
   sel.innerHTML = opts;
   sel.value = selectedUid || '';
 }
@@ -13003,14 +13006,14 @@ function renderCompare() {
     var emptyTxt = i < 2 ? '\u2014 pick a bottle \u2014' : '\u2014 none \u2014';
     var optRow = function (key, idTxt, spTxt, extraCls) {
       return '<tr class="cmp-opt' + (sel[i] === key ? ' sel' : '') + (extraCls || '') + '" onclick="cmpPick(' + i + ', \'' + esc(key) + '\')">'
-        + '<td class="cmp-opt-id">' + esc(idTxt) + '</td><td class="cmp-opt-sp">' + (spTxt ? '\u2022 ' + esc(spTxt) : '') + '</td></tr>';
+        + '<td class="cmp-opt-id">' + esc(idTxt) + '</td><td class="cmp-opt-sp">' + (spTxt ? esc(spTxt) : '') + '</td></tr>';
     };
     var rows = optRow('', emptyTxt, '', ' cmp-opt-none'), act = '', arc = '';
     units.forEach(function (u) { var r = optRow(u.key, u.id, cmpUnitSpices(u)); if (u.archived) arc += r; else act += r; });
     if (act) rows += '<tr class="cmp-opt-grp"><td colspan="2">Active</td></tr>' + act;
     if (arc) rows += '<tr class="cmp-opt-grp"><td colspan="2">Archived</td></tr>' + arc;
     var btnTxt = cur
-      ? '<span class="cmp-opt-id">' + esc(cur.id) + '</span>' + (cmpUnitSpices(cur) ? '<span class="cmp-btn-sp">\u2022 ' + esc(cmpUnitSpices(cur)) + '</span>' : '')
+      ? '<span class="cmp-opt-id">' + esc(cur.id) + '</span>' + (cmpUnitSpices(cur) ? '<span class="cmp-btn-sp">' + esc(cmpUnitSpices(cur)) + '</span>' : '')
       : '<span class="cmp-btn-empty">' + emptyTxt + '</span>';
     ph += '<div class="form-group"><label>Bottle ' + (i + 1) + (i === 2 ? ' (optional)' : '') + '</label>'
       + '<div class="cmp-pick' + (cmpOpenSlot === i ? ' open' : '') + '">'
