@@ -1651,6 +1651,14 @@
     <button type="button" class="view-tab" data-view="bottlemath" onclick="showView('bottlemath')">Bottle<br>math</button>
   </div>
   <div class="view-tab-divider"></div>
+  <div class="view-tab-group" style="-webkit-flex-grow:5;flex-grow:5">
+    <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
+    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
+    <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
+    <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
+    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
+  </div>
+  <div class="view-tab-divider"></div>
   <div class="view-tab-group" style="-webkit-flex-grow:6;flex-grow:6">
     <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">First<br>fermentation</button>
     <button type="button" class="view-tab" data-view="infusion" onclick="showView('infusion')">Infusion</button>
@@ -1658,14 +1666,6 @@
     <button type="button" class="view-tab" data-view="readings" onclick="showView('readings')">Labo</button>
     <button type="button" class="view-tab" data-view="faucet" onclick="showView('faucet')">Faucet<br>timer</button>
     <button type="button" class="view-tab" data-view="bottlecalc" onclick="showView('bottlecalc')">Volume<br>converter</button>
-  </div>
-  <div class="view-tab-divider"></div>
-  <div class="view-tab-group" style="-webkit-flex-grow:5;flex-grow:5">
-    <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
-    <button type="button" class="view-tab" data-view="inventory" onclick="showView('inventory')">Bottle<br>inventory</button>
-    <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
-    <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
-    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
   </div>
 </nav>
 
@@ -1686,6 +1686,32 @@
       <div class="feature-card clickable" onclick="showView('bottlemath')">
         <div class="card-head"><span class="name">Bottle math</span></div>
         <div class="desc">The real cost of a bottle &mdash; ingredients, packaging, overhead, pricing, and the break-even point behind it all.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-section">
+    <div class="home-section-title">Operations</div>
+    <div class="home-section-grid">
+      <div class="feature-card clickable" onclick="showView('today')">
+        <div class="card-head"><span class="name">Daily operations</span></div>
+        <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('inventory')">
+        <div class="card-head"><span class="name">Bottle inventory</span></div>
+        <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('spices')">
+        <div class="card-head"><span class="name">Spice inventory</span></div>
+        <div class="desc">Tea, sugar, spices &amp; yeast &mdash; what you bought, what the brews have used since, and what&rsquo;s left.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('production')">
+        <div class="card-head"><span class="name">Production timeline</span></div>
+        <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; sorted into now, next &amp; later.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('compare')">
+        <div class="card-head"><span class="name">Bottle comparison</span></div>
+        <div class="desc">Two or three bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
       </div>
     </div>
   </div>
@@ -1716,32 +1742,6 @@
       <div class="feature-card clickable" onclick="showView('bottlecalc')">
         <div class="card-head"><span class="name">Volume converter</span></div>
         <div class="desc">Convert litres of kombucha into a small/big bottle mix, or the other way around.</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="home-section">
-    <div class="home-section-title">Operations</div>
-    <div class="home-section-grid">
-      <div class="feature-card clickable" onclick="showView('today')">
-        <div class="card-head"><span class="name">Daily operations</span></div>
-        <div class="desc">What needs doing today &mdash; what&rsquo;s fermenting, when to brew next, when to fridge &mdash; plus your own running to-do list.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('inventory')">
-        <div class="card-head"><span class="name">Bottle inventory</span></div>
-        <div class="desc">Bottle count &mdash; empty stock by size, filled stock by flavour, and a log of every bottle received, filled or used.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('spices')">
-        <div class="card-head"><span class="name">Spice inventory</span></div>
-        <div class="desc">Tea, sugar, spices &amp; yeast &mdash; what you bought, what the brews have used since, and what&rsquo;s left.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('production')">
-        <div class="card-head"><span class="name">Production timeline</span></div>
-        <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; sorted into now, next &amp; later.</div>
-      </div>
-      <div class="feature-card clickable" onclick="showView('compare')">
-        <div class="card-head"><span class="name">Bottle comparison</span></div>
-        <div class="desc">Two or three bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
       </div>
     </div>
   </div>
@@ -10496,7 +10496,9 @@ function renderBottleInventory() {
 // on used one pair of its size (1 small bottle = 1 small pair, 1 big = 1 big
 // pair); aphrometer bottles don't get labels, so they're left out. Add a
 // purchase here when new labels arrive.
-var LABEL_STOCK = { since: '2026-10-05', purchased: '2026-10-28', flavour: 'cardamom sumac', bought: { 'small (375ml)': 1333, 'big (750ml)': 36 } };
+var LABEL_STOCK = { since: '2026-10-05', purchased: '2026-10-28', flavour: 'cardamom sumac', bought: { 'small (375ml)': 1333, 'big (750ml)': 667 },
+  // Big labels: 36 used up to 1 Nov 2026 (set by hand); big bottlings after that date are counted.
+  usedUpTo: { 'big (750ml)': { n: 36, date: '2026-11-01' } } };
 function bivLabelsHtml() {
   var used = {}, left = {}, sizes = BIV_SIZES;
   bottleInventory.forEach(function (e) {
@@ -10504,9 +10506,12 @@ function bivLabelsHtml() {
     if (bottledOn < LABEL_STOCK.since) return;
     if (String(e.flavour || '').trim().toLowerCase() !== LABEL_STOCK.flavour) return;   // only cardamom sumac bottles get these labels
     var sz = canonSize(e.size);
+    var fix = LABEL_STOCK.usedUpTo[sz];
+    if (fix && bottledOn <= fix.date) return;
     if (e.stage === 'filled') used[sz] = (used[sz] || 0) + (parseFloat(e.qty) || 0);
     else if (e.stage === 'consumed' && String(e.notes || '').trim().toLowerCase() === APHRO_NOTE) used[sz] = (used[sz] || 0) - Math.abs(parseFloat(e.qty) || 0);
   });
+  Object.keys(LABEL_STOCK.usedUpTo).forEach(function (sz) { used[sz] = (used[sz] || 0) + LABEL_STOCK.usedUpTo[sz].n; });
   sizes.forEach(function (sz) { left[sz] = (LABEL_STOCK.bought[sz] || 0) - (used[sz] || 0); });
   var h = '<div class="an-section biv-labels"><div class="sec-title">Label count</div>';
   h += '<div class="biv-stat-table">';
