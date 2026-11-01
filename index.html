@@ -1627,6 +1627,7 @@
   .id-cell, .task-id, .ftl-batch-id, .tt-head, .biv-batch-ref, .biv-btl-id, .cmp-opt-id, .cmp-link, .ov-node-label, .src-cell, .id-ref { text-transform: none; }
   .price-calc { font-style: italic; color: var(--ink-faint); font-size: 0.86em; margin-top: 1px; white-space: nowrap; }
   .price-net { font-weight: 500; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border); display: inline-block; min-width: 100%; }
+  .biv-labels { margin-top: 36px; }
 /* checkbox / option labels read as sentences: keep them lowercase */
   .bm-applies-label, .linked-toggle, .plan-done-inline, .pt-filter-opt, .pt-lead-opt, .sale-paid-label, label:has(input[type="checkbox"]), label:has(input[type="radio"]) { text-transform: lowercase; letter-spacing: normal; font-size: 0.82rem; }
 </style>
@@ -7177,21 +7178,36 @@ function aphroEntriesFor(b) {
 function aphroEntryFor(b) { return aphroEntriesFor(b)[0] || null; }
 // All aphrometer lines of a bottling count (some were logged in two goes).
 function aphroCount(b) { return aphroEntriesFor(b).reduce(function (t, e) { return t + Math.abs(parseFloat(e.qty) || 0); }, 0); }
+// Aphrometer bottles get two automatic lines, both linked to the bottling:
+// "consumed" (out of the sellable filled stock) and "recycled" (the empty
+// glass goes back into the empty stock at the atelier).
+function aphroRowsFor(b, stage) {
+  if (!b) return [];
+  var k = aphroKeyFor(b);
+  return bottleInventory.filter(function (e) { return e.stage === stage && String(e.bottling || '') === k && String(e.notes || '').trim().toLowerCase() === APHRO_NOTE; });
+}
 function syncAphrometer(b, orig, n) {
   n = Math.max(0, parseInt(n, 10) || 0);
   if (!bottleIsSellSize(b.volumeMl)) return;
-  var all = aphroEntriesFor(orig || b), e = all[0] || null, body = null;
-  // Several lines for one bottling: keep the first, remove the others.
-  all.slice(1).forEach(function (x) { apiPost({ action: 'deleteBottleInvEntry', id: x.id }, function () {}); });
   var flavour = (b.flavours || []).map(function (f) { return String(f.name || '').trim(); }).filter(Boolean).join(' ').toLowerCase() || 'unknown';
-  if (e && n === 0) body = { action: 'deleteBottleInvEntry', id: e.id };
-  else if (e) { var upd = JSON.parse(JSON.stringify(e)); upd.qty = -n; body = { action: 'updateBottleInvEntry', entry: upd }; }
-  else if (n > 0) body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: bottleInvSizeLabel(b.volumeMl || 375), date: b.bottlingDate || todayISO(), flavour: flavour, bottling: aphroKeyFor(b), qty: -n, notes: APHRO_NOTE } };
-  if (!body) return;
-  apiPost(body, function (err, res) {
-    if (err || !res || !res.ok) { setSyncStatus('error', 'aphrometer bottles not logged'); return; }
-    loadBottleInventory(function () { renderBottles(); });
+  var size = bottleInvSizeLabel(b.volumeMl || 375), date = b.bottlingDate || todayISO(), key = aphroKeyFor(b);
+  var calls = [];
+  [['consumed', -n, flavour], ['recycled', n, '']].forEach(function (spec) {
+    var all = aphroRowsFor(orig || b, spec[0]), e = all[0] || null;
+    // Several lines for one bottling: keep the first, remove the others.
+    all.slice(1).forEach(function (x) { calls.push({ action: 'deleteBottleInvEntry', id: x.id }); });
+    if (e && n === 0) calls.push({ action: 'deleteBottleInvEntry', id: e.id });
+    else if (e) { if ((parseFloat(e.qty) || 0) !== spec[1]) { var upd = JSON.parse(JSON.stringify(e)); upd.qty = spec[1]; calls.push({ action: 'updateBottleInvEntry', entry: upd }); } }
+    else if (n > 0) calls.push({ action: 'createBottleInvEntry', entry: { stage: spec[0], size: size, date: date, flavour: spec[2], bottling: key, qty: spec[1], notes: APHRO_NOTE } });
   });
+  if (!calls.length) return;
+  (function next(i) {
+    if (i >= calls.length) { loadBottleInventory(function () { renderBottles(); }); return; }
+    apiPost(calls[i], function (err, res) {
+      if (err || !res || !res.ok) { setSyncStatus('error', 'aphrometer bottles not logged'); return; }
+      next(i + 1);
+    });
+  })(0);
 }
 function createBottlesSequentially(list, i, cb) {
   if (i >= list.length) { cb(true); return; }
@@ -9141,7 +9157,7 @@ function onOrderCustomerInput() {
 function readOrderLines() {
   return [].map.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
     var pb = bivParseBatch(r.querySelector('.ol-flavour').value);
-    return { flavour: pb.flavour, bottling: pb.bottling, size: r.querySelector('.ol-size').value,
+    return { flavour: String(pb.flavour || '').toLowerCase(), bottling: pb.bottling, size: r.querySelector('.ol-size').value,
       qty: parseFloat(r.querySelector('.ol-qty').value) || 0, unitPrice: parseFloat(r.querySelector('.ol-price').value) || 0,
       manualPrice: !!r.getAttribute('data-manual') };
   }).filter(function (l) { return l.qty > 0; });
@@ -9616,7 +9632,7 @@ function bivBalances() {
     var e = bottleInventory[i];
     var q = parseFloat(e.qty) || 0;
     var scat = e.size || '(unspecified)';
-    var fcat = e.flavour || '(unspecified)';
+    var fcat = String(e.flavour || '(unspecified)').toLowerCase();   // "Cardamom Sumac" and "cardamom sumac" are one flavour
     // Rows with no stage yet (shouldn't happen going forward, but covers
     // anything ever added before this field existed) default to 'depot',
     // matching the original "Receive empty bottles" behavior. 'other'
@@ -9875,7 +9891,7 @@ function bivParseBatch(v) {
 }
 function bivFlavourBottlingsHtml(fl, sizes) {
   // Only bottlings of this flavour that still have bottles left.
-  var list = bivBottlings().filter(function (g) { return g.flavour === fl && sizes.some(function (sz) { return (g.left[sz] || 0) > 0; }); });
+  var list = bivBottlings().filter(function (g) { return String(g.flavour).toLowerCase() === String(fl).toLowerCase() && sizes.some(function (sz) { return (g.left[sz] || 0) > 0; }); });
   var h = '';
   list.forEach(function (g) {
     // The bottling it came from: same ID, or one bottle of that group
@@ -10003,7 +10019,7 @@ function bivAddMovement() {
   var mv = val('biv-move');
   var size = val('biv-mv-size');
   var flavour = val('biv-mv-flavour').trim(), bottling = '';
-  if (mv === 'consumed') { var pb = bivParseBatch(flavour); flavour = pb.flavour; bottling = pb.bottling; size = pb.size || size; }
+  if (mv === 'consumed') { var pb = bivParseBatch(flavour); flavour = String(pb.flavour || '').toLowerCase(); bottling = pb.bottling; size = pb.size || size; }
   var qty = parseFloat(val('biv-mv-qty'));
   var date = val('biv-mv-date') || todayISO();
   var notes = val('biv-mv-notes').trim();
@@ -10174,8 +10190,9 @@ function bivSizeRank(size) {
   return 2;
 }
 function bivFlavourRank(flavour) {
-  if (flavour === 'Cardamom Sumac') return 0;
-  if (flavour === 'Sumac') return 1;
+  var f = String(flavour || '').toLowerCase();
+  if (f === 'cardamom sumac') return 0;
+  if (f === 'sumac') return 1;
   return 2;
 }
 // Lifecycle-stage rank for sorting: displayed with the most "finished"
@@ -10255,7 +10272,10 @@ function bivRowHtml(e, sub, newDate, extras) {
   // this bottling (changed in the bottling itself).
   var subs = [];
   if (sub) subs.push([bivStageLabel(sub.stage), fmtNum(parseFloat(sub.qty) || 0), '']);
-  (extras || []).forEach(function (x) { subs.push([bivStageLabel(x.stage), '-' + fmtNum(Math.abs(parseFloat(x.qty) || 0)), APHRO_NOTE]); });
+  (extras || []).slice().sort(function (a, c) { return (a.stage === 'recycled') - (c.stage === 'recycled'); }).forEach(function (x) {
+    var q = Math.abs(parseFloat(x.qty) || 0);
+    subs.push([bivStageLabel(x.stage), (x.stage === 'recycled' ? '+' : '-') + fmtNum(q), APHRO_NOTE]);
+  });
   subs.forEach(function (r, k) {
     h += '<tr class="biv-sub-row' + (k < subs.length - 1 ? ' biv-sub-mid' : '') + '"><td></td><td>' + esc(r[0]) + '</td><td></td><td></td>'
       + '<td class="num">' + r[1] + '</td><td>' + esc(r[2]) + '</td><td></td></tr>';
@@ -10446,7 +10466,7 @@ function bivLogTableHtml() {
     if (!m) return;
     var key = (f.date || '') + '|' + m[1];
     bottleInventory.forEach(function (c) {
-      if (c.stage === 'consumed' && String(c.notes || '').toLowerCase() === APHRO_NOTE && String(c.bottling || '') === key && !aphroHost[c.id]) {
+      if ((c.stage === 'consumed' || c.stage === 'recycled') && String(c.notes || '').trim().toLowerCase() === APHRO_NOTE && String(c.bottling || '') === key && !aphroHost[c.id]) {
         (aphroUnder[f.id] = aphroUnder[f.id] || []).push(c); aphroHost[c.id] = f.id;
       }
     });
@@ -10474,7 +10494,32 @@ function bivLogTableHtml() {
 function renderBottleInventory() {
   var body = document.getElementById('biv-body');
   if (!body) return;
-  body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml();
+  body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml() + bivLabelsHtml();
+}
+// Label count (front + back pairs). Every bottle filled from the start date
+// on used one pair of its size (1 small bottle = 1 small pair, 1 big = 1 big
+// pair); aphrometer bottles don't get labels, so they're left out. Add a
+// purchase here when new labels arrive.
+var LABEL_STOCK = { since: '2026-10-05', flavour: 'cardamom sumac', bought: { 'small (375ml)': 1333, 'big (750ml)': 667 } };
+function bivLabelsHtml() {
+  var used = {}, left = {}, sizes = BIV_SIZES;
+  bottleInventory.forEach(function (e) {
+    var bottledOn = e.stage === 'filled' ? String(e.date || '') : String(e.bottling || '').split('|')[0];
+    if (bottledOn < LABEL_STOCK.since) return;
+    if (String(e.flavour || '').trim().toLowerCase() !== LABEL_STOCK.flavour) return;   // only cardamom sumac bottles get these labels
+    var sz = canonSize(e.size);
+    if (e.stage === 'filled') used[sz] = (used[sz] || 0) + (parseFloat(e.qty) || 0);
+    else if (e.stage === 'consumed' && String(e.notes || '').trim().toLowerCase() === APHRO_NOTE) used[sz] = (used[sz] || 0) - Math.abs(parseFloat(e.qty) || 0);
+  });
+  sizes.forEach(function (sz) { left[sz] = (LABEL_STOCK.bought[sz] || 0) - (used[sz] || 0); });
+  var h = '<div class="an-section biv-labels"><div class="sec-title">Label count</div>';
+  h += '<div class="biv-stat-table">';
+  h += bivStatRowHtml('', sizes, {}, true);
+  h += bivStatRowHtml('label pairs bought (front + back)', sizes, LABEL_STOCK.bought);
+  h += bivStatRowHtml('used — cardamom sumac bottled since ' + fmtDate(LABEL_STOCK.since) + ', without aphrometer bottles', sizes, used);
+  h += bivStatRowHtml('labels left', sizes, left);
+  h += '</div></div>';
+  return h;
 }
 function deleteBottleInvEntry(id) {
   var sub = bivPairs().autoOf[id];
