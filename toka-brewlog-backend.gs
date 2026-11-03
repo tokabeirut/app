@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '49 (hand-typed prices kept on recalculation)';
+var VERSION = '52 (shopify orders always b2c, shopify number as invoice number)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -666,7 +666,7 @@ function readAllIngredientPurchases_() {
 var SALES_SHEET = 'Sales';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
-var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary'];
+var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary', 'delivery', 'delivery_fee', 'shopify_order'];   // delivery_fee: paid to the courier, not toka revenue
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling', 'manual_price'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
 
@@ -736,6 +736,7 @@ function readAllOrders_() {
       customerId: String(o.customer_fk || ''), customerName: String(o.customer_name || ''),
       channel: String(o.channel || 'b2c').toLowerCase(), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
       deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''), complimentary: truthy_(o.complimentary),
+      delivery: String(o.delivery || ''), deliveryFee: o.delivery_fee === '' || o.delivery_fee == null ? '' : o.delivery_fee, shopifyOrder: String(o.shopify_order || ''),
       lines: lines[String(o.order_pk)] || []
     };
   });
@@ -771,7 +772,8 @@ function saveOrder_(o, customer) {
     }
     var orow = rowFrom_({ order_pk: o.id, invoice_no: o.invoiceNo, order_date: o.date || '', customer_fk: o.customerId || '',
       customer_name: o.customerName || '', channel: String(o.channel || 'b2c').toLowerCase(), paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
-      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '', complimentary: o.complimentary ? 'yes' : '' }, on, omap);
+      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '', complimentary: o.complimentary ? 'yes' : '',
+      delivery: String(o.delivery || '').toLowerCase(), delivery_fee: (o.deliveryFee == null ? '' : o.deliveryFee), shopify_order: o.shopifyOrder || '' }, on, omap);
     var r = findRowByKey_(osh, omap, 'order_pk', o.id);
     if (r === -1) osh.appendRow(orow); else osh.getRange(r, 1, 1, on).setValues([orow]);
 
@@ -800,6 +802,124 @@ function deleteOrder_(id) {
   deleteRowsWhere_(getOrdersSheet_(), 'order_pk', id);
   deleteRowsWhere_(getSalesLinesSheet_(), 'order_fk', id);
   deleteRowsWhere_(getBottleInvSheet_(), 'order_fk', id);
+}
+
+/* ---------- Shopify orders (read from the "new order" emails) ----------
+   Shopify sends toka.beirut@gmail.com a staff email for every new order.
+   A hidden block added to that email template ([[toka-order]] … [[/toka-order]],
+   see CLAUDE-CONTEXT.md) lists the order in plain key=value lines; money in
+   cents. syncShopifyEmails() reads new emails (every 15 minutes, plus the
+   "sync shopify" button), turns each into a Sales order (b2c, prices as paid,
+   stock from the oldest batch) and labels the email "toka-imported".
+   An order whose Shopify number is already in Sales is skipped. */
+var SHOPIFY_LABEL = 'toka-imported';
+function decodeEntities_(t) {
+  return String(t || '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&#(\d+);/g, function (m, n) { return String.fromCharCode(parseInt(n, 10)); })
+    .replace(/&#x([0-9a-f]+);/gi, function (m, n) { return String.fromCharCode(parseInt(n, 16)); })
+    .replace(/&amp;/g, '&');
+}
+function parseShopifyBlock_(html) {
+  var a = html.indexOf('[[toka-order]]'), b = html.indexOf('[[/toka-order]]');
+  if (a === -1 || b === -1 || b < a) return null;
+  var txt = html.slice(a + 14, b).replace(/<br\s*\/?>/gi, '\n').replace(/<\/(div|p|tr|li)>/gi, '\n').replace(/<[^>]+>/g, '');
+  var o = { items: [] };
+  decodeEntities_(txt).split(/\r?\n/).forEach(function (line) {
+    var i = line.indexOf('=');
+    if (i < 1) return;
+    var k = line.slice(0, i).trim(), v = line.slice(i + 1).trim();
+    if (k === 'item') {
+      var p = v.split('|');
+      o.items.push({ qty: parseFloat(p[0]) || 0, lineTotal: (parseFloat(p[1]) || 0) / 100, title: (p[2] || '').trim(), sku: (p[3] || '').trim() });
+    } else o[k] = v;
+  });
+  ['delivery_fee', 'subtotal'].forEach(function (k) { o[k] = o[k] === '' || o[k] == null ? '' : (parseFloat(String(o[k]).replace(/[^\d.\-]/g, '')) || 0) / 100; });
+  o.order = String(o.order || '').replace(/^#/, '');
+  o.order_name = String(o.order_name || '').trim();
+  return o.order ? o : null;
+}
+function shopifySize_(t) {
+  t = String(t || '').toLowerCase();
+  if (/750|big|large/.test(t)) return '750';
+  if (/375|small/.test(t)) return '375';
+  return '';
+}
+function shopifyFlavour_(t) {
+  t = String(t || '').toLowerCase();
+  if (/cardamom|sumac/.test(t)) return 'cardamom sumac';
+  return t.replace(/\s*-\s*.*$/, '').replace(/\b(375|750)\s*ml\b|\b(small|big|large)\b/g, '').replace(/\s+/g, ' ').trim();
+}
+function digits_(s) { return String(s || '').replace(/\D/g, ''); }
+// so = { order, date, name, email, phone, address, city, delivery, delivery_fee,
+//        paid (Shopify payment status), gateway, note, subtotal, items[] }
+function importShopifyOrder_(so, existingNos, customers) {
+  if (!so || !so.order || existingNos[so.order]) return null;
+  // Customer: a b2c customer with the same email, or same phone (last 8 digits); otherwise a new b2c customer.
+  var em = String(so.email || '').trim().toLowerCase(), ph = digits_(so.phone).slice(-8), cust = null;
+  for (var i = 0; i < customers.length && !cust; i++) {
+    var c = customers[i];
+    if (String(c.type || 'b2c').toLowerCase() === 'b2b') continue;   // Shopify is b2c only: never matched to a business
+    if ((em && String(c.email || '').trim().toLowerCase() === em) || (ph.length >= 7 && digits_(c.phone).slice(-8) === ph)) cust = c;
+  }
+  var newCust = null;
+  if (!cust) {
+    var nm = String(so.name || so.shipping_name || so.billing_name || em || 'shopify customer').trim();
+    newCust = cust = { id: Utilities.getUuid(), name: nm, type: 'b2c', phone: so.phone || '', email: em,
+      address: String(so.address || '').trim(), area: String(so.city || '').trim(), notes: 'from shopify', created: so.date || ymd_(new Date()) };
+    customers.push(cust);
+  }
+  // Lines at the price actually paid: item totals scaled to the subtotal
+  // (so order-wide discount codes are included), per bottle, rounded to cents.
+  var sum = so.items.reduce(function (a, it) { return a + it.lineTotal; }, 0);
+  var scale = (so.subtotal !== '' && sum > 0) ? so.subtotal / sum : 1;
+  var lines = [], skipped = [];
+  so.items.forEach(function (it) {
+    var size = shopifySize_(it.title + ' ' + it.sku);
+    if (!size || !it.qty) { skipped.push(it.title + ' ×' + it.qty); return; }
+    lines.push({ size: size, flavour: shopifyFlavour_(it.title), qty: it.qty, unitPrice: Math.round(it.lineTotal * scale / it.qty * 100) / 100, bottling: '', manualPrice: true });
+  });
+  var paid = String(so.paid || '').toLowerCase() === 'paid';
+  var notes = [];
+  if (so.note) notes.push(so.note);
+  if (so.gateway) notes.push('payment: ' + String(so.gateway).toLowerCase());
+  if (skipped.length) notes.push('not imported: ' + skipped.join(', '));
+  var deliv = String(so.delivery || '').toLowerCase();
+  var o = { invoiceNo: so.order_name || ('#' + so.order),   // Shopify's own order number is the invoice number
+    date: so.date || ymd_(new Date()), customerId: cust.id, customerName: cust.name, channel: 'b2c',   // Shopify is only used for b2c
+    paid: paid, paidDate: paid ? (so.date || '') : '', deductStock: true, notes: notes.join(' · '), lines: lines,
+    delivery: deliv ? (/pick/.test(deliv) ? 'pickup' : 'delivery') : '', deliveryFee: so.delivery_fee, shopifyOrder: so.order };
+  var r = saveOrder_(o, newCust);
+  existingNos[so.order] = 1;
+  return r;
+}
+function shopifyContext_() {
+  var nos = {};
+  readSheetObjects_(getOrdersSheet_(), 'order_pk').forEach(function (o) { if (o.shopify_order) nos[String(o.shopify_order).replace(/^#/, '')] = 1; });
+  return { nos: nos, customers: readAllCustomers_() };
+}
+function syncShopifyEmails() {
+  var label = GmailApp.getUserLabelByName(SHOPIFY_LABEL) || GmailApp.createLabel(SHOPIFY_LABEL);
+  var threads = GmailApp.search('(from:shopify.com OR "toka-order") -label:' + SHOPIFY_LABEL + ' newer_than:60d', 0, 50);
+  var ctx = shopifyContext_(), added = [];
+  threads.forEach(function (th) {
+    var found = false;
+    th.getMessages().forEach(function (m) {
+      var so = parseShopifyBlock_(m.getBody());
+      if (!so) return;
+      found = true;
+      var r = importShopifyOrder_(so, ctx.nos, ctx.customers);
+      if (r) added.push('#' + so.order);
+    });
+    if (found) th.addLabel(label);   // other Shopify emails stay unlabelled and are just skipped
+  });
+  return added;
+}
+// Run once from the Apps Script editor (select it, ▶ Run): asks for Gmail
+// access and checks the inbox every 15 minutes from then on.
+function setupShopifySync() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'syncShopifyEmails') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('syncShopifyEmails').timeBased().everyMinutes(15).create();
+  return syncShopifyEmails();
 }
 
 /* ---------- bottle inventory (Operations > Bottle inventory) ----------
@@ -1566,6 +1686,20 @@ function handleAction_(body) {
     return json_({ ok: true, id: so.id, invoiceNo: so.invoiceNo });
   }
   if (action === 'deleteOrder') { deleteOrder_(body.id); return json_({ ok: true }); }
+  if (action === 'importShopify') {
+    var ictx = shopifyContext_(), iadded = [];
+    (body.orders || []).forEach(function (so) {
+      if (!so || !so.order) return;
+      so.order = String(so.order).replace(/^#/, '');
+      so.items = (so.items || []).map(function (it) { return { qty: parseFloat(it.qty) || 0, lineTotal: parseFloat(it.lineTotal) || 0, title: String(it.title || ''), sku: String(it.sku || '') }; });
+      if (importShopifyOrder_(so, ictx.nos, ictx.customers)) iadded.push('#' + so.order);
+    });
+    return json_({ ok: true, added: iadded });
+  }
+  if (action === 'syncShopify') {
+    try { return json_({ ok: true, added: syncShopifyEmails() }); }
+    catch (shErr) { return json_({ ok: false, error: String(shErr && shErr.message || shErr) }); }
+  }
   if (action === 'saveCustomer') { upsertCustomer_(body.customer || {}); return json_({ ok: true }); }
   if (action === 'deleteCustomer') { deleteRowsWhere_(getCustomersSheet_(), 'customer_pk', body.id); return json_({ ok: true }); }
   if (action === 'setInvoiceSettings') { setInvoiceSettings_(body.settings || {}); return json_({ ok: true }); }

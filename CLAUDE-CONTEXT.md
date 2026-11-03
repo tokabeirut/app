@@ -142,3 +142,33 @@ Read this first when continuing work on the toka app.
 - Flavours are compared without capitals everywhere in Bottle inventory (bottle count per flavour, batch lists); order lines and consumed movements are saved in lowercase.
 - Selling only cardamom sumac for now (`SELL_FLAVOURS`): "filled bottles at atelier" counts only those flavours (breakdown too), and the order form's batch picker only offers them (`bivBatchOptionsHtml(..., sellOnly)`); other flavours stay in the movement log and the consumed form. "Any batch" on an order = oldest batch of that flavour and size with bottles left first (`bivBottlings`, FIFO).
 - No "•" between spices anywhere (flavours shown as stored, e.g. "cardamom sumac"). Order batch picker: "any batch (oldest first)" group on top (default), then "batches" as "BTL-… · 30 Oct 2026 · 94 left" (no flavour while only one is on sale, no "(estimate)"); on orders only batches with bottles left, oldest first (the line's own saved batch always stays). All dropdown group labels lowercase.
+
+## Shopify orders (index v98, backend v52)
+- Orders have `delivery` ('' / 'delivery' / 'pickup'), `deliveryFee` and `shopifyOrder` (Sales columns delivery, delivery_fee, shopify_order). The fee goes to the courier: shown in the order drawer ("delivery" section) and on the invoice (Delivery line, in the invoice total), never in revenue (`orderTotal` excludes it; `orderDeliveryFee(o)`).
+- Import from the Shopify staff "new order" emails (toka.beirut@gmail.com, same account as the sheet): the email template carries a hidden `[[toka-order]] … [[/toka-order]]` block of key=value lines (money in cents). Backend `syncShopifyEmails()` (time trigger every 15 min, set up by running `setupShopifySync` once in the editor; Gmail label `toka-imported`) → `parseShopifyBlock_` → `importShopifyOrder_`: skip if shopify_order already in Sales; customer matched by email or phone (last 8 digits), else new b2c customer "from shopify"; lines: size from 375/750/small/big in title+sku, flavour cardamom sumac if title has cardamom/sumac; unit price = line total scaled to Shopify subtotal / qty, `manualPrice` true; unknown products → notes "not imported: …"; paid only if Shopify status "paid"; notes = customer note + "payment: <gateway>"; stock deducted as any batch (FIFO) via saveOrder_.
+- Imported orders use Shopify's own order number as invoice number (`order_name`, e.g. "#1004"; fallback "#"+order); app-made orders keep TOKA-YYYY-NNN (numbering only counts those). Shopify is b2c only: imported orders are always b2c and only matched to b2c customers. Prices are always what Shopify charged (manualPrice).
+- Sales page buttons: "sync shopify" (action `syncShopify`) and "import shopify export" (Shopify orders CSV, parsed in the browser by `shopifyCsvOrders`, sent one order at a time as action `importShopify`; same dedupe).
+- Template block (Shopify admin → Settings → Notifications → Staff notifications → New order → edit code, paste before the last `</body>`):
+```
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#ffffff;">
+[[toka-order]]<br>
+order={{ order_number }}<br>
+order_name={{ order_name }}<br>
+date={{ created_at | date: "%Y-%m-%d" }}<br>
+name={{ customer.name }}<br>
+shipping_name={{ shipping_address.name }}<br>
+billing_name={{ billing_address.name }}<br>
+email={{ email }}<br>
+phone={% if shipping_address.phone != blank %}{{ shipping_address.phone }}{% else %}{{ billing_address.phone }}{% endif %}<br>
+address={{ shipping_address.address1 }} {{ shipping_address.address2 }}<br>
+city={{ shipping_address.city }}<br>
+delivery={{ shipping_method.title }}<br>
+delivery_fee={{ shipping_price }}<br>
+paid={{ financial_status }}<br>
+gateway={{ unique_gateways | join: ", " }}<br>
+note={{ note | strip_newlines }}<br>
+subtotal={{ subtotal_price }}<br>
+{% for line in line_items %}item={{ line.quantity }}|{{ line.final_line_price }}|{{ line.title }}|{{ line.variant.sku }}<br>
+{% endfor %}[[/toka-order]]
+</div>
+```

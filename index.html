@@ -1603,6 +1603,8 @@
   .price-calc { font-style: italic; color: var(--ink-faint); font-size: 0.86em; margin-top: 1px; white-space: nowrap; }
   .price-net { font-weight: 500; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border); display: inline-block; min-width: 100%; }
   .biv-labels { margin-top: 36px; }
+  .o-deliv-row { display: -webkit-flex; display: flex; gap: 12px; }
+  .o-deliv-row .form-group { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 0; }
   .biv-labels .biv-stat-row.biv-labels-total { margin-top: 14px; border-top: 1px solid var(--ink-faint); padding-top: 12px; }
   .biv-labels-total .biv-stat-val { font-size: 1.1em; font-weight: 500; }
 /* checkbox / option labels read as sentences: keep them lowercase */
@@ -1851,6 +1853,9 @@
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
+      <button class="btn-ghost" id="shopify-sync-btn" onclick="syncShopify()" title="Import new Shopify orders from the order emails now (this also happens by itself every 15 minutes)">sync shopify</button>
+      <button class="btn-ghost" onclick="document.getElementById('shopify-csv').click()" title="Import a Shopify orders export (.csv) — orders already in the app are skipped">import shopify export</button>
+      <input type="file" id="shopify-csv" accept=".csv,text/csv" style="display:none" onchange="importShopifyCsv(this)" />
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ new customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
@@ -1921,9 +1926,28 @@
       <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" /> <span>Paid</span></label>
     </div>
     <div class="form-section">
+      <div class="form-section-title">Delivery</div>
+      <div class="o-deliv-row">
+        <div class="form-group">
+          <label for="o-delivery">How it gets there</label>
+          <select id="o-delivery" onchange="onOrderDeliveryChange()">
+            <option value="">&mdash;</option>
+            <option value="delivery">delivery</option>
+            <option value="pickup">pickup at the atelier</option>
+          </select>
+        </div>
+        <div class="form-group" id="o-fee-group">
+          <label for="o-fee">Delivery fee ($)</label>
+          <input type="number" id="o-fee" min="0" step="0.01" placeholder="0.00" />
+        </div>
+      </div>
+      <div class="hint">The fee goes to the courier: it shows on the invoice, not in toka's revenue.</div>
+      <div class="hint" id="o-shopify-hint" style="display:none"></div>
+    </div>
+    <div class="form-section">
       <div class="form-section-title">Notes</div>
       <div class="form-group">
-        <textarea id="o-notes" placeholder="Delivery, special requests &mdash; shown on the invoice."></textarea>
+        <textarea id="o-notes" placeholder="Special requests &mdash; shown on the invoice."></textarea>
       </div>
     </div>
   </div>
@@ -8543,6 +8567,9 @@ function lineTotal(l) {
   if (isRebateLine(l)) return -(parseFloat(l.unitPrice) || 0);
   return (parseFloat(l.qty) || 0) * (parseFloat(l.unitPrice) || 0);
 }
+// Delivery fee: shown on the order and the invoice, but it goes to the courier,
+// so it is never part of toka's revenue (orderTotal leaves it out).
+function orderDeliveryFee(o) { var f = parseFloat(o && o.deliveryFee); return isNaN(f) || f < 0 ? 0 : f; }
 function orderTotal(o) { return (o.lines || []).reduce(function (a, l) { return a + lineTotal(l); }, 0); }
 function orderBottles(o) { return (o.lines || []).reduce(function (a, l) { return a + (parseFloat(l.qty) || 0); }, 0); }
 // An order's lines with the batch left out: lines with the same flavour,
@@ -9151,6 +9178,10 @@ function updateOrderTotalOnly() {
   if (rIn && box && box.style.display !== 'none') tot -= parseFloat(rIn.value) || 0;
   document.getElementById('o-total').textContent = saleMoney(tot);
 }
+function onOrderDeliveryChange() {
+  var d = document.getElementById('o-delivery').value;
+  document.getElementById('o-fee-group').style.visibility = d === 'pickup' ? 'hidden' : '';
+}
 function openOrderDrawer(id) {
   var o = id ? findOrder(id) : null;
   editingOrderId = o ? o.id : null;
@@ -9164,6 +9195,12 @@ function openOrderDrawer(id) {
   document.getElementById('o-comp').checked = !!(o && o.complimentary);
   document.getElementById('o-paid-group').style.display = (o && o.complimentary) ? 'none' : '';
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
+  document.getElementById('o-delivery').value = (o && (o.delivery === 'pickup' || o.delivery === 'delivery')) ? o.delivery : (o && o.delivery ? 'delivery' : '');
+  document.getElementById('o-fee').value = (o && orderDeliveryFee(o)) ? orderDeliveryFee(o) : '';
+  onOrderDeliveryChange();
+  var shh = document.getElementById('o-shopify-hint');
+  shh.textContent = (o && o.shopifyOrder) ? 'imported from shopify order #' + o.shopifyOrder : '';
+  shh.style.display = (o && o.shopifyOrder) ? '' : 'none';
   // New orders get their number automatically; an existing order's number
   // can be changed here (its lines and "sold" inventory rows follow on save).
   document.getElementById('o-invoice-hint').textContent = o ? '' : 'The invoice number is given automatically when you save.';
@@ -9294,6 +9331,9 @@ function saveOrder() {
     paidDate: prev ? (prev.paidDate || '') : '',
     deductStock: true,   // an order's bottles always leave Bottle inventory
     notes: val('o-notes').trim(),
+    delivery: val('o-delivery'),
+    deliveryFee: (val('o-delivery') === 'pickup' || val('o-fee') === '') ? '' : (parseFloat(val('o-fee')) || 0),
+    shopifyOrder: prev ? (prev.shopifyOrder || '') : '',
     lines: isOrderComp() ? lines.map(function (l) { l.unitPrice = 0; return l; }) : lines.concat(orderRebateLines()),
     _hadStock: prev ? !!prev.deductStock : false
   };
@@ -9463,7 +9503,7 @@ function invoiceHtml(o) {
   var logoEl = document.querySelector('#main-header img');
   var logo = logoEl ? logoEl.getAttribute('src') : '';
   var psum = orderPriceSummary(o);
-  var sub = orderTotal(o), rate = parseFloat(s.taxRate) || 0, tax = Math.round(sub * rate) / 100, total = sub + tax;
+  var sub = orderTotal(o), rate = parseFloat(s.taxRate) || 0, tax = Math.round(sub * rate) / 100, fee = orderDeliveryFee(o), total = sub + tax + fee;
   function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
   function money(n) { return '$ ' + fmtUSD(n); }
   // 1. Rebate on the earlier orders of the 30-day period (worked out per
@@ -9539,11 +9579,114 @@ function invoiceHtml(o) {
       + (psum.disc ? '<div class="disc"><span>Discount</span><span>\u2212 ' + money(psum.disc) + '</span></div>' : '') : '')
     + '<div><span class="muted">Subtotal</span><span>' + money(sub) + '</span></div>'
     + (rate ? '<div><span class="muted">Tax (' + fmtNum(rate) + '%)</span><span>' + money(tax) + '</span></div>' : '')
+    + (fee ? '<div><span class="muted">Delivery</span><span>' + money(fee) + '</span></div>' : '')
     + '<div class="big"><span>Total (USD)</span><span>' + money(total) + '</span></div></div>'
     + '<div class="foot">' + (s.payment ? '<div><div class="lbl">Payment</div>' + nl(s.payment) + '</div>' : '') + (o.notes ? '<div><div class="lbl">Notes</div>' + nl(o.notes) + '</div>' : '') + '</div>'
     + '<p class="thanks">' + esc(thanks) + '</p>'
     + '<div class="bottom"><div class="lbl">storage</div><div class="row"><div class="txt">keep refrigerated at all times, 1–4°C, and store upright. naturally carbonated, so open it chilled.</div><div class="sign">drink alive.</div></div></div>'
     + '</div></body></html>';
+}
+/* ---- Shopify orders ----
+   New Shopify orders come in by themselves: the backend reads the "new
+   order" emails every 15 minutes (syncShopifyEmails in the .gs). "sync
+   shopify" runs that now; "import shopify export" reads a Shopify orders
+   export (.csv) for orders from before the email set-up. Either way an
+   order whose Shopify number is already in Sales is skipped. */
+function reloadSalesAndStock(msg) {
+  loadSales(function () { renderSales(); });
+  loadBottleInventory();
+  if (msg) alert(msg);
+}
+function syncShopify() {
+  var btn = document.getElementById('shopify-sync-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'syncing…'; }
+  setSyncStatus('saving', 'checking shopify emails…');
+  apiPost({ action: 'syncShopify' }, function (err, res) {
+    if (btn) { btn.disabled = false; btn.textContent = 'sync shopify'; }
+    if (err || !res || !res.ok) {
+      setSyncStatus('error', 'shopify sync failed');
+      alert('Couldn’t check the Shopify emails' + (res && res.error ? ': ' + res.error : '.') + '\n\nIf this is the first time: redeploy the latest toka-brewlog-backend.gs and run setupShopifySync once in the Apps Script editor.');
+      return;
+    }
+    setSyncStatus('live', 'connected · google sheets');
+    var n = (res.added || []).length;
+    reloadSalesAndStock(n ? n + ' new shopify order' + (n === 1 ? '' : 's') + ' imported: ' + res.added.join(', ') : 'no new shopify orders.');
+  });
+}
+function parseCsv(text) {
+  var rows = [], row = [], f = '', q = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
+      else f += ch;
+    } else if (ch === '"') q = true;
+    else if (ch === ',') { row.push(f); f = ''; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += ch;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); });
+}
+// Shopify's orders export: one row per product; the order's own columns are
+// only filled on its first row.
+function shopifyCsvOrders(text) {
+  var rows = parseCsv(text.replace(/^﻿/, ''));
+  if (rows.length < 2) return [];
+  var H = {}; rows[0].forEach(function (h, i) { H[String(h).trim().toLowerCase()] = i; });
+  function g(r, k) { var i = H[k]; return i == null ? '' : String(r[i] == null ? '' : r[i]).trim(); }
+  function num(v) { var n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return isNaN(n) ? 0 : n; }
+  if (H['name'] == null || H['lineitem name'] == null) return null;
+  var byNo = {}, list = [];
+  rows.slice(1).forEach(function (r) {
+    var no = g(r, 'name').replace(/^#/, '');
+    if (!no) return;
+    var o = byNo[no];
+    if (!o) {
+      o = byNo[no] = { order: no, order_name: g(r, 'name'), items: [] };
+      list.push(o);
+    }
+    if (!o.date && g(r, 'created at')) {
+      o.date = g(r, 'created at').slice(0, 10);
+      o.email = g(r, 'email');
+      o.name = g(r, 'shipping name') || g(r, 'billing name');
+      o.phone = g(r, 'shipping phone') || g(r, 'billing phone') || g(r, 'phone');
+      o.address = (g(r, 'shipping address1') + ' ' + g(r, 'shipping address2')).trim();
+      o.city = g(r, 'shipping city');
+      o.delivery = g(r, 'shipping method');
+      o.delivery_fee = g(r, 'shipping') === '' ? '' : num(g(r, 'shipping'));
+      o.paid = g(r, 'financial status');
+      o.gateway = g(r, 'payment method');
+      o.note = g(r, 'notes').replace(/\s*\n\s*/g, ' ');
+      o.subtotal = g(r, 'subtotal') === '' ? '' : num(g(r, 'subtotal'));
+    }
+    var qty = num(g(r, 'lineitem quantity'));
+    if (g(r, 'lineitem name') && qty) o.items.push({ qty: qty, lineTotal: qty * num(g(r, 'lineitem price')) - num(g(r, 'lineitem discount')), title: g(r, 'lineitem name'), sku: g(r, 'lineitem sku') });
+  });
+  return list;
+}
+function importShopifyCsv(input) {
+  var file = input.files && input.files[0];
+  input.value = '';
+  if (!file) return;
+  var rd = new FileReader();
+  rd.onload = function () {
+    var list = shopifyCsvOrders(String(rd.result || ''));
+    if (!list) { alert('This doesn’t look like a Shopify orders export (it needs the "Name" and "Lineitem name" columns).'); return; }
+    var have = {}; orders.forEach(function (o) { if (o.shopifyOrder) have[String(o.shopifyOrder)] = 1; });
+    var todo = list.filter(function (o) { return !have[o.order]; });
+    if (!todo.length) { alert('All ' + list.length + ' orders in this file are already in the app.'); return; }
+    if (!confirm('Import ' + todo.length + ' shopify order' + (todo.length === 1 ? '' : 's') + ' (' + todo.map(function (o) { return '#' + o.order; }).join(', ') + ')?' + (todo.length < list.length ? '\n\n' + (list.length - todo.length) + ' already in the app are skipped.' : ''))) return;
+    setSyncStatus('saving', 'importing shopify orders…');
+    (function next(i) {
+      if (i >= todo.length) { setSyncStatus('live', 'connected · google sheets'); reloadSalesAndStock(); return; }
+      apiPost({ action: 'importShopify', orders: [todo[i]] }, function (err) {
+        if (err) { setSyncStatus('error', 'import failed'); alert('Import stopped at order #' + todo[i].order + '. Check your connection and try again — orders already imported are skipped.'); reloadSalesAndStock(); return; }
+        next(i + 1);
+      });
+    })(0);
+  };
+  rd.readAsText(file);
 }
 // Price lists open in their own page, like invoices (price-lists/view.html):
 // the sheet with a bar on top to download the PDF or close.
