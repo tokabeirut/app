@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '52 (shopify orders always b2c, shopify number as invoice number)';
+var VERSION = '55 (phone numbers: lebanese however typed, international with country code)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -846,20 +846,27 @@ function shopifySize_(t) {
 }
 function shopifyFlavour_(t) {
   t = String(t || '').toLowerCase();
-  if (/cardamom|sumac/.test(t)) return 'cardamom sumac';
+  if (/green\s*amber|cardamom|sumac/.test(t)) return 'cardamom sumac';   // "green amber" is its name in the shop
   return t.replace(/\s*-\s*.*$/, '').replace(/\b(375|750)\s*ml\b|\b(small|big|large)\b/g, '').replace(/\s+/g, ' ').trim();
 }
 function digits_(s) { return String(s || '').replace(/\D/g, ''); }
+// Same number however it was typed: "03 566 464", "3566464", "+961 3 566 464" → "3566464".
+function phoneKey_(s) {
+  var d = digits_(String(s || '').replace(/\(0\)/g, ''));
+  if (d.indexOf('00') === 0) d = d.slice(2);
+  if (d.indexOf('961') === 0) d = d.slice(3);
+  return d.replace(/^0+/, '');
+}
 // so = { order, date, name, email, phone, address, city, delivery, delivery_fee,
 //        paid (Shopify payment status), gateway, note, subtotal, items[] }
 function importShopifyOrder_(so, existingNos, customers) {
   if (!so || !so.order || existingNos[so.order]) return null;
-  // Customer: a b2c customer with the same email, or same phone (last 8 digits); otherwise a new b2c customer.
-  var em = String(so.email || '').trim().toLowerCase(), ph = digits_(so.phone).slice(-8), cust = null;
+  // Customer: a b2c customer with the same email, or same phone number (phoneKey_); otherwise a new b2c customer.
+  var em = String(so.email || '').trim().toLowerCase(), ph = phoneKey_(so.phone), cust = null;
   for (var i = 0; i < customers.length && !cust; i++) {
     var c = customers[i];
     if (String(c.type || 'b2c').toLowerCase() === 'b2b') continue;   // Shopify is b2c only: never matched to a business
-    if ((em && String(c.email || '').trim().toLowerCase() === em) || (ph.length >= 7 && digits_(c.phone).slice(-8) === ph)) cust = c;
+    if ((em && String(c.email || '').trim().toLowerCase() === em) || (ph.length >= 7 && phoneKey_(c.phone) === ph)) cust = c;
   }
   var newCust = null;
   if (!cust) {

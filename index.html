@@ -8821,7 +8821,7 @@ function crmStatusChip(ins) {
 // Lebanese numbers shown the local way: +961 76 343 940 (mobile, 8 digits)
 // or +961 3 123 456 / +961 1 234 567 (7 digits). Anything else is left as typed.
 function fmtPhone(p) {
-  var raw = String(p || '').trim();
+  var raw = String(p || '').trim().replace(/\s*\(0\)\s*/g, ' ');   // "+32 (0)470…": the (0) isn't dialled from abroad
   var d = raw.replace(/[^\d]/g, '');
   if (d.indexOf('00') === 0) d = d.slice(2);
   var local = null;
@@ -8833,7 +8833,14 @@ function fmtPhone(p) {
   if (local && local.length === 7) return '+961 ' + local.slice(0, 1) + ' ' + local.slice(1, 4) + ' ' + local.slice(4);
   return raw;
 }
-function crmPhoneDigits(p) { var d = String(p || '').replace(/[^\d]/g, ''); return d.indexOf('00') === 0 ? d.slice(2) : d; }
+// Digits for WhatsApp / call links, always with the country code:
+// "03566464", "3566464" (a sheet dropped the 0) and "+961 3 566 464" all
+// become 9613566464 (Lebanese numbers are recognised by fmtPhone).
+function crmPhoneDigits(p) {
+  var f = fmtPhone(p), d = String(f || '').replace(/[^\d]/g, '');
+  if (d.indexOf('00') === 0) d = d.slice(2);
+  return d;
+}
 function crmNudgeText(c) {
   var first = String(c.contact || c.name || '').split(' ')[0];
   return 'Hi ' + first + ', it’s toka! Hope you’re enjoying the kombucha. Are you running low — shall we bring you some more?';
@@ -8842,7 +8849,7 @@ function crmContactButtons(c) {
   var h = '', d = crmPhoneDigits(c.phone);
   if (d) {
     h += '<a class="crm-act" href="https://wa.me/' + d + '?text=' + encodeURIComponent(crmNudgeText(c)) + '" target="_blank" rel="noopener" title="WhatsApp ' + esc(c.phone) + '" onclick="event.stopPropagation()">WhatsApp</a>';
-    h += '<a class="crm-act" href="tel:' + esc(String(c.phone).replace(/[^\d+]/g, '')) + '" title="Call ' + esc(c.phone) + '" onclick="event.stopPropagation()">Call</a>';
+    h += '<a class="crm-act" href="tel:+' + esc(d) + '" title="Call ' + esc(c.phone) + '" onclick="event.stopPropagation()">Call</a>';
   }
   if (c.email) h += '<a class="crm-act" href="mailto:' + esc(c.email) + '" onclick="event.stopPropagation()">Email</a>';
   return h;
