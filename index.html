@@ -1862,8 +1862,6 @@
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
       <button class="btn-ghost" id="shopify-sync-btn" onclick="syncShopify()" title="Import new Shopify orders from the order emails now (this also happens by itself every 15 minutes)">sync shopify</button>
-      <button class="btn-ghost" onclick="document.getElementById('shopify-csv').click()" title="Import a Shopify orders export (.csv) — orders already in the app are skipped">import shopify export</button>
-      <input type="file" id="shopify-csv" accept=".csv,text/csv" style="display:none" onchange="importShopifyCsv(this)" />
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ new customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
@@ -9621,9 +9619,8 @@ function invoiceHtml(o) {
 /* ---- Shopify orders ----
    New Shopify orders come in by themselves: the backend reads the "new
    order" emails every 15 minutes (syncShopifyEmails in the .gs). "sync
-   shopify" runs that now; "import shopify export" reads a Shopify orders
-   export (.csv) for orders from before the email set-up. Either way an
-   order whose Shopify number is already in Sales is skipped. */
+   shopify" runs that now. An order whose Shopify number is already in
+   Sales is skipped. */
 function reloadSalesAndStock(msg) {
   loadSales(function () { renderSales(); });
   loadBottleInventory();
@@ -9644,81 +9641,6 @@ function syncShopify() {
     var n = (res.added || []).length;
     reloadSalesAndStock(n ? n + ' new shopify order' + (n === 1 ? '' : 's') + ' imported: ' + res.added.join(', ') : 'no new shopify orders.');
   });
-}
-function parseCsv(text) {
-  var rows = [], row = [], f = '', q = false;
-  for (var i = 0; i < text.length; i++) {
-    var ch = text[i];
-    if (q) {
-      if (ch === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; }
-      else f += ch;
-    } else if (ch === '"') q = true;
-    else if (ch === ',') { row.push(f); f = ''; }
-    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
-    else f += ch;
-  }
-  if (f !== '' || row.length) { row.push(f); rows.push(row); }
-  return rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); });
-}
-// Shopify's orders export: one row per product; the order's own columns are
-// only filled on its first row.
-function shopifyCsvOrders(text) {
-  var rows = parseCsv(text.replace(/^﻿/, ''));
-  if (rows.length < 2) return [];
-  var H = {}; rows[0].forEach(function (h, i) { H[String(h).trim().toLowerCase()] = i; });
-  function g(r, k) { var i = H[k]; return i == null ? '' : String(r[i] == null ? '' : r[i]).trim(); }
-  function num(v) { var n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return isNaN(n) ? 0 : n; }
-  if (H['name'] == null || H['lineitem name'] == null) return null;
-  var byNo = {}, list = [];
-  rows.slice(1).forEach(function (r) {
-    var no = g(r, 'name').replace(/^#/, '');
-    if (!no) return;
-    var o = byNo[no];
-    if (!o) {
-      o = byNo[no] = { order: no, order_name: g(r, 'name'), items: [] };
-      list.push(o);
-    }
-    if (!o.date && g(r, 'created at')) {
-      o.date = g(r, 'created at').slice(0, 10);
-      o.email = g(r, 'email');
-      o.name = g(r, 'shipping name') || g(r, 'billing name');
-      o.phone = g(r, 'shipping phone') || g(r, 'billing phone') || g(r, 'phone');
-      o.address = (g(r, 'shipping address1') + ' ' + g(r, 'shipping address2')).trim();
-      o.city = g(r, 'shipping city');
-      o.delivery = g(r, 'shipping method');
-      o.delivery_fee = g(r, 'shipping') === '' ? '' : num(g(r, 'shipping'));
-      o.paid = g(r, 'financial status');
-      o.gateway = g(r, 'payment method');
-      o.note = g(r, 'notes').replace(/\s*\n\s*/g, ' ');
-      o.subtotal = g(r, 'subtotal') === '' ? '' : num(g(r, 'subtotal'));
-    }
-    var qty = num(g(r, 'lineitem quantity'));
-    if (g(r, 'lineitem name') && qty) o.items.push({ qty: qty, lineTotal: qty * num(g(r, 'lineitem price')) - num(g(r, 'lineitem discount')), title: g(r, 'lineitem name'), sku: g(r, 'lineitem sku') });
-  });
-  return list;
-}
-function importShopifyCsv(input) {
-  var file = input.files && input.files[0];
-  input.value = '';
-  if (!file) return;
-  var rd = new FileReader();
-  rd.onload = function () {
-    var list = shopifyCsvOrders(String(rd.result || ''));
-    if (!list) { alert('This doesn’t look like a Shopify orders export (it needs the "Name" and "Lineitem name" columns).'); return; }
-    var have = {}; orders.forEach(function (o) { if (o.shopifyOrder) have[String(o.shopifyOrder)] = 1; });
-    var todo = list.filter(function (o) { return !have[o.order]; });
-    if (!todo.length) { alert('All ' + list.length + ' orders in this file are already in the app.'); return; }
-    if (!confirm('Import ' + todo.length + ' shopify order' + (todo.length === 1 ? '' : 's') + ' (' + todo.map(function (o) { return '#' + o.order; }).join(', ') + ')?' + (todo.length < list.length ? '\n\n' + (list.length - todo.length) + ' already in the app are skipped.' : ''))) return;
-    setSyncStatus('saving', 'importing shopify orders…');
-    (function next(i) {
-      if (i >= todo.length) { setSyncStatus('live', 'connected · google sheets'); reloadSalesAndStock(); return; }
-      apiPost({ action: 'importShopify', orders: [todo[i]] }, function (err) {
-        if (err) { setSyncStatus('error', 'import failed'); alert('Import stopped at order #' + todo[i].order + '. Check your connection and try again — orders already imported are skipped.'); reloadSalesAndStock(); return; }
-        next(i + 1);
-      });
-    })(0);
-  };
-  rd.readAsText(file);
 }
 // Price lists open in their own page, like invoices (price-lists/view.html):
 // the sheet with a bar on top to download the PDF or close.
