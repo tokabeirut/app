@@ -8654,14 +8654,14 @@ function orderTotalCellHtml(o) {
 function orderItemsText(o) {
   return mergedOrderLines(o).map(function (l) {
     if (isRebateLine(l)) return (l.flavour || 'Discount') + ' −' + saleMoney(parseFloat(l.unitPrice) || 0);
-    return fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '');
+    return fmtNum(parseFloat(l.qty) || 0) + '× ' + (productName(l.flavour) || '—') + ' ' + (l.size ? l.size + ' ml' : '');
   }).join(' · ');
 }
 // One product per line (orders table, customer history).
 function orderItemsHtml(o) {
   return mergedOrderLines(o).map(function (l) {
     if (isRebateLine(l)) return '';   // discounts are worked out in the Total column
-    return '<div class="crm-item">' + esc(fmtNum(parseFloat(l.qty) || 0) + '× ' + (l.flavour || '—') + ' ' + (l.size ? l.size + ' ml' : '')) + '</div>';
+    return '<div class="crm-item">' + esc(fmtNum(parseFloat(l.qty) || 0) + '× ' + (productName(l.flavour) || '—') + ' ' + (l.size ? l.size + ' ml' : '')) + '</div>';
   }).join('');
 }
 function findOrder(id) { for (var i = 0; i < orders.length; i++) if (String(orders[i].id) === String(id)) return orders[i]; return null; }
@@ -9520,7 +9520,7 @@ function invoiceHtml(o) {
   }).join('');
   var rows = rebRows + merged.filter(function (l) { return !isRebateLine(l); }).map(function (l) {
     var b = orderLineBreakdown(o, l, win), q = parseFloat(l.qty) || 0;
-    var h = '<tr' + (b.disc ? ' class="has-disc"' : '') + '><td>' + esc(l.flavour || 'kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
+    var h = '<tr' + (b.disc ? ' class="has-disc"' : '') + '><td>' + esc(productName(l.flavour) || 'kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
       + '<td class="r">' + fmtNum(q) + '</td><td class="r">' + money(b.base) + '</td><td class="r">' + money(b.baseAmt) + '</td></tr>';
     if (b.disc) h += '<tr class="disc"><td>' + esc(b.label) + ' · ' + money(b.disc) + ' off per bottle</td><td class="r"></td><td class="r">− ' + money(b.disc) + '</td><td class="r">− ' + money(b.discAmt) + '</td></tr>';
     return h;
@@ -9891,7 +9891,7 @@ function bivKpisHtml() {
       netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0) - (soldBySize[sz] || 0);
     }
     var open = !!bivOpenFlavours()[fl];
-    h += bivStatSubRowHtml(bivFlavourDisplay(fl), sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
+    h += bivStatSubRowHtml(productName(fl), sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
       'class="biv-summary-grid biv-stat-subrow biv-fold-row" onclick="bivToggleFlavour(\'' + esc(fl).replace(/'/g, "\\'") + '\')"')
       .replace('<div class="biv-stat-sublabel">', '<div class="biv-stat-sublabel"><span class="biv-tri' + (open ? ' open' : '') + '">&#9656;</span>');
     if (open) h += bivFlavourBottlingsHtml(fl, sizes);
@@ -10003,7 +10003,7 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
       // Orders (one flavour on sale): "BTL-20261030-375-CS · 30 Oct 2026 · 94 left";
       // elsewhere the flavour is named too.
       var showFl = !(sellOnly && SELL_FLAVOURS.length === 1);
-      h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + (showFl ? ' · ' + bivFlavourDisplay(g.flavour) : '') + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
+      h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + (showFl ? ' · ' + productName(g.flavour) : '') + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
@@ -10016,12 +10016,15 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   flavours.forEach(function (f) {
     BIV_SIZES.forEach(function (sz) {
       var v = '||' + f + '||' + sz;
-      any += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivFlavourDisplay(f) + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
+      any += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(productName(f) + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
     });
   });
   // Never fall back to the first batch in the list: if the saved batch isn't
   // offered any more, keep it as it is.
-  var keep = (!matched && (selBottling || selFlavour)) ? '<option value="' + esc(cur) + '" selected>' + esc(bivFlavourDisplay(selFlavour || '') + ' ' + bivSizeShort(selSize || '') + (selBottling ? ' · ' + bivBottlingRefName(selBottling) : ' — any batch') + ' (as saved)') + '</option>' : '';
+  var keep = (!matched && (selBottling || selFlavour)) ? '<option value="' + esc(cur) + '" selected>' + esc(productName(selFlavour || '') + ' ' + bivSizeShort(selSize || '') + (selBottling ? ' · ' + bivBottlingRefName(selBottling) : ' — any batch') + ' (as saved)') + '</option>' : '';
+  // Orders: no batch choice, bottles always come off the oldest batch first
+  // (a line saved earlier with a specific batch keeps it, shown "as saved").
+  if (sellOnly) return keep + any.replace(/ — any batch/g, '');
   return keep + '<optgroup label="any batch (oldest first)">' + any + '</optgroup>' + (h ? '<optgroup label="batches">' + h + '</optgroup>' : '');
 }
 function bivParseBatch(v) {
@@ -10090,7 +10093,7 @@ function bivFlavourOptsString(current) {
   rest.sort(function (a, c) { return a.localeCompare(c); }).forEach(add);
   if (current) add(current);
   return list.filter(function (f) { return f.indexOf(',') === -1 && f.indexOf(':') === -1; })
-    .map(function (f) { return f + ':' + bivFlavourDisplay(f); }).join(',');
+    .map(function (f) { return f + ':' + productName(f); }).join(',');
 }
 function bivFlavourOptionsHtml() { return bivOptionsHtml(bivFlavourOptsString()); }
 // One form for every kind of movement: the Movement picker decides what the
@@ -10247,6 +10250,15 @@ function bivKnownSpices() {
   infusions.forEach(function (x) { (x.flavours || []).forEach(function (f) { add(f.name); }); });
   return out.sort(function (a, b) { return b.length - a.length; });   // longest first
 }
+// Products: the name customers know a flavour by. Selling side (sales,
+// invoices, bottle inventory, order picker) shows the product name; the
+// brewing side and the sheet keep the spices ("cardamom sumac"), and bottle
+// IDs keep their spice letters (CS).
+var PRODUCT_NAMES = { 'cardamom sumac': 'green amber' };
+function productName(fl) {
+  var k = String(fl || '').trim().toLowerCase();
+  return PRODUCT_NAMES[k] || bivFlavourDisplay(fl);
+}
 function bivFlavourDisplay(fl) {
   fl = String(fl || '');
   if (!fl || fl === '(unspecified)') return fl;
@@ -10376,10 +10388,10 @@ function bivPairs() {
 // too). Sold rows come from a Sales order, so a click opens that order,
 // where the batch is changed per line. Other rows: flavour select.
 function bivFlavourCellHtml(e) {
-  var inner = esc(bivFlavourDisplay(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
+  var inner = esc(productName(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
-  if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Change the batch in the order">' + inner + '</td>';
+  if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Open the order">' + inner + '</td>';
   return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
 }
 function bivRowHtml(e, sub, newDate, extras) {
