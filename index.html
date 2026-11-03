@@ -1603,6 +1603,14 @@
   .price-calc { font-style: italic; color: var(--ink-faint); font-size: 0.86em; margin-top: 1px; white-space: nowrap; }
   .price-net { font-weight: 500; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border); display: inline-block; min-width: 100%; }
   .biv-labels { margin-top: 36px; }
+  .sc-row { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .sc-row:last-child { border-bottom: none; }
+  .sc-name { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
+  .sc-sub { font-size: 0.8rem; color: var(--ink-faint); margin-top: 2px; }
+  .sc-row .sc-in { width: 80px; -webkit-flex: 0 0 80px; flex: 0 0 80px; text-align: right; }
+  .sc-diff { width: 42px; -webkit-flex: 0 0 42px; flex: 0 0 42px; text-align: right; font-size: 0.9rem; color: var(--ink-faint); }
+  .sc-diff.on { color: var(--terra); }
+  .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
   .o-deliv-row { display: -webkit-flex; display: flex; gap: 12px; }
   .o-deliv-row .form-group { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 0; }
   .biv-labels .biv-stat-row.biv-labels-total { margin-top: 14px; border-top: 1px solid var(--ink-faint); padding-top: 12px; }
@@ -1878,6 +1886,22 @@
 <datalist id="crm-customer-list"></datalist>
 <datalist id="crm-flavour-list"></datalist>
 
+<div class="drawer-overlay" id="sc-overlay" onclick="closeStockCheck()"></div>
+<div class="add-drawer" id="sc-drawer">
+  <div class="drawer-head">
+    <div class="drawer-head-title">Stock check</div>
+    <button class="drawer-close" onclick="closeStockCheck()">&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="hint" style="margin-bottom:14px">Type what you counted in the fridge per batch. Where a shelf mixes two batches, split it as best you can: the total per size matters most. Saving adds a "stock check" line for every batch that differs, so the app matches your count from today on.</div>
+    <div class="form-group"><label for="sc-date">Date of the count</label><input type="date" id="sc-date" /></div>
+    <div id="sc-body"></div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" onclick="closeStockCheck()">Cancel</button>
+    <button class="btn-primary" id="sc-save" onclick="saveStockCheck()">Save stock check</button>
+  </div>
+</div>
 <div class="drawer-overlay" id="order-overlay" onclick="closeOrderDrawer()"></div>
 <div class="add-drawer crm-wide-drawer" id="order-drawer">
   <div class="drawer-head">
@@ -2132,6 +2156,7 @@
 <div id="view-inventory" style="display:none;">
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
+    <div class="crm-bar-btns"><button class="btn-ghost" onclick="openStockCheck()">stock check</button></div>
   </div>
   <div class="content-head">
     <div class="content-title">Bottle inventory</div>
@@ -9754,7 +9779,7 @@ function bivBalances() {
   // Same two tallies, but keyed by flavour THEN size, so the flavour
   // breakdown can be shown split into the same Small/Big columns as every
   // other row in the stat table (see bivStatSubRowHtml).
-  var filledByFlavourSize = {}, consumedByFlavourSize = {};
+  var filledByFlavourSize = {}, consumedByFlavourSize = {}, checkByFlavourSize = {};
   for (var i = 0; i < bottleInventory.length; i++) {
     var e = bottleInventory[i];
     var q = parseFloat(e.qty) || 0;
@@ -9790,6 +9815,11 @@ function bivBalances() {
       // atelier, and counted as stock "received" for the progress bar.
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + Math.abs(q);
       received[scat] = (received[scat] || 0) + Math.abs(q);
+    } else if (stage === 'check') {
+      // Stock check: the difference between what was counted and what the
+      // app had, for one bottling (+ more in the fridge, − fewer).
+      checkByFlavourSize[fcat] = checkByFlavourSize[fcat] || {};
+      checkByFlavourSize[fcat][scat] = (checkByFlavourSize[fcat][scat] || 0) + q;
     } else if (stage === 'other') {
       // untracked in the headline totals
     } else {
@@ -9798,7 +9828,7 @@ function bivBalances() {
       if (q >= 0) add(depotIn, scat, q); else add(depotOut, scat, -q);
     }
   }
-  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize, depotIn: depotIn, depotOut: depotOut, atelierIn: atelierIn, atelierOut: atelierOut, recycled: recycled, sold: sold, soldByFlavourSize: soldByFlavourSize };
+  return { received: received, depot: depot, atelierEmpty: atelierEmpty, filledEvents: filledEvents, consumed: consumed, filledEventsByFlavour: filledEventsByFlavour, consumedByFlavour: consumedByFlavour, filledByFlavourSize: filledByFlavourSize, consumedByFlavourSize: consumedByFlavourSize, depotIn: depotIn, depotOut: depotOut, atelierIn: atelierIn, atelierOut: atelierOut, recycled: recycled, sold: sold, soldByFlavourSize: soldByFlavourSize, checkByFlavourSize: checkByFlavourSize };
 }
 function bivSizeList(b) {
   // Known sizes always show first (even at zero), then any extra category
@@ -9868,7 +9898,7 @@ function bivKpisHtml() {
     var s = sizes[i];
     filledAtelierNet[s] = 0;
     SELL_FLAVOURS.forEach(function (f) {
-      filledAtelierNet[s] += ((b.filledByFlavourSize[f] || {})[s] || 0) - ((b.consumedByFlavourSize[f] || {})[s] || 0) - ((b.soldByFlavourSize[f] || {})[s] || 0);
+      filledAtelierNet[s] += ((b.filledByFlavourSize[f] || {})[s] || 0) - ((b.consumedByFlavourSize[f] || {})[s] || 0) - ((b.soldByFlavourSize[f] || {})[s] || 0) + ((b.checkByFlavourSize[f] || {})[s] || 0);
     });
   }
   var h = '<div class="an-section"><div class="sec-title">Bottle count</div>';
@@ -9895,7 +9925,7 @@ function bivKpisHtml() {
     var netBySize = {};
     for (var k = 0; k < sizes.length; k++) {
       var sz = sizes[k];
-      netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0) - (soldBySize[sz] || 0);
+      netBySize[sz] = (filledBySize[sz] || 0) - (consumedBySize[sz] || 0) - (soldBySize[sz] || 0) + ((b.checkByFlavourSize[fl] || {})[sz] || 0);
     }
     var open = !!bivOpenFlavours()[fl];
     h += bivStatSubRowHtml(productName(fl), sizes, netBySize).replace('class="biv-summary-grid biv-stat-subrow"',
@@ -9945,26 +9975,54 @@ function bivBottlings() {
     if (!groups[gk]) { groups[gk] = { key: key, date: e.date || '', label: label, ids: m ? m[1].split(', ') : [], flavour: fl, made: {}, left: {} }; order.push(gk); }
     var sz = e.size || '(unspecified)', q = parseFloat(e.qty) || 0;
     groups[gk].made[sz] = (groups[gk].made[sz] || 0) + q;
-    groups[gk].left[sz] = (groups[gk].left[sz] || 0) + q;
   });
   var list = order.map(function (k) { return groups[k]; });
   list.sort(function (a, c) { return String(a.date).localeCompare(String(c.date)); });   // oldest first for FIFO
-  var pool = {};   // flavour|size -> bottles out without (a known) bottling
-  bottleInventory.forEach(function (e) {
-    if (e.stage !== 'sold' && e.stage !== 'consumed') return;
-    var fl = e.flavour || '(unspecified)', sz = e.size || '(unspecified)', q = Math.abs(parseFloat(e.qty) || 0);
-    var g = null;
-    if (e.bottling) for (var i = 0; i < list.length; i++) { if (list[i].key === e.bottling && String(list[i].flavour).toLowerCase() === String(fl).toLowerCase()) { g = list[i]; break; } }
-    if (g) { var take = Math.min(q, Math.max(0, g.left[sz] || 0)); g.left[sz] = (g.left[sz] || 0) - take; q -= take; }
-    if (q > 0) pool[fl + '|' + sz] = (pool[fl + '|' + sz] || 0) + q;
+  function flk(f) { return String(f || '(unspecified)').trim().toLowerCase(); }
+  function find(key, fl) { for (var i = 0; i < list.length; i++) if (list[i].key === key && flk(list[i].flavour) === flk(fl)) return list[i]; return null; }
+  // Day by day, in date order: bottlings add bottles; a sold/consumed row
+  // that names its bottling comes off that one, the rest come off the
+  // oldest bottling of that flavour that still has bottles on that day
+  // (first in, first out). Bottles out before any were bottled wait as a
+  // "debt" and come off the next bottling. A stock check row ('check',
+  // the difference with what was counted) corrects one bottling.
+  var ev = [];
+  bottleInventory.forEach(function (e, idx) {
+    var st = e.stage || '';
+    if (st === 'filled') ev.push({ d: e.date || '', o: 0, i: idx, e: e });
+    else if (st === 'sold' || st === 'consumed') ev.push({ d: e.date || '', o: 1, i: idx, e: e });
+    else if (st === 'check') ev.push({ d: e.date || '', o: 2, i: idx, e: e });
   });
-  list.forEach(function (g) {
-    Object.keys(g.left).forEach(function (sz) {
-      var pk = g.flavour + '|' + sz, out = pool[pk] || 0;
-      var take = Math.min(out, Math.max(0, g.left[sz]));
-      g.left[sz] -= take; pool[pk] = out - take;
-    });
+  ev.sort(function (a, c) { return a.d < c.d ? -1 : a.d > c.d ? 1 : (a.o - c.o) || (a.i - c.i); });
+  var debt = {};
+  function fifo(fl, sz, q) {
+    for (var i = 0; i < list.length && q > 0; i++) {
+      var g = list[i];
+      if (flk(g.flavour) !== flk(fl) || !(g.left[sz] > 0)) continue;
+      var t = Math.min(q, g.left[sz]); g.left[sz] -= t; q -= t;
+    }
+    if (q > 0) debt[flk(fl) + '|' + sz] = (debt[flk(fl) + '|' + sz] || 0) + q;
+  }
+  ev.forEach(function (x) {
+    var e = x.e, fl = e.flavour || '(unspecified)', sz = e.size || '(unspecified)', q = parseFloat(e.qty) || 0, g;
+    if (x.o === 0) {
+      var m = /^auto: bottled (.+)$/i.exec(String(e.notes || ''));
+      g = find((e.date || '') + '|' + (m ? m[1] : 'filled by hand'), fl);
+      if (!g) return;
+      g.left[sz] = (g.left[sz] || 0) + q;
+      var dk = flk(fl) + '|' + sz, owed = debt[dk] || 0;
+      if (owed > 0) { var t = Math.min(owed, Math.max(0, g.left[sz])); g.left[sz] -= t; debt[dk] = owed - t; }
+    } else if (x.o === 1) {
+      q = Math.abs(q);
+      g = e.bottling ? find(e.bottling, fl) : null;
+      if (g) { var take = Math.min(q, Math.max(0, g.left[sz] || 0)); g.left[sz] = (g.left[sz] || 0) - take; q -= take; }
+      if (q > 0) fifo(fl, sz, q);
+    } else {
+      g = e.bottling ? find(e.bottling, fl) : null;
+      if (g) g.left[sz] = Math.max(0, (g.left[sz] || 0) + q);
+    }
   });
+  list.forEach(function (g) { Object.keys(g.made).forEach(function (sz) { if (g.left[sz] == null) g.left[sz] = 0; }); });
   return list.reverse();
 }
 // "2026-10-20|BTL-…-CS" -> "BTL-…-CS" (for a stored bottling key).
@@ -10196,6 +10254,7 @@ function bivStageLabel(stage) {
   if (stage === 'recycled') return 'recycled';
   if (stage === 'sold') return 'sold';
   if (stage === 'other') return 'other';
+  if (stage === 'check') return 'stock check';
   return 'depot';
 }
 // Rank helpers purely for sort order (see bivSortedLog) — not tied to the
@@ -10685,6 +10744,97 @@ function bivLabelsHtml() {
   h += bivStatRowHtml('labels still in stock', sizes, left).replace('biv-stat-row"', 'biv-stat-row biv-labels-total"');
   h += '</div></div>';
   return h;
+}
+/* ---- Stock check ----
+   Count the fridge per batch; every batch where the count differs from the
+   app gets a 'check' row in Bottle inventory with the difference (and its
+   bottling), dated the day of the count. bivBottlings applies it to that
+   batch on that day, bivBalances to the filled stock. Only the flavours we
+   sell are listed (SELL_FLAVOURS). */
+function stockCheckBatches() {
+  var out = [];
+  bivBottlings().forEach(function (g) {
+    if (!isSellFlavour(g.flavour)) return;
+    Object.keys(g.made).forEach(function (sz) {
+      if (!(g.made[sz] > 0)) return;
+      out.push({ g: g, size: sz, left: Math.max(0, g.left[sz] || 0) });
+    });
+  });
+  // Batches that still have bottles, plus the ones from the last 45 days.
+  var cut = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
+  return out.filter(function (x) { return x.left > 0 || String(x.g.date) >= cut; })
+    .sort(function (a, b) { return a.size === b.size ? String(a.g.date).localeCompare(String(b.g.date)) : (a.size < b.size ? 1 : -1); });
+}
+var scRows = [];
+function openStockCheck() {
+  scRows = stockCheckBatches();
+  document.getElementById('sc-date').value = todayISO();
+  var h = '', curSize = null;
+  scRows.forEach(function (x, i) {
+    if (x.size !== curSize) {
+      if (curSize !== null) h += '</div>';
+      curSize = x.size;
+      h += '<div class="form-section"><div class="form-section-title">' + esc(productName(x.g.flavour) + ' · ' + x.size) + '</div>';
+    }
+    h += '<div class="sc-row"><div class="sc-name"><span class="biv-btl-id">' + esc(bivBottlingName(x.g)) + '</span><div class="sc-sub">' + esc(fmtDate(x.g.date)) + ' · app: ' + fmtNum(x.left) + '</div></div>'
+      + '<input type="number" min="0" step="1" class="sc-in" data-i="' + i + '" value="' + x.left + '" oninput="scUpdate()" />'
+      + '<div class="sc-diff" id="sc-diff-' + i + '"></div></div>';
+  });
+  if (curSize !== null) h += '</div>';
+  h += '<div class="sc-total" id="sc-total"></div>';
+  document.getElementById('sc-body').innerHTML = scRows.length ? h : '<div class="hint">No batches with bottles left.</div>';
+  scUpdate();
+  document.getElementById('sc-drawer').classList.add('open');
+  document.getElementById('sc-overlay').classList.add('open');
+}
+function closeStockCheck() {
+  document.getElementById('sc-drawer').classList.remove('open');
+  document.getElementById('sc-overlay').classList.remove('open');
+}
+function scCounted(i) {
+  var el = document.querySelector('#sc-body .sc-in[data-i="' + i + '"]');
+  var v = el ? parseFloat(el.value) : NaN;
+  return isNaN(v) || v < 0 ? null : Math.round(v);
+}
+function scUpdate() {
+  var tot = {};
+  scRows.forEach(function (x, i) {
+    var c = scCounted(i), d = c == null ? 0 : c - x.left;
+    var el = document.getElementById('sc-diff-' + i);
+    if (el) { el.textContent = d ? (d > 0 ? '+' : '−') + fmtNum(Math.abs(d)) : ''; el.className = 'sc-diff' + (d ? ' on' : ''); }
+    var t = tot[x.size] = tot[x.size] || { app: 0, count: 0 };
+    t.app += x.left; t.count += (c == null ? x.left : c);
+  });
+  var el = document.getElementById('sc-total');
+  if (el) el.innerHTML = Object.keys(tot).map(function (sz) {
+    var t = tot[sz], d = t.count - t.app;
+    return '<div>' + esc(sz) + ': counted ' + fmtNum(t.count) + ' · app ' + fmtNum(t.app) + (d ? ' · <strong>' + (d > 0 ? '+' : '−') + fmtNum(Math.abs(d)) + '</strong>' : ' · matches') + '</div>';
+  }).join('');
+}
+function saveStockCheck() {
+  var date = val('sc-date') || todayISO();
+  var calls = [];
+  scRows.forEach(function (x, i) {
+    var c = scCounted(i);
+    if (c == null || c === x.left) return;
+    calls.push({ action: 'createBottleInvEntry', entry: { stage: 'check', date: date, size: x.size, flavour: String(x.g.flavour).toLowerCase(), bottling: x.g.key, qty: c - x.left, notes: 'stock check' } });
+  });
+  if (!calls.length) { closeStockCheck(); alert('Everything matches, nothing to correct.'); return; }
+  var btn = document.getElementById('sc-save');
+  btn.disabled = true;
+  setSyncStatus('saving', 'saving stock check…');
+  (function next(i) {
+    if (i >= calls.length) {
+      btn.disabled = false; closeStockCheck();
+      setSyncStatus('live', 'connected · google sheets');
+      loadBottleInventory(function () { renderBottleInventory(); });
+      return;
+    }
+    apiPost(calls[i], function (err, res) {
+      if (err || !res || !res.ok) { btn.disabled = false; setSyncStatus('error', 'stock check not saved'); alert('The stock check stopped halfway (' + i + ' of ' + calls.length + ' lines saved). Check your connection; open stock check again to see what is left to correct.'); loadBottleInventory(function () { renderBottleInventory(); }); return; }
+      next(i + 1);
+    });
+  })(0);
 }
 function deleteBottleInvEntry(id) {
   var sub = bivPairs().autoOf[id];
