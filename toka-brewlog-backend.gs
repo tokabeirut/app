@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '55 (phone numbers: lebanese however typed, international with country code)';
+var VERSION = '56 (complimentary orders leave the stock as consumed)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -788,8 +788,9 @@ function saveOrder_(o, customer) {
     deleteRowsWhere_(ish, 'order_fk', o.id);
     if (o.deductStock) {
       var irows = (o.lines || []).filter(function (l) { return parseFloat(l.qty) > 0; }).map(function (l) {
-        return buildBottleInvRow_({ id: Utilities.getUuid(), stage: 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
-          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: 'sold: ' + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
+        // Complimentary bottles were given away, not sold: they leave the stock as 'consumed'.
+        return buildBottleInvRow_({ id: Utilities.getUuid(), stage: o.complimentary ? 'consumed' : 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
+          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: (o.complimentary ? 'complimentary: ' : 'sold: ') + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
       });
       if (irows.length) ish.getRange(ish.getLastRow() + 1, 1, irows.length, inN).setValues(irows);
     }
@@ -959,7 +960,26 @@ function buildBottleInvRow_(e, ncols, map) {
   return row;
 }
 
+// Rows written as 'sold' for orders that are (now) complimentary become
+// 'consumed' ("complimentary: <invoice>"), and back when an order stops
+// being complimentary. Runs on every read; only writes when something differs.
+function fixComplimentaryStock_() {
+  var comp = {};
+  readSheetObjects_(getOrdersSheet_(), 'order_pk').forEach(function (o) { comp[String(o.order_pk)] = truthy_(o.complimentary); });
+  var sh = getBottleInvSheet_(), map = headerMap_(sh), n = sh.getLastRow();
+  if (n < 2 || map.order_fk == null || map.stage == null) return;
+  var w = sh.getLastColumn(), vals = sh.getRange(2, 1, n - 1, w).getValues();
+  vals.forEach(function (r, i) {
+    var fk = String(r[map.order_fk] || ''), st = String(r[map.stage] || '');
+    if (!fk || !(fk in comp) || (st !== 'sold' && st !== 'consumed')) return;
+    var want = comp[fk] ? 'consumed' : 'sold';
+    if (st === want) return;
+    sh.getRange(i + 2, map.stage + 1).setValue(want);
+    if (map.notes != null) sh.getRange(i + 2, map.notes + 1).setValue(String(r[map.notes] || '').replace(/^(sold|complimentary): /, want === 'consumed' ? 'complimentary: ' : 'sold: '));
+  });
+}
 function readAllBottleInv_() {
+  try { fixComplimentaryStock_(); } catch (fixErr) {}
   var sh = getBottleInvSheet_();
   var map = headerMap_(sh);
   var data = sh.getDataRange().getValues();

@@ -1611,6 +1611,9 @@
   .sc-diff { width: 42px; -webkit-flex: 0 0 42px; flex: 0 0 42px; text-align: right; font-size: 0.9rem; color: var(--ink-faint); }
   .sc-diff.on { color: var(--terra); }
   .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
+  .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
+  .o-paid-date label { margin: 0; }
+  .o-paid-date input { width: auto; }
   .o-deliv-row { display: -webkit-flex; display: flex; gap: 12px; }
   .o-deliv-row .form-group { -webkit-flex: 1 1 0; flex: 1 1 0; min-width: 0; }
   .biv-labels .biv-stat-row.biv-labels-total { margin-top: 14px; border-top: 1px solid var(--ink-faint); padding-top: 12px; }
@@ -1945,7 +1948,8 @@
       <label class="sale-paid-label"><input type="checkbox" id="o-comp" class="task-check" onchange="onOrderCompChange()" /> <span>Complimentary &mdash; free, nothing to pay</span></label>
     </div>
     <div class="form-group" id="o-paid-group">
-      <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" /> <span>Paid</span></label>
+      <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" onchange="onOrderPaidChange()" /> <span>Paid</span></label>
+      <div class="o-paid-date" id="o-paid-date-wrap"><label for="o-paid-date">Paid on</label><input type="date" id="o-paid-date" /></div>
     </div>
     <div class="form-section">
       <div class="form-section-title">Delivery</div>
@@ -9005,7 +9009,7 @@ function crmOrdersHtml() {
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
       + '<td class="mono">' + orderTotalCellHtml(o) + '</td>'
       + '<td>' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
-        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button>') + '</td>'
+        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Unpaid') + '</button>') + '</td>'
       + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
       + '<td class="row-actions"><button type="button" class="icon-btn" title="Invoice PDF" onclick="openInvoice(\'' + esc(o.id) + '\')">' + crmInvoiceIcon() + '</button>'
       + '<button type="button" class="icon-btn" title="Edit order" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
@@ -9174,7 +9178,7 @@ function onOrderLineChange(el, sizeChanged) {
 }
 function onOrderChannelChange() {
   applyAllLinePrices();
-  if (!editingOrderId) document.getElementById('o-paid').checked = val('o-channel') !== 'b2b';
+  if (!editingOrderId) { document.getElementById('o-paid').checked = val('o-channel') !== 'b2b'; onOrderPaidChange(); }
   updateOrderTotal();
 }
 function onOrderCustomerInput() {
@@ -9222,6 +9226,8 @@ function openOrderDrawer(id) {
   document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
   document.getElementById('o-channel').value = o ? (o.channel || 'b2c') : 'b2c';
   document.getElementById('o-paid').checked = o ? !!o.paid : true;
+  document.getElementById('o-paid-date').value = (o && o.paid) ? (o.paidDate || '') : '';
+  onOrderPaidChange();
   document.getElementById('o-comp').checked = !!(o && o.complimentary);
   document.getElementById('o-paid-group').style.display = (o && o.complimentary) ? 'none' : '';
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
@@ -9358,7 +9364,7 @@ function saveOrder() {
     channel: val('o-channel'),
     paid: isOrderComp() ? true : document.getElementById('o-paid').checked,
     complimentary: isOrderComp(),
-    paidDate: prev ? (prev.paidDate || '') : '',
+    paidDate: isOrderComp() ? (prev ? (prev.paidDate || '') : '') : (document.getElementById('o-paid').checked ? (val('o-paid-date') || todayISO()) : ''),
     deductStock: true,   // an order's bottles always leave Bottle inventory
     notes: val('o-notes').trim(),
     delivery: val('o-delivery'),
@@ -9382,6 +9388,13 @@ function saveOrder() {
     recalcB2bOrders(customerForOrder(o));
     if (prev && customerForOrder(prev) !== customerForOrder(o)) recalcB2bOrders(customerForOrder(prev));
   });
+}
+// Paid date: filled in with today when an order is ticked paid, and can be
+// changed by hand (the date the money actually came in).
+function onOrderPaidChange() {
+  var on = document.getElementById('o-paid').checked, d = document.getElementById('o-paid-date');
+  if (on && !d.value) d.value = todayISO();
+  document.getElementById('o-paid-date-wrap').style.display = on ? '' : 'none';
 }
 function toggleOrderPaid(id) {
   var o = findOrder(id);
@@ -10214,11 +10227,11 @@ function renameBaseBrewRows() {
   });
   // Automatic "Sold" lines name the customer by alias when they have one.
   bottleInventory.forEach(function (e) {
-    if (e.stage !== 'sold' || !e.orderId || typeof findOrder !== 'function') return;
+    if ((e.stage !== 'sold' && e.stage !== 'consumed') || !e.orderId || typeof findOrder !== 'function') return;
     var o = findOrder(e.orderId);
     if (!o || !o.invoiceNo) return;
-    var want = 'sold: ' + o.invoiceNo + (orderCustomerName(o) ? ' · ' + orderCustomerName(o) : '');
-    if (String(e.notes || '') !== want && /^sold: /i.test(String(e.notes || ''))) { e.notes = want; if (todo.indexOf(e) === -1) todo.push(e); }
+    var want = (e.stage === 'consumed' ? 'complimentary: ' : 'sold: ') + o.invoiceNo + (orderCustomerName(o) ? ' · ' + orderCustomerName(o) : '');
+    if (String(e.notes || '') !== want && /^(sold|complimentary): /i.test(String(e.notes || ''))) { e.notes = want; if (todo.indexOf(e) === -1) todo.push(e); }
   });
   if (!todo.length) return;
   if (typeof renderBottleInventory === 'function') renderBottleInventory();
@@ -10379,7 +10392,7 @@ function bivFlavourCellHtml(e) {
   var inner = esc(productName(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
-  if (e.stage === 'sold' && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Open the order">' + inner + '</td>';
+  if ((e.stage === 'sold' || e.stage === 'consumed') && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Open the order">' + inner + '</td>';
   return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
 }
 function bivRowHtml(e, sub, newDate, extras) {
