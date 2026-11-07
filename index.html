@@ -1611,6 +1611,7 @@
   .sc-diff { width: 42px; -webkit-flex: 0 0 42px; flex: 0 0 42px; text-align: right; font-size: 0.9rem; color: var(--ink-faint); }
   .sc-diff.on { color: var(--terra); }
   .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
+  .paid-pill-date { margin-top: 4px; padding-left: 2px; font-size: 0.78rem; color: var(--ink-faint); white-space: nowrap; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
   .o-paid-date input { width: auto; }
@@ -9009,7 +9010,7 @@ function crmOrdersHtml() {
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
       + '<td class="mono">' + orderTotalCellHtml(o) + '</td>'
       + '<td>' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
-        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Unpaid') + '</button>') + '</td>'
+        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button>' + (o.paid && o.paidDate ? '<div class="paid-pill-date">' + esc(fmtDate(o.paidDate)) + '</div>' : '')) + '</td>'
       + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
       + '<td class="row-actions"><button type="button" class="icon-btn" title="Invoice PDF" onclick="openInvoice(\'' + esc(o.id) + '\')">' + crmInvoiceIcon() + '</button>'
       + '<button type="button" class="icon-btn" title="Edit order" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
