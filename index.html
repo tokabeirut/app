@@ -825,15 +825,15 @@
   #view-sales .paid-pill.is-comp { border-color: var(--border); background: var(--surface2); color: var(--ink-faint); cursor: default; }
   /* px column widths + max(sum, 100%) like Bottling/Infusion: fills a
      laptop screen, scrolls sideways on a phone instead of squashing. */
-  .sales-table { table-layout: fixed; min-width: 1240px; width: 1240px; width: max(1240px, 100%); }
+  .sales-table { table-layout: fixed; min-width: 1250px; width: 1250px; width: max(1250px, 100%); }
   .sales-table th:nth-child(1), .sales-table td:nth-child(1) { width: 130px; }
   .sales-table th:nth-child(2), .sales-table td:nth-child(2) { width: 110px; }
-  .sales-table th:nth-child(3), .sales-table td:nth-child(3) { width: 190px; white-space: normal; }
-  .sales-table th:nth-child(4), .sales-table td:nth-child(4) { width: 270px; white-space: normal; }
+  .sales-table th:nth-child(3), .sales-table td:nth-child(3) { width: 165px; white-space: normal; }
+  .sales-table th:nth-child(4), .sales-table td:nth-child(4) { width: 230px; white-space: normal; }
   .sales-table th:nth-child(5), .sales-table td:nth-child(5) { width: 70px; }
   .sales-table th:nth-child(6), .sales-table td:nth-child(6) { width: 110px; }
-  .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 90px; }
-  .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 170px; }
+  .sales-table th:nth-child(7), .sales-table td:nth-child(7) { width: 175px; }   /* paid · date */
+  .sales-table th:nth-child(8), .sales-table td:nth-child(8) { width: 160px; }
   .sales-table th:nth-child(9), .sales-table td:nth-child(9) { width: 100px; }
   .crm-table { table-layout: fixed; min-width: 1340px; width: 1340px; width: max(1340px, 100%); }
   .crm-table th:nth-child(1), .crm-table td:nth-child(1) { width: 170px; white-space: normal; }
@@ -1611,7 +1611,8 @@
   .sc-diff { width: 42px; -webkit-flex: 0 0 42px; flex: 0 0 42px; text-align: right; font-size: 0.9rem; color: var(--ink-faint); }
   .sc-diff.on { color: var(--terra); }
   .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
-  .paid-pill-date { margin-top: 4px; padding-left: 2px; font-size: 0.78rem; color: var(--ink-faint); white-space: nowrap; }
+  #view-sales td.crm-paid-cell { white-space: nowrap; }
+  #view-sales .paid-pill { white-space: nowrap; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
   .o-paid-date input { width: auto; }
@@ -9009,8 +9010,8 @@ function crmOrdersHtml() {
       + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + (o.deductStock ? '' : ' <span class="crm-nostock" title="These bottles were not taken out of Bottle inventory">not in stock count</span>') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
       + '<td class="mono">' + orderTotalCellHtml(o) + '</td>'
-      + '<td>' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
-        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' : 'Unpaid') + '</button>' + (o.paid && o.paidDate ? '<div class="paid-pill-date">' + esc(fmtDate(o.paidDate)) + '</div>' : '')) + '</td>'
+      + '<td class="crm-paid-cell">' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
+        : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Unpaid') + '</button>') + '</td>'
       + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
       + '<td class="row-actions"><button type="button" class="icon-btn" title="Invoice PDF" onclick="openInvoice(\'' + esc(o.id) + '\')">' + crmInvoiceIcon() + '</button>'
       + '<button type="button" class="icon-btn" title="Edit order" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
