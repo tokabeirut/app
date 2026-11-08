@@ -8644,7 +8644,8 @@ function orderLineBreakdown(o, l, win) {
   if (o.complimentary) label = 'complimentary';
   else if (o.channel === 'b2b') {
     var prevN = (win && win.qty[String(l.size)]) || 0, n = orderQtyOfSize(o, l.size) + prevN;
-    label = (prevN ? '30-day volume price (' : 'volume price (') + fmtNum(n) + ' bottles)';
+    // The quantity is already on the line; only say more when earlier orders of the 30-day period count too.
+    label = prevN ? fmtNum(n) + ' bottles this 30-day period' : '';
   } else label = 'bundle price';
   return { base: base, baseAmt: q * base, disc: Math.round((base - paid) * 100) / 100, discAmt: Math.round(q * (base - paid) * 100) / 100, label: label };
 }
@@ -9552,8 +9553,9 @@ function invoiceHtml(o) {
   function nl(t) { return esc(t || '').replace(/\n/g, '<br>'); }
   function money(n) { return '$ ' + fmtUSD(n); }
   // 1. Rebate on the earlier orders of the 30-day period (worked out per
-  //    size in italics), 2. each product at its normal price, with the
-  //    discount down to the 30-day / bundle price on an italic line underneath.
+  //    size in italics), 2. each product at its normal price with the
+  //    discount next to it (small, italic), and the price actually paid on
+  //    the line underneath.
   var win = orderWindow(o), merged = mergedOrderLines(o);
   var rebRows = merged.filter(isRebateLine).map(function (l) {
     var refs = win ? win.orders.map(function (x) { return x.invoiceNo; }).filter(Boolean).join(', ') : '';
@@ -9566,8 +9568,9 @@ function invoiceHtml(o) {
   var rows = rebRows + merged.filter(function (l) { return !isRebateLine(l); }).map(function (l) {
     var b = orderLineBreakdown(o, l, win), q = parseFloat(l.qty) || 0;
     var h = '<tr' + (b.disc ? ' class="has-disc"' : '') + '><td>' + esc(productName(l.flavour) || 'kombucha') + ' <span class="muted">· ' + esc(l.size ? l.size + ' ml' : '') + '</span></td>'
-      + '<td class="r">' + fmtNum(q) + '</td><td class="r">' + money(b.base) + '</td><td class="r">' + money(b.baseAmt) + '</td></tr>';
-    if (b.disc) h += '<tr class="disc"><td>' + esc(b.label) + ' · ' + money(b.disc) + ' off per bottle</td><td class="r"></td><td class="r">− ' + money(b.disc) + '</td><td class="r">− ' + money(b.discAmt) + '</td></tr>';
+      + '<td class="r">' + fmtNum(q) + '</td><td class="r">' + (b.disc ? '<span class="sd">− ' + money(b.disc) + '</span><s>' + money(b.base) + '</s>' : money(b.base)) + '</td><td class="r">' + (b.disc ? '<span class="sd">− ' + money(b.discAmt) + '</span><s>' + money(b.baseAmt) + '</s>' : money(b.baseAmt)) + '</td></tr>';
+    // The price actually paid, underneath (the discount sits next to the normal price above).
+    if (b.disc) h += '<tr class="pay"><td><span class="pl">' + esc(b.label) + '</span></td><td class="r"></td><td class="r">' + money(b.base - b.disc) + '</td><td class="r">' + money(b.baseAmt - b.discAmt) + '</td></tr>';
     return h;
   }).join('');
   // Thank-you note, same words as on the price lists (B2B or B2C).
@@ -9599,7 +9602,7 @@ function invoiceHtml(o) {
     + 'th{font-size:6.6pt;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--grey);text-align:left;background:var(--card);border-bottom:1px solid var(--parch);padding:10px 14px 9px}'
     + 'td{padding:10px 14px;border-bottom:1px solid #efeadf;font-weight:400}tr:last-child td{border-bottom:none}th.r,.r{text-align:right}.muted{color:var(--grey);font-weight:300}'
     + '.tot{margin-left:auto;width:240px;margin-top:5mm}.tot div{display:flex;justify-content:space-between;padding:4px 14px}.tot .big{border-top:1px solid var(--parch);margin-top:5px;padding-top:9px;align-items:baseline}.tot .big span:first-child{font-weight:400}.tot .big span:last-child{font-family:"DM Serif Display",Georgia,serif;font-size:18px;color:var(--amber)}'
-    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}tr.disc.mid td{border-bottom:none;padding-bottom:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
+    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}.sd{font-size:.8em;font-style:italic;color:var(--grey);font-weight:300;margin-right:7px}tr.has-disc s{color:var(--grey);text-decoration-thickness:1px}tr.pay td{padding-top:2px}tr.pay .pl{font-style:italic;color:var(--grey);font-weight:300}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}tr.disc.mid td{border-bottom:none;padding-bottom:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
     + '.foot{margin-top:7mm;display:flex;gap:40px;line-height:1.65}.foot>div{flex:1}.foot .lbl{margin-bottom:6px;color:var(--grey)}'
     + '.thanks{margin:auto 0 0;padding-top:8mm;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:11.5px;line-height:1.6;color:var(--amber);text-align:justify;text-align-last:left;hyphens:none}'
     + '.bottom{position:relative;height:33.8mm;border-top:1px solid var(--parch);margin-top:8mm;flex:0 0 auto}'
