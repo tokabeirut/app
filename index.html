@@ -8551,7 +8551,7 @@ function deletePurchase(id) {
      last order ÷ days between first and last order; the last order runs
      out after (its bottles ÷ that rate);
    - else (one order): last order + 30 days.
-   Due within 7 days or past → listed under "Time to reach out". */
+   Due within 3 days (CRM_DUE_SOON_DAYS) or past → listed under "Time to reach out". */
 var orders = [];
 var customers = [];
 var invoiceSettings = {};
@@ -8560,7 +8560,7 @@ var salesTab = 'orders';
 var editingOrderId = null;
 var editingCustomerId = null;
 var CRM_DEFAULT_REORDER_DAYS = 30;
-var CRM_DUE_SOON_DAYS = 7;
+var CRM_DUE_SOON_DAYS = 3;
 var SALES_PERIODS = [
   { key: 'month', label: 'This month' },
   { key: 'lastmonth', label: 'Last month' },
