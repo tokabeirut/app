@@ -8643,9 +8643,9 @@ function orderLineBreakdown(o, l, win) {
   var label;
   if (o.complimentary) label = 'complimentary';
   else if (o.channel === 'b2b') {
-    var prevN = (win && win.qty[String(l.size)]) || 0, n = orderQtyOfSize(o, l.size) + prevN;
-    // The quantity is already on the line; only say more when earlier orders of the 30-day period count too.
-    label = prevN ? fmtNum(n) + ' bottles this 30-day period' : '';
+    // The quantity is already on the line; when earlier orders of the
+    // 30-day period count too, a note under the invoice table says so.
+    label = '';
   } else label = 'bundle price';
   return { base: base, baseAmt: q * base, disc: Math.round((base - paid) * 100) / 100, discAmt: Math.round(q * (base - paid) * 100) / 100, label: label };
 }
@@ -9573,6 +9573,17 @@ function invoiceHtml(o) {
     if (b.disc) h += '<tr class="pay"><td><span class="pl">' + esc(b.label) + '</span></td><td class="r"></td><td class="r">' + money(b.base - b.disc) + '</td><td class="r">' + money(b.baseAmt - b.discAmt) + '</td></tr>';
     return h;
   }).join('');
+  // B2B: when earlier orders of the 30-day period count towards the price,
+  // one plain sentence under the table instead of a label on every line.
+  var periodNote = '';
+  if (win && win.orders.length) {
+    var per = ['375', '750'].map(function (sz) {
+      var n = (win.qty[sz] || 0) + orderQtyOfSize(o, sz);
+      return n ? fmtNum(n) + ' × ' + sz + ' ml' : '';
+    }).filter(Boolean).join(' and ');
+    var refs = win.orders.map(function (x) { return x.invoiceNo; }).filter(Boolean).join(', ');
+    periodNote = '<div class="pnote">Your price per bottle counts everything ordered in the 30 days from ' + esc(fmtDate(win.start)) + ' (' + esc(refs) + ' and this order): ' + per + '.</div>';
+  }
   // Thank-you note, same words as on the price lists (B2B or B2C).
   var isB2B = (o.channel === 'b2b') || (c && c.type === 'b2b');
   var thanks = isB2B
@@ -9602,7 +9613,7 @@ function invoiceHtml(o) {
     + 'th{font-size:6.6pt;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--grey);text-align:left;background:var(--card);border-bottom:1px solid var(--parch);padding:10px 14px 9px}'
     + 'td{padding:10px 14px;border-bottom:1px solid #efeadf;font-weight:400}tr:last-child td{border-bottom:none}th.r,.r{text-align:right}.muted{color:var(--grey);font-weight:300}'
     + '.tot{margin-left:auto;width:240px;margin-top:5mm}.tot div{display:flex;justify-content:space-between;padding:4px 14px}.tot .big{border-top:1px solid var(--parch);margin-top:5px;padding-top:9px;align-items:baseline}.tot .big span:first-child{font-weight:400}.tot .big span:last-child{font-family:"DM Serif Display",Georgia,serif;font-size:18px;color:var(--amber)}'
-    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}.sd{font-size:.8em;font-style:italic;color:var(--grey);font-weight:300;margin-right:7px}tr.has-disc s{color:var(--grey);text-decoration-thickness:1px}tr.pay td{padding-top:2px}tr.pay .pl{font-style:italic;color:var(--grey);font-weight:300}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}tr.disc.mid td{border-bottom:none;padding-bottom:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
+    + 'tr.has-disc td{border-bottom:none;padding-bottom:3px}.sd{font-size:.8em;font-style:italic;color:var(--grey);font-weight:300;margin-right:7px}tr.has-disc s{color:var(--grey);text-decoration-thickness:1px}tr.pay td{padding-top:2px}.pnote{font-style:italic;color:var(--grey);font-weight:300;font-size:.82em;margin-top:8px}tr.pay .pl{font-style:italic;color:var(--grey);font-weight:300}tr.disc td{font-style:italic;color:var(--grey);font-weight:300;padding-top:2px}tr.disc.mid td{border-bottom:none;padding-bottom:2px}.tot div.disc{font-style:italic;color:var(--grey)}'
     + '.foot{margin-top:7mm;display:flex;gap:40px;line-height:1.65}.foot>div{flex:1}.foot .lbl{margin-bottom:6px;color:var(--grey)}'
     + '.thanks{margin:auto 0 0;padding-top:8mm;font-family:"DM Serif Display",Georgia,serif;font-style:italic;font-size:11.5px;line-height:1.6;color:var(--amber);text-align:justify;text-align-last:left;hyphens:none}'
     + '.bottom{position:relative;height:33.8mm;border-top:1px solid var(--parch);margin-top:8mm;flex:0 0 auto}'
@@ -9622,6 +9633,7 @@ function invoiceHtml(o) {
     + (c.address ? '<div>' + nl(c.address) + '</div>' : '') + (c.area ? '<div>' + esc(c.area) + '</div>' : '') + (c.phone ? '<div>' + esc(fmtPhone(c.phone)) + '</div>' : '') + (c.email ? '<div>' + esc(c.email) + '</div>' : '')
     + (c.contact ? '<div>' + esc(c.contact) + '</div>' : '') + '</div></div>'
     + '<div class="card"><table><thead><tr><th>Description</th><th class="r">Qty</th><th class="r">Unit price</th><th class="r">Amount</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    + periodNote
     + '<div class="tot">' + ((psum.disc || psum.rebate) ? '<div><span class="muted">Normal price</span><span>' + money(psum.gross) + '</span></div>'
       + (psum.rebate ? '<div class="disc"><span>Rebate</span><span>\u2212 ' + money(psum.rebate) + '</span></div>' : '')
       + (psum.disc ? '<div class="disc"><span>Discount</span><span>\u2212 ' + money(psum.disc) + '</span></div>' : '') : '')
