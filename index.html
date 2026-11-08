@@ -8878,6 +8878,24 @@ function crmNudgeText(c) {
   var first = String(c.contact || c.name || '').split(' ')[0];
   return 'Hi ' + first + ', it’s toka! Hope you’re enjoying the kombucha. Are you running low — shall we bring you some more?';
 }
+// "Time to reach out" card: WhatsApp (marks them as reached out) and a
+// "reached out" button for when we got in touch another way.
+function crmReachButtons(c) {
+  var d = crmPhoneDigits(c.phone), h = '';
+  if (d) h += '<a class="crm-act" href="https://wa.me/' + d + '?text=' + encodeURIComponent(crmNudgeText(c)) + '" target="_blank" rel="noopener" title="WhatsApp ' + esc(c.phone) + '" onclick="event.stopPropagation(); markReachedOut(\'' + esc(c.id) + '\')">WhatsApp</a>';
+  h += '<button type="button" class="crm-act" onclick="event.stopPropagation(); markReachedOut(\'' + esc(c.id) + '\')">reached out</button>';
+  return h;
+}
+function markReachedOut(id) {
+  var c = customers.filter(function (x) { return String(x.id) === String(id); })[0];
+  if (!c) return;
+  var was = c.reachedOut || '';
+  c.reachedOut = todayISO();
+  setTimeout(renderSales, 300);   // after the WhatsApp link has opened
+  apiPost({ action: 'saveCustomer', customer: c }, function (err, res) {
+    if (err || !res || !res.ok) { c.reachedOut = was; renderSales(); alert('Couldn’t save “reached out”. Check your connection and try again.'); }
+  });
+}
 function crmContactButtons(c) {
   var h = '', d = crmPhoneDigits(c.phone);
   if (d) {
@@ -8950,7 +8968,6 @@ function crmDiscountNudgeHtml() {
         + (offer ? '<div class="crm-nudge-meta">' + offer + '</div>' : '')
         + '<div class="crm-nudge-acts">' + (d
           ? '<a class="crm-act" href="https://wa.me/' + d + '?text=' + encodeURIComponent(crmDiscountText(x)) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp reminder</a>'
-            + '<a class="crm-act" href="tel:' + esc(String(x.c.phone).replace(/[^\d+]/g, '')) + '" onclick="event.stopPropagation()">Call</a>'
           : '<span class="muted">add a phone number to send the reminder</span>') + '</div>'
         + '</div>';
     }).join('') + '</div></div>';
@@ -8959,9 +8976,10 @@ function crmNudgeHtml() {
   var discIds = {};
   crmDiscountDue().forEach(function (x) { discIds[x.c.id] = 1; });
   var due = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
-    // From 2 days after their predicted run-out date until they order again;
-    // not while the discount reminder already covers them.
-    .filter(function (x) { return x.ins.n && x.ins.daysLeft <= -CRM_REACH_AFTER_DAYS && !discIds[x.c.id]; })
+    // From 2 days after their predicted run-out date until we've reached out
+    // (WhatsApp button or "reached out"); not while the discount reminder
+    // already covers them. A new order gives a new date, so it comes back.
+    .filter(function (x) { return x.ins.n && x.ins.daysLeft <= -CRM_REACH_AFTER_DAYS && !discIds[x.c.id] && !(x.c.reachedOut && x.c.reachedOut >= x.ins.next); })
     .sort(function (a, b) { return a.ins.daysLeft - b.ins.daysLeft; });
   if (!due.length) return '';
   return '<div class="crm-nudge"><div class="crm-nudge-title">Time to reach out <span class="crm-nudge-count">' + due.length + '</span></div><div class="crm-nudge-list">'
@@ -8971,7 +8989,7 @@ function crmNudgeHtml() {
         + '<div class="crm-nudge-name"' + (x.c.alias ? ' title="' + esc(x.c.name) + '"' : '') + '>' + esc(customerDisplayName(x.c)) + '</div>'
         + '<div class="crm-nudge-meta">Last order ' + esc(fmtDate(lo.date)) + ' · ' + fmtNum(orderBottles(lo)) + ' bottles</div>'
         + '<div class="crm-nudge-meta" title="Estimated ' + esc(x.ins.basis) + '">Predicted next order: <span class="crm-nudge-date crm-' + x.ins.status + '">' + esc(fmtDate(x.ins.next)) + '</span></div>'
-        + '<div class="crm-nudge-acts">' + (crmContactButtons(x.c) || '<span class="muted">add a phone number to contact them</span>') + '</div>'
+        + '<div class="crm-nudge-acts">' + crmReachButtons(x.c) + '</div>'
         + '</div>';
     }).join('') + '</div></div>';
 }
@@ -9490,7 +9508,7 @@ function saveCustomer() {
   var c = {
     id: prev ? prev.id : crmId('cus'), name: name, alias: val('c-alias').trim(), type: val('c-type'), contact: val('c-type') === 'b2b' ? val('c-contact').trim() : '',
     phone: val('c-phone').trim(), email: val('c-email').trim(), address: val('c-address').trim(), area: val('c-area').trim(),
-    reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO()
+    reorderDays: val('c-reorder').trim(), notes: val('c-notes').trim(), created: prev ? prev.created : todayISO(), reachedOut: prev ? (prev.reachedOut || '') : ''
   };
   if (prev) customers = customers.map(function (x) { return String(x.id) === String(c.id) ? c : x; });
   else customers.push(c);

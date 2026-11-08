@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '56 (complimentary orders leave the stock as consumed)';
+var VERSION = '57 (customers: reached-out date for reorder reminders)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -668,7 +668,7 @@ var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
 var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary', 'delivery', 'delivery_fee', 'shopify_order'];   // delivery_fee: paid to the courier, not toka revenue
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling', 'manual_price'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
-var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date'];
+var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date', 'reached_out'];   // reached_out: date we last reached out about a reorder
 
 function rowFrom_(obj, ncols, map) {
   var row = [];
@@ -719,7 +719,7 @@ function readAllCustomers_() {
       id: String(c.customer_pk), name: String(c.name || ''), alias: String(c.alias || ''), type: String(c.type || 'b2c').toLowerCase(),
       contact: String(c.contact_person || ''), phone: String(c.phone || ''), email: String(c.email || ''),
       address: String(c.address || ''), area: String(c.area || ''), reorderDays: c.reorder_days === '' ? '' : c.reorder_days,
-      notes: String(c.notes || ''), created: ymd_(c.created_date)
+      notes: String(c.notes || ''), created: ymd_(c.created_date), reachedOut: c.reached_out ? ymd_(c.reached_out) : ''
     };
   });
 }
@@ -744,7 +744,7 @@ function readAllOrders_() {
 function customerRow_(c) {
   return { customer_pk: c.id, name: c.name || '', alias: c.alias || '', type: String(c.type || 'b2c').toLowerCase(), contact_person: c.contact || '', phone: c.phone || '',
     email: c.email || '', address: c.address || '', area: c.area || '', reorder_days: (c.reorderDays == null ? '' : c.reorderDays), notes: c.notes || '',
-    created_date: c.created || ymd_(new Date()) };
+    created_date: c.created || ymd_(new Date()), reached_out: c.reachedOut || '' };
 }
 function upsertCustomer_(c) {
   var sh = getCustomersSheet_(), map = headerMap_(sh), n = sh.getLastColumn();
