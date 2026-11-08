@@ -8551,7 +8551,9 @@ function deletePurchase(id) {
      last order ÷ days between first and last order; the last order runs
      out after (its bottles ÷ that rate);
    - else (one order): last order + 30 days.
-   Due within 3 days (CRM_DUE_SOON_DAYS) or past → listed under "Time to reach out". */
+   Listed under "Time to reach out" from 2 days after that date
+   (CRM_REACH_AFTER_DAYS) until they order again. B2B: "Discount reminder" in
+   the last 2 days of their 30-day period (B2B_REMIND_DAY). */
 var orders = [];
 var customers = [];
 var invoiceSettings = {};
@@ -8561,6 +8563,7 @@ var editingOrderId = null;
 var editingCustomerId = null;
 var CRM_DEFAULT_REORDER_DAYS = 30;
 var CRM_DUE_SOON_DAYS = 3;
+var CRM_REACH_AFTER_DAYS = 2;   // "time to reach out": 2 days after they'd usually have run out
 var SALES_PERIODS = [
   { key: 'month', label: 'This month' },
   { key: 'lastmonth', label: 'Last month' },
@@ -8749,7 +8752,7 @@ function b2cBottlePrice(size, n) {
 //   375 ml: $4.50 · from 18: $4 · from 36: $3.50
 // (Below the 4 / 6 bottle minimum the first price applies.)
 var B2B_WINDOW_DAYS = 30;
-var B2B_REMIND_DAY = 20;
+var B2B_REMIND_DAY = 28;   // discount reminder only in the last 2 days of a 30-day period
 var B2B_TIERS = {
   '750': [[0, 7], [12, 6], [24, 5.5]],
   '375': [[0, 4.5], [18, 4], [36, 3.5]]
@@ -8902,8 +8905,8 @@ function renderSales() {
   h += salesTab === 'customers' ? crmCustomersHtml() : crmOrdersHtml();
   body.innerHTML = h;
 }
-// B2B businesses 20–30 days into a 30-day period: they still have a few
-// days to order again and get the lower 30-day price. Each card has a
+// B2B businesses in the last 2 days of a 30-day period (day 28–30): they can still
+// order again and get the lower 30-day price. Each card has a
 // WhatsApp button with a ready-made reminder.
 function crmDiscountDue() {
   var today = todayISO();
@@ -8953,8 +8956,12 @@ function crmDiscountNudgeHtml() {
     }).join('') + '</div></div>';
 }
 function crmNudgeHtml() {
+  var discIds = {};
+  crmDiscountDue().forEach(function (x) { discIds[x.c.id] = 1; });
   var due = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
-    .filter(function (x) { return x.ins.n && (x.ins.status === 'due' || x.ins.status === 'overdue'); })
+    // From 2 days after their predicted run-out date until they order again;
+    // not while the discount reminder already covers them.
+    .filter(function (x) { return x.ins.n && x.ins.daysLeft <= -CRM_REACH_AFTER_DAYS && !discIds[x.c.id]; })
     .sort(function (a, b) { return a.ins.daysLeft - b.ins.daysLeft; });
   if (!due.length) return '';
   return '<div class="crm-nudge"><div class="crm-nudge-title">Time to reach out <span class="crm-nudge-count">' + due.length + '</span></div><div class="crm-nudge-list">'
