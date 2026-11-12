@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '57 (customers: reached-out date for reorder reminders)';
+var VERSION = '58 (veloz courier emails: their order number and delivery status on our orders)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -666,7 +666,7 @@ function readAllIngredientPurchases_() {
 var SALES_SHEET = 'Sales';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
-var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary', 'delivery', 'delivery_fee', 'shopify_order'];   // delivery_fee: paid to the courier, not toka revenue
+var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary', 'delivery', 'delivery_fee', 'shopify_order', 'courier_ref', 'courier_status'];   // delivery_fee: paid to the courier, not toka revenue
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling', 'manual_price'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date', 'reached_out'];   // reached_out: date we last reached out about a reorder
 
@@ -737,6 +737,7 @@ function readAllOrders_() {
       channel: String(o.channel || 'b2c').toLowerCase(), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
       deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''), complimentary: truthy_(o.complimentary),
       delivery: String(o.delivery || ''), deliveryFee: o.delivery_fee === '' || o.delivery_fee == null ? '' : o.delivery_fee, shopifyOrder: String(o.shopify_order || ''),
+      courierRef: String(o.courier_ref || ''), courierStatus: String(o.courier_status || ''),
       lines: lines[String(o.order_pk)] || []
     };
   });
@@ -773,7 +774,7 @@ function saveOrder_(o, customer) {
     var orow = rowFrom_({ order_pk: o.id, invoice_no: o.invoiceNo, order_date: o.date || '', customer_fk: o.customerId || '',
       customer_name: o.customerName || '', channel: String(o.channel || 'b2c').toLowerCase(), paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
       deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '', complimentary: o.complimentary ? 'yes' : '',
-      delivery: String(o.delivery || '').toLowerCase(), delivery_fee: (o.deliveryFee == null ? '' : o.deliveryFee), shopify_order: o.shopifyOrder || '' }, on, omap);
+      delivery: String(o.delivery || '').toLowerCase(), delivery_fee: (o.deliveryFee == null ? '' : o.deliveryFee), shopify_order: o.shopifyOrder || '', courier_ref: o.courierRef || '', courier_status: String(o.courierStatus || '').toLowerCase() }, on, omap);
     var r = findRowByKey_(osh, omap, 'order_pk', o.id);
     if (r === -1) osh.appendRow(orow); else osh.getRange(r, 1, 1, on).setValues([orow]);
 
@@ -920,7 +921,60 @@ function syncShopifyEmails() {
     });
     if (found) th.addLabel(label);   // other Shopify emails stay unlabelled and are just skipped
   });
+  try { syncVelozEmails_(); } catch (vzErr) { Logger.log('veloz: ' + vzErr); }
   return added;
+}
+
+/* ---------- Veloz (courier) emails ----------
+   Veloz emails toka.beirut@gmail.com about each delivery, e.g. "Assigned to a
+   driver … Order TOK-0012 (toka-1015)": TOK-0012 is Veloz's number, toka-1015
+   ours. Every check reads the Veloz emails of the last 10 days (oldest first)
+   and writes Veloz's number and the latest status onto our order (columns
+   courier_ref / courier_status). Nothing is labelled: the same email read
+   again changes nothing, and a later status email simply updates the status. */
+var VELOZ_STATUSES = ['delivered', 'picked up', 'on the way', 'out for delivery', 'assigned to a driver', 'cancelled', 'canceled', 'returned', 'failed'];
+function parseVelozEmail_(html) {
+  var txt = decodeEntities_(String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(div|p|tr|td|th|h\d|li)>/gi, '\n').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ');
+  var m = /\b([A-Z]{2,5}-\d{2,})\s*\(\s*(toka-\d+|#?\d{3,})\s*\)/i.exec(txt);
+  if (!m) return null;
+  var head = txt.slice(0, m.index).toLowerCase(), status = '';
+  VELOZ_STATUSES.forEach(function (st) { var i = head.lastIndexOf(st); if (i !== -1 && (status === '' || i > head.lastIndexOf(status))) status = st; });
+  if (status === 'canceled') status = 'cancelled';
+  return { ref: m[1].toUpperCase(), ours: m[2].toLowerCase().replace(/^#/, ''), status: status };
+}
+function syncVelozEmails_() {
+  var threads = GmailApp.search('from:withveloz.com newer_than:10d', 0, 50);
+  var msgs = [];
+  threads.forEach(function (th) { th.getMessages().forEach(function (m) { msgs.push(m); }); });
+  if (!msgs.length) return 0;
+  msgs.sort(function (a, b) { return a.getDate() - b.getDate(); });
+  var sh = getOrdersSheet_(), map = headerMap_(sh), n = sh.getLastRow();
+  if (n < 2 || map.courier_ref == null) return 0;
+  var w = sh.getLastColumn(), vals = sh.getRange(2, 1, n - 1, w).getValues(), changed = 0;
+  function rowFor(ours) {
+    var digits = ours.replace(/\D/g, '');
+    for (var i = 0; i < vals.length; i++) {
+      var inv = String(vals[i][map.invoice_no] || '').toLowerCase(), so = String(vals[i][map.shopify_order] || '').toLowerCase().replace(/^#/, '');
+      if (inv === ours || so === ours || (digits && so && so.replace(/\D/g, '') === digits)) return i;
+    }
+    return -1;
+  }
+  var latest = {};   // row → { ref, status } from the newest email about it
+  msgs.forEach(function (m) {
+    var v = parseVelozEmail_(m.getBody());
+    if (!v) return;
+    var i = rowFor(v.ours);
+    if (i === -1) return;
+    var cur = latest[i] = latest[i] || {};
+    cur.ref = 'veloz ' + v.ref;
+    if (v.status) cur.status = v.status;
+  });
+  Object.keys(latest).forEach(function (k) {
+    var i = +k, v = latest[k];
+    if (String(vals[i][map.courier_ref] || '') !== v.ref) { sh.getRange(i + 2, map.courier_ref + 1).setValue(v.ref); changed++; }
+    if (v.status && map.courier_status != null && String(vals[i][map.courier_status] || '') !== v.status) { sh.getRange(i + 2, map.courier_status + 1).setValue(v.status); changed++; }
+  });
+  return changed;
 }
 // Run once from the Apps Script editor (select it, ▶ Run): asks for Gmail
 // access and checks the inbox every 15 minutes from then on.

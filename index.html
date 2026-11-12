@@ -1613,6 +1613,7 @@
   .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
   #view-sales td.crm-paid-cell { white-space: nowrap; }
   #view-sales .paid-pill { white-space: nowrap; }
+  .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
   .o-paid-date input { width: auto; }
@@ -1969,6 +1970,11 @@
           <input type="number" id="o-fee" min="0" step="0.01" placeholder="0.00" />
         </div>
       </div>
+      <div class="form-group">
+        <label for="o-courier">Courier reference</label>
+        <input type="text" id="o-courier" placeholder="e.g. veloz TOK-0012 (filled in from the Veloz emails)" />
+      </div>
+      <div class="hint" id="o-courier-status" style="display:none"></div>
       <div class="hint">The fee goes to the courier: it shows on the invoice, not in toka's revenue.</div>
       <div class="hint" id="o-shopify-hint" style="display:none"></div>
     </div>
@@ -9038,7 +9044,7 @@ function crmOrdersHtml() {
       + '<td class="mono">' + orderTotalCellHtml(o) + '</td>'
       + '<td class="crm-paid-cell">' + (o.complimentary ? '<span class="paid-pill is-comp" title="Free order — nothing to pay">Complimentary</span>'
         : '<button type="button" class="paid-pill' + (o.paid ? ' is-paid' : '') + '" onclick="toggleOrderPaid(\'' + esc(o.id) + '\')" title="Click to switch between paid and unpaid">' + (o.paid ? 'Paid' + (o.paidDate ? ' · ' + esc(fmtDate(o.paidDate)) : '') : 'Unpaid') + '</button>') + '</td>'
-      + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+      + cellEd(esc(o.notes || '') + (o.courierRef ? '<div class="courier-ref">' + esc(o.courierRef + (o.courierStatus ? ' · ' + o.courierStatus : '')) + '</div>' : ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
       + '<td class="row-actions"><button type="button" class="icon-btn" title="Invoice PDF" onclick="openInvoice(\'' + esc(o.id) + '\')">' + crmInvoiceIcon() + '</button>'
       + '<button type="button" class="icon-btn" title="Edit order" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
       + '<button type="button" class="icon-btn" title="Delete order" onclick="deleteOrder(\'' + esc(o.id) + '\')">&times;</button></td>'
@@ -9262,6 +9268,10 @@ function openOrderDrawer(id) {
   document.getElementById('o-delivery').value = (o && (o.delivery === 'pickup' || o.delivery === 'delivery')) ? o.delivery : (o && o.delivery ? 'delivery' : '');
   document.getElementById('o-fee').value = (o && orderDeliveryFee(o)) ? orderDeliveryFee(o) : '';
   onOrderDeliveryChange();
+  document.getElementById('o-courier').value = o ? (o.courierRef || '') : '';
+  var csh = document.getElementById('o-courier-status');
+  csh.textContent = (o && o.courierStatus) ? 'courier status: ' + o.courierStatus : '';
+  csh.style.display = (o && o.courierStatus) ? '' : 'none';
   var shh = document.getElementById('o-shopify-hint');
   shh.textContent = (o && o.shopifyOrder) ? 'imported from shopify order #' + o.shopifyOrder : '';
   shh.style.display = (o && o.shopifyOrder) ? '' : 'none';
@@ -9398,6 +9408,8 @@ function saveOrder() {
     delivery: val('o-delivery'),
     deliveryFee: (val('o-delivery') === 'pickup' || val('o-fee') === '') ? '' : (parseFloat(val('o-fee')) || 0),
     shopifyOrder: prev ? (prev.shopifyOrder || '') : '',
+    courierRef: val('o-courier').trim(),
+    courierStatus: prev ? (prev.courierStatus || '') : '',
     lines: isOrderComp() ? lines.map(function (l) { l.unitPrice = 0; return l; }) : lines.concat(orderRebateLines()),
     _hadStock: prev ? !!prev.deductStock : false
   };
