@@ -1867,7 +1867,7 @@
   <div class="view-bar">
     <button class="back-link" onclick="goBack()">&larr; back</button>
     <div class="crm-bar-btns">
-      <button class="btn-ghost" id="shopify-sync-btn" onclick="syncShopify()" title="Import new Shopify orders from the order emails now (this also happens by itself every 15 minutes)">sync shopify</button>
+      <button class="btn-ghost" id="shopify-sync-btn" onclick="syncShopify()" title="Check the Shopify order emails and Veloz emails now (this also happens by itself every 15 minutes)">sync email</button>
       <button class="btn-ghost" onclick="openCustomerDrawer()">+ new customer</button>
       <button class="btn-primary" onclick="openOrderDrawer()">+ new order</button>
     </div>
@@ -9696,12 +9696,12 @@ function reloadSalesAndStock(msg) {
 function syncShopify() {
   var btn = document.getElementById('shopify-sync-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'syncing…'; }
-  setSyncStatus('saving', 'checking shopify emails…');
+  setSyncStatus('saving', 'checking emails…');
   apiPost({ action: 'syncShopify' }, function (err, res) {
-    if (btn) { btn.disabled = false; btn.textContent = 'sync shopify'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'sync email'; }
     if (err || !res || !res.ok) {
-      setSyncStatus('error', 'shopify sync failed');
-      alert('Couldn’t check the Shopify emails' + (res && res.error ? ': ' + res.error : '.') + '\n\nIf this is the first time: redeploy the latest toka-brewlog-backend.gs and run setupShopifySync once in the Apps Script editor.');
+      setSyncStatus('error', 'email sync failed');
+      alert('Couldn’t check the emails' + (res && res.error ? ': ' + res.error : '.') + '\n\nIf this is the first time: redeploy the latest toka-brewlog-backend.gs and run setupShopifySync once in the Apps Script editor.');
       return;
     }
     setSyncStatus('live', 'connected · google sheets');
