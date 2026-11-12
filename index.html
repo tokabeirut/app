@@ -10470,7 +10470,7 @@ function bivRowHtml(e, sub, newDate, extras) {
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
     + bivFlavourCellHtml(e)
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
-    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+    + cellEd('<div class="clip-inner muted"' + (e.notes ? ' data-full="' + esc(e.notes + bivCourierNote(e)) + '"' : '') + '>' + autoTag + (e.notes ? esc(e.notes + bivCourierNote(e)) : '—') + '</div>', { type: 'bottleinv', uid: e.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions"><button class="del-btn" title="Delete" onclick="deleteBottleInvEntry(\'' + id + '\')">&times;</button></td>'
     + '</tr>';
   // Read-only counter lines under the main row: the automatic counterpart
@@ -10824,6 +10824,13 @@ function saveStockCheck() {
       next(i + 1);
     });
   })(0);
+}
+// A sold row of an order delivered by a courier also shows the courier's
+// reference (" · veloz TOK-0012"); shown only, not saved in the row.
+function bivCourierNote(e) {
+  if (!e || !e.orderId || typeof findOrder !== 'function') return '';
+  var o = findOrder(e.orderId);
+  return (o && o.courierRef) ? ' · ' + o.courierRef : '';
 }
 function deleteBottleInvEntry(id) {
   var sub = bivPairs().autoOf[id];

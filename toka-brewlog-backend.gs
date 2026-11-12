@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '60 (veloz emails: last 10 days)';
+var VERSION = '61 (veloz: "order received" status)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -932,7 +932,7 @@ function syncShopifyEmails() {
    and writes Veloz's number and the latest status onto our order (columns
    courier_ref / courier_status). Nothing is labelled: the same email read
    again changes nothing, and a later status email simply updates the status. */
-var VELOZ_STATUSES = ['delivered', 'picked up', 'on the way', 'out for delivery', 'assigned to a driver', 'cancelled', 'canceled', 'returned', 'failed'];
+var VELOZ_STATUSES = ['order received', 'assigned to a driver', 'picked up', 'on the way', 'out for delivery', 'delivered', 'cancelled', 'canceled', 'returned', 'failed'];
 function parseVelozEmail_(html) {
   var txt = decodeEntities_(String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(div|p|tr|td|th|h\d|li)>/gi, '\n').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ');
   var m = /\b([A-Z]{2,5}-\d{2,})\s*\(\s*(toka-\d+|#?\d{3,})\s*\)/i.exec(txt);
