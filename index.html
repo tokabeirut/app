@@ -9088,7 +9088,6 @@ function crmGiftsHtml() {
     + '<div class="sales-stat-note">' + fmtNum(n750) + ' × 750 ml · ' + fmtNum(n375) + ' × 375 ml</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Times given</div><div class="sales-stat-val">' + list.length + '</div>'
     + '<div class="sales-stat-note">to ' + np + ' client' + (np === 1 ? '' : 's') + '</div></div>'
-    + '<div class="sales-stat sales-stat-btn"><button class="btn-ghost" onclick="openGiftDrawer()">+ new complimentary</button></div>'
     + '</div>';
   if (!list.length) return h + '<div class="sales-empty">Nothing given in this period.</div>';
   h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table gifts-table"><thead><tr>'
