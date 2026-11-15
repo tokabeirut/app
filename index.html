@@ -1613,6 +1613,15 @@
   .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
   #view-sales td.crm-paid-cell { white-space: nowrap; }
   #view-sales .paid-pill { white-space: nowrap; }
+  .crm-gift-sub { font-size: 0.75rem; color: var(--ink-faint); margin-top: 2px; white-space: nowrap; }
+  #view-sales .sales-stat-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: flex-end; justify-content: flex-end; background: none; border: none; box-shadow: none; }
+  .sales-table.gifts-table { min-width: 900px; width: 900px; width: max(900px, 100%); }
+  .sales-table.gifts-table th:nth-child(1), .sales-table.gifts-table td:nth-child(1) { width: 120px; }
+  .sales-table.gifts-table th:nth-child(2), .sales-table.gifts-table td:nth-child(2) { width: 190px; white-space: normal; }
+  .sales-table.gifts-table th:nth-child(3), .sales-table.gifts-table td:nth-child(3) { width: 240px; white-space: normal; }
+  .sales-table.gifts-table th:nth-child(4), .sales-table.gifts-table td:nth-child(4) { width: 80px; }
+  .sales-table.gifts-table th:nth-child(5), .sales-table.gifts-table td:nth-child(5) { width: auto; }
+  .sales-table.gifts-table th:nth-child(6), .sales-table.gifts-table td:nth-child(6) { width: 80px; }
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
@@ -8829,8 +8838,13 @@ function b2bRebate(win, thisQty) {
 }
 /* ---- reorder estimate ---- */
 function customerInsights(c) {
-  var list = ordersOfCustomer(c);
-  var out = { orders: list, n: list.length, bottles: 0, spent: 0, unpaid: 0, first: '', last: '', next: '', basis: '', daysLeft: null, status: 'none' };
+  // Gifts (complimentary) are kept apart: they don't count as orders and
+  // don't move the reorder estimate.
+  var all = ordersOfCustomer(c);
+  var list = all.filter(function (o) { return !o.complimentary; });
+  var gifts = all.filter(function (o) { return o.complimentary; });
+  var out = { orders: list, n: list.length, bottles: 0, spent: 0, unpaid: 0, first: '', last: '', next: '', basis: '', daysLeft: null, status: 'none',
+    gifts: gifts, giftN: gifts.length, giftBottles: gifts.reduce(function (a, o) { return a + orderBottles(o); }, 0) };
   list.forEach(function (o) { out.bottles += orderBottles(o); out.spent += orderTotal(o); if (!o.paid) out.unpaid += orderTotal(o); });
   if (!list.length) return out;
   out.first = list[0].date; out.last = list[list.length - 1].date;
@@ -8925,8 +8939,9 @@ function renderSales() {
   h += '<div class="crm-tabs">'
     + '<button type="button" class="crm-tab' + (salesTab === 'orders' ? ' active' : '') + '" onclick="setSalesTab(\'orders\')">Orders</button>'
     + '<button type="button" class="crm-tab' + (salesTab === 'customers' ? ' active' : '') + '" onclick="setSalesTab(\'customers\')">Customers</button>'
+    + '<button type="button" class="crm-tab' + (salesTab === 'gifts' ? ' active' : '') + '" onclick="setSalesTab(\'gifts\')">Gifts</button>'
     + '</div>';
-  h += salesTab === 'customers' ? crmCustomersHtml() : crmOrdersHtml();
+  h += salesTab === 'customers' ? crmCustomersHtml() : salesTab === 'gifts' ? crmGiftsHtml() : crmOrdersHtml();
   body.innerHTML = h;
 }
 // B2B businesses in the last 2 days of a 30-day period (day 28–30): they can still
@@ -9000,10 +9015,11 @@ function crmNudgeHtml() {
     }).join('') + '</div></div>';
 }
 function crmOrdersHtml() {
-  var list = ordersForPeriod(salesPeriod);
+  var all = ordersForPeriod(salesPeriod);
+  var list = all.filter(function (o) { return !o.complimentary; });   // gifts have their own tab
   var revenue = 0, bottles = 0, b750 = 0, b375 = 0, unpaid = 0, unpaidN = 0, b2b = 0, b2c = 0, compBottles = 0, compN = 0;
+  all.forEach(function (o) { if (o.complimentary) { compBottles += orderBottles(o); compN++; } });
   list.forEach(function (o) {
-    if (o.complimentary) { compBottles += orderBottles(o); compN++; return; }   // given away: not in the sales figures
     var t = orderTotal(o);
     revenue += t; bottles += orderBottles(o);
     (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') b375 += q; else if (String(l.size) === '750') b750 += q; });
@@ -9015,9 +9031,9 @@ function crmOrdersHtml() {
   }).join('') + '</div>';
   h += '<div class="sales-stats">'
     + '<div class="sales-stat"><div class="sales-stat-label">Revenue</div><div class="sales-stat-val">' + saleMoney(revenue) + '</div>'
-    + '<div class="sales-stat-note">' + (list.length - compN) + ' order' + (list.length - compN === 1 ? '' : 's') + '</div></div>'
+    + '<div class="sales-stat-note">' + list.length + ' order' + (list.length === 1 ? '' : 's') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Bottles sold</div><div class="sales-stat-val">' + fmtNum(bottles) + '</div>'
-    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' complimentary' : '') + '</div></div>'
+    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' given away (see gifts)' : '') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Still to be paid</div><div class="sales-stat-val' + (unpaid > 0 ? ' warn' : '') + '">' + saleMoney(unpaid) + '</div>'
     + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid order' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Average per bottle</div><div class="sales-stat-val">' + saleMoney(bottles ? revenue / bottles : 0) + '</div>'
@@ -9052,6 +9068,49 @@ function crmOrdersHtml() {
   });
   return h + '</tbody></table></div></div>';
 }
+// Gifts: complimentary orders (free bottles: samples, tastings, friends),
+// kept out of the orders table and the sales figures. Same period chips.
+function crmGiftsHtml() {
+  var list = ordersForPeriod(salesPeriod).filter(function (o) { return o.complimentary; });
+  var n375 = 0, n750 = 0, people = {};
+  list.forEach(function (o) {
+    (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') n375 += q; else if (String(l.size) === '750') n750 += q; });
+    people[String(o.customerId || o.customerName || '')] = 1;
+  });
+  var h = '<div class="sales-periods">' + SALES_PERIODS.map(function (p) {
+    return '<button type="button" class="sales-chip' + (p.key === salesPeriod ? ' active' : '') + '" onclick="setSalesPeriod(\'' + p.key + '\')">' + p.label + '</button>';
+  }).join('') + '</div>';
+  h += '<div class="sales-stats">'
+    + '<div class="sales-stat"><div class="sales-stat-label">Bottles given away</div><div class="sales-stat-val">' + fmtNum(n375 + n750) + '</div>'
+    + '<div class="sales-stat-note">' + fmtNum(n750) + ' × 750 ml · ' + fmtNum(n375) + ' × 375 ml</div></div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Gifts</div><div class="sales-stat-val">' + list.length + '</div>'
+    + '<div class="sales-stat-note">to ' + Object.keys(people).length + ' ' + (Object.keys(people).length === 1 ? 'person or place' : 'people or places') + '</div></div>'
+    + '<div class="sales-stat sales-stat-btn"><button class="btn-ghost" onclick="openGiftDrawer()">+ new gift</button></div>'
+    + '</div>';
+  if (!list.length) return h + '<div class="sales-empty">No gifts in this period.</div>';
+  h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table gifts-table"><thead><tr>'
+    + '<th>Date</th><th>Given to</th><th>Items</th><th>Bottles</th><th>Note</th><th></th>'
+    + '</tr></thead><tbody>';
+  list.forEach(function (o) {
+    var c = customerForOrder(o);
+    h += '<tr>'
+      + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
+      + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(customerDisplayName(c)) + '</button>' : esc(o.customerName || '—')) + '</td>'
+      + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + '</td>'
+      + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
+      + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
+      + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit gift" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
+      + '<button type="button" class="icon-btn" title="Delete gift" onclick="deleteOrder(\'' + esc(o.id) + '\')">&times;</button></td>'
+      + '</tr>';
+  });
+  return h + '</tbody></table></div></div>';
+}
+function openGiftDrawer() {
+  openOrderDrawer();
+  var cb = document.getElementById('o-comp');
+  if (cb && !cb.checked) { cb.checked = true; onOrderCompChange(); }
+  document.getElementById('order-title').textContent = 'New gift';
+}
 function crmInvoiceIcon() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>';
 }
@@ -9071,7 +9130,7 @@ function crmCustomersHtml() {
       + cellEd(esc(c.phone ? fmtPhone(c.phone) : '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
       + cellEd('<div class="clip-inner muted">' + esc([c.address, c.area].filter(Boolean).join(' · ') || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', cls: 'notes-cell' })
-      + '<td class="mono">' + ins.n + '</td>'
+      + '<td class="mono">' + ins.n + (ins.giftN ? '<div class="crm-gift-sub" title="' + fmtNum(ins.giftBottles) + ' bottles given">+ ' + ins.giftN + ' gift' + (ins.giftN === 1 ? '' : 's') + '</div>' : '') + '</td>'
       + '<td class="mono">' + fmtNum(ins.bottles) + '</td>'
       + '<td class="mono' + (ins.unpaid > 0 ? ' crm-unpaid-val' : '') + '"' + (ins.unpaid > 0 ? ' title="' + saleMoney(ins.unpaid) + ' still unpaid"' : '') + '>' + saleMoney(ins.spent) + '</td>'
       + '<td class="mono">' + (ins.last ? esc(fmtDate(ins.last)) : '—') + '</td>'
@@ -9137,9 +9196,10 @@ function orderB2bWindow() {
   return b2bWindow(c, val('o-date'), editingOrderId, !!(ex && ex.checked));
 }
 function isOrderComp() { var el = document.getElementById('o-comp'); return !!(el && el.checked); }
-// Complimentary order: free. Every price is 0, no discount, nothing to pay;
-// the bottles still leave stock as "sold", but the order stays out of the
-// sales figures and the 30-day volume discount.
+// Complimentary order = a gift: free, every price 0, nothing to pay. The
+// bottles leave stock as "consumed" (backend), and it is listed under the
+// Gifts tab instead of Orders, outside the sales figures, the 30-day volume
+// discount and the reorder estimates.
 function onOrderCompChange() {
   var comp = isOrderComp();
   [].forEach.call(document.querySelectorAll('#o-lines .ol-row'), function (r) {
@@ -9254,7 +9314,7 @@ function openOrderDrawer(id) {
   var o = id ? findOrder(id) : null;
   editingOrderId = o ? o.id : null;
   refreshCrmDatalists();
-  document.getElementById('order-title').textContent = o ? 'Edit order ' + (o.invoiceNo || '') : 'New order';
+  document.getElementById('order-title').textContent = o ? (o.complimentary ? 'Edit gift' : 'Edit order ' + (o.invoiceNo || '')) : 'New order';
   document.getElementById('order-save-btn').textContent = o ? 'Update order' : 'Save order';
   document.getElementById('o-date').value = o ? (o.date || todayISO()) : todayISO();
   document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
@@ -9492,14 +9552,15 @@ function closeCustomerDrawer() {
 function customerHistoryHtml(c) {
   var ins = customerInsights(c);
   var h = '<div class="form-section"><div class="form-section-title">History</div>';
-  if (!ins.n) return h + '<div class="hint">No orders yet.</div></div>';
+  var giftLine = ins.giftN ? '<div class="hint">Gifts: ' + ins.giftN + ' time' + (ins.giftN === 1 ? '' : 's') + ' · ' + fmtNum(ins.giftBottles) + ' bottle' + (ins.giftBottles === 1 ? '' : 's') + ' (' + ins.gifts.map(function (o) { return fmtDate(o.date); }).join(', ') + ')</div>' : '';
+  if (!ins.n) return h + '<div class="hint">No orders yet.</div>' + giftLine + '</div>';
   h += '<div class="crm-hist-stats">'
     + '<div><b>' + ins.n + '</b> order' + (ins.n === 1 ? '' : 's') + '</div>'
     + '<div><b>' + fmtNum(ins.bottles) + '</b> bottles</div>'
     + '<div><b>' + saleMoney(ins.spent) + '</b> spent</div>'
     + (ins.unpaid > 0 ? '<div class="crm-unpaid"><b>' + saleMoney(ins.unpaid) + '</b> unpaid</div>' : '')
     + '</div>'
-    + '<div class="hint">Next order expected ' + crmStatusChip(ins) + '<br>Estimated ' + esc(ins.basis) + '.</div>'
+    + '<div class="hint">Next order expected ' + crmStatusChip(ins) + '<br>Estimated ' + esc(ins.basis) + '.</div>' + giftLine
     + (crmContactButtons(c) ? '<div class="crm-nudge-acts" style="margin:10px 0 4px">' + crmContactButtons(c) + '</div>' : '');
   h += '<div class="crm-hist-list">' + ins.orders.slice().reverse().map(function (o) {
     return '<div class="crm-hist-row"><div class="crm-hist-top"><button type="button" class="crm-link mono" onclick="openInvoice(\'' + esc(o.id) + '\')">' + esc(o.invoiceNo || '…') + '</button>'
