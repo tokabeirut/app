@@ -8939,7 +8939,7 @@ function renderSales() {
   h += '<div class="crm-tabs">'
     + '<button type="button" class="crm-tab' + (salesTab === 'orders' ? ' active' : '') + '" onclick="setSalesTab(\'orders\')">Orders</button>'
     + '<button type="button" class="crm-tab' + (salesTab === 'customers' ? ' active' : '') + '" onclick="setSalesTab(\'customers\')">Customers</button>'
-    + '<button type="button" class="crm-tab' + (salesTab === 'gifts' ? ' active' : '') + '" onclick="setSalesTab(\'gifts\')">Gifts</button>'
+    + '<button type="button" class="crm-tab' + (salesTab === 'gifts' ? ' active' : '') + '" onclick="setSalesTab(\'gifts\')">Complimentary</button>'
     + '</div>';
   h += salesTab === 'customers' ? crmCustomersHtml() : salesTab === 'gifts' ? crmGiftsHtml() : crmOrdersHtml();
   body.innerHTML = h;
@@ -9033,7 +9033,7 @@ function crmOrdersHtml() {
     + '<div class="sales-stat"><div class="sales-stat-label">Revenue</div><div class="sales-stat-val">' + saleMoney(revenue) + '</div>'
     + '<div class="sales-stat-note">' + list.length + ' order' + (list.length === 1 ? '' : 's') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Bottles sold</div><div class="sales-stat-val">' + fmtNum(bottles) + '</div>'
-    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' given away (see gifts)' : '') + '</div></div>'
+    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' given away (see complimentary)' : '') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Still to be paid</div><div class="sales-stat-val' + (unpaid > 0 ? ' warn' : '') + '">' + saleMoney(unpaid) + '</div>'
     + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid order' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Average per bottle</div><div class="sales-stat-val">' + saleMoney(bottles ? revenue / bottles : 0) + '</div>'
@@ -9083,11 +9083,11 @@ function crmGiftsHtml() {
   h += '<div class="sales-stats">'
     + '<div class="sales-stat"><div class="sales-stat-label">Bottles given away</div><div class="sales-stat-val">' + fmtNum(n375 + n750) + '</div>'
     + '<div class="sales-stat-note">' + fmtNum(n750) + ' × 750 ml · ' + fmtNum(n375) + ' × 375 ml</div></div>'
-    + '<div class="sales-stat"><div class="sales-stat-label">Gifts</div><div class="sales-stat-val">' + list.length + '</div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Times given</div><div class="sales-stat-val">' + list.length + '</div>'
     + '<div class="sales-stat-note">to ' + Object.keys(people).length + ' ' + (Object.keys(people).length === 1 ? 'person or place' : 'people or places') + '</div></div>'
-    + '<div class="sales-stat sales-stat-btn"><button class="btn-ghost" onclick="openGiftDrawer()">+ new gift</button></div>'
+    + '<div class="sales-stat sales-stat-btn"><button class="btn-ghost" onclick="openGiftDrawer()">+ new complimentary</button></div>'
     + '</div>';
-  if (!list.length) return h + '<div class="sales-empty">No gifts in this period.</div>';
+  if (!list.length) return h + '<div class="sales-empty">Nothing given away in this period.</div>';
   h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table gifts-table"><thead><tr>'
     + '<th>Date</th><th>Given to</th><th>Items</th><th>Bottles</th><th>Note</th><th></th>'
     + '</tr></thead><tbody>';
@@ -9099,8 +9099,8 @@ function crmGiftsHtml() {
       + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
       + cellEd(esc(o.notes || ''), { type: 'order', uid: o.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
-      + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit gift" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
-      + '<button type="button" class="icon-btn" title="Delete gift" onclick="deleteOrder(\'' + esc(o.id) + '\')">&times;</button></td>'
+      + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openOrderDrawer(\'' + esc(o.id) + '\')">&#9998;</button>'
+      + '<button type="button" class="icon-btn" title="Delete" onclick="deleteOrder(\'' + esc(o.id) + '\')">&times;</button></td>'
       + '</tr>';
   });
   return h + '</tbody></table></div></div>';
@@ -9109,7 +9109,7 @@ function openGiftDrawer() {
   openOrderDrawer();
   var cb = document.getElementById('o-comp');
   if (cb && !cb.checked) { cb.checked = true; onOrderCompChange(); }
-  document.getElementById('order-title').textContent = 'New gift';
+  document.getElementById('order-title').textContent = 'New complimentary';
 }
 function crmInvoiceIcon() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>';
@@ -9130,7 +9130,7 @@ function crmCustomersHtml() {
       + cellEd(esc(c.phone ? fmtPhone(c.phone) : '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
       + cellEd('<div class="clip-inner muted">' + esc([c.address, c.area].filter(Boolean).join(' · ') || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', cls: 'notes-cell' })
-      + '<td class="mono">' + ins.n + (ins.giftN ? '<div class="crm-gift-sub" title="' + fmtNum(ins.giftBottles) + ' bottles given">+ ' + ins.giftN + ' gift' + (ins.giftN === 1 ? '' : 's') + '</div>' : '') + '</td>'
+      + '<td class="mono">' + ins.n + (ins.giftN ? '<div class="crm-gift-sub" title="' + fmtNum(ins.giftBottles) + ' bottles given">+ ' + ins.giftN + ' complimentary</div>' : '') + '</td>'
       + '<td class="mono">' + fmtNum(ins.bottles) + '</td>'
       + '<td class="mono' + (ins.unpaid > 0 ? ' crm-unpaid-val' : '') + '"' + (ins.unpaid > 0 ? ' title="' + saleMoney(ins.unpaid) + ' still unpaid"' : '') + '>' + saleMoney(ins.spent) + '</td>'
       + '<td class="mono">' + (ins.last ? esc(fmtDate(ins.last)) : '—') + '</td>'
@@ -9314,7 +9314,7 @@ function openOrderDrawer(id) {
   var o = id ? findOrder(id) : null;
   editingOrderId = o ? o.id : null;
   refreshCrmDatalists();
-  document.getElementById('order-title').textContent = o ? (o.complimentary ? 'Edit gift' : 'Edit order ' + (o.invoiceNo || '')) : 'New order';
+  document.getElementById('order-title').textContent = o ? (o.complimentary ? 'Edit complimentary' : 'Edit order ' + (o.invoiceNo || '')) : 'New order';
   document.getElementById('order-save-btn').textContent = o ? 'Update order' : 'Save order';
   document.getElementById('o-date').value = o ? (o.date || todayISO()) : todayISO();
   document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
@@ -9552,7 +9552,7 @@ function closeCustomerDrawer() {
 function customerHistoryHtml(c) {
   var ins = customerInsights(c);
   var h = '<div class="form-section"><div class="form-section-title">History</div>';
-  var giftLine = ins.giftN ? '<div class="hint">Gifts: ' + ins.giftN + ' time' + (ins.giftN === 1 ? '' : 's') + ' · ' + fmtNum(ins.giftBottles) + ' bottle' + (ins.giftBottles === 1 ? '' : 's') + ' (' + ins.gifts.map(function (o) { return fmtDate(o.date); }).join(', ') + ')</div>' : '';
+  var giftLine = ins.giftN ? '<div class="hint">Complimentary: ' + ins.giftN + ' time' + (ins.giftN === 1 ? '' : 's') + ' · ' + fmtNum(ins.giftBottles) + ' bottle' + (ins.giftBottles === 1 ? '' : 's') + ' (' + ins.gifts.map(function (o) { return fmtDate(o.date); }).join(', ') + ')</div>' : '';
   if (!ins.n) return h + '<div class="hint">No orders yet.</div>' + giftLine + '</div>';
   h += '<div class="crm-hist-stats">'
     + '<div><b>' + ins.n + '</b> order' + (ins.n === 1 ? '' : 's') + '</div>'
