@@ -1613,22 +1613,15 @@
   .sc-total { margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.8; font-size: 0.92rem; }
   #view-sales td.crm-paid-cell { white-space: nowrap; }
   #view-sales .paid-pill { white-space: nowrap; }
-  .o-free-kind { display: none; margin: 8px 0 0 28px; }
-  .o-free-kind label { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 8px; margin: 6px 0; font-size: 0.9rem; cursor: pointer; text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 400; }
-  .o-free-kind input[type="radio"] { -webkit-appearance: radio; appearance: auto; width: 16px; height: 16px; min-width: 16px; padding: 0; margin: 0; border: none; background: none; box-shadow: none; accent-color: var(--ink); }
-  .free-kind { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
-  .free-kind.free-sample { color: var(--ink); }
-  #view-sales .sales-stat-btn .btn-ghost + .btn-ghost { margin-left: 8px; }
   .crm-gift-sub { font-size: 0.75rem; color: var(--ink-faint); margin-top: 2px; white-space: nowrap; }
   #view-sales .sales-stat-btn { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; -webkit-justify-content: flex-end; justify-content: flex-end; background: none; border: none; box-shadow: none; }
-  .sales-table.gifts-table { min-width: 1030px; width: 1030px; width: max(1030px, 100%); }
+  .sales-table.gifts-table { min-width: 900px; width: 900px; width: max(900px, 100%); }
   .sales-table.gifts-table th:nth-child(1), .sales-table.gifts-table td:nth-child(1) { width: 120px; }
-  .sales-table.gifts-table th:nth-child(2), .sales-table.gifts-table td:nth-child(2) { width: 130px; }
-  .sales-table.gifts-table th:nth-child(3), .sales-table.gifts-table td:nth-child(3) { width: 190px; white-space: normal; }
-  .sales-table.gifts-table th:nth-child(4), .sales-table.gifts-table td:nth-child(4) { width: 240px; white-space: normal; }
-  .sales-table.gifts-table th:nth-child(5), .sales-table.gifts-table td:nth-child(5) { width: 80px; }
-  .sales-table.gifts-table th:nth-child(6), .sales-table.gifts-table td:nth-child(6) { width: auto; }
-  .sales-table.gifts-table th:nth-child(7), .sales-table.gifts-table td:nth-child(7) { width: 80px; }
+  .sales-table.gifts-table th:nth-child(2), .sales-table.gifts-table td:nth-child(2) { width: 190px; white-space: normal; }
+  .sales-table.gifts-table th:nth-child(3), .sales-table.gifts-table td:nth-child(3) { width: 240px; white-space: normal; }
+  .sales-table.gifts-table th:nth-child(4), .sales-table.gifts-table td:nth-child(4) { width: 80px; }
+  .sales-table.gifts-table th:nth-child(5), .sales-table.gifts-table td:nth-child(5) { width: auto; }
+  .sales-table.gifts-table th:nth-child(6), .sales-table.gifts-table td:nth-child(6) { width: 80px; }
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
@@ -1964,11 +1957,7 @@
       <div class="sale-total-line">Total <strong id="o-total">$ 0.00</strong></div>
     </div>
     <div class="form-group">
-      <label class="sale-paid-label"><input type="checkbox" id="o-comp" class="task-check" onchange="onOrderCompChange()" /> <span>Free</span></label>
-      <div class="o-free-kind" id="o-free-kind">
-        <label><input type="radio" name="o-kind" value="complimentary" checked /> <span>complimentary</span></label>
-        <label><input type="radio" name="o-kind" value="sample" /> <span>sample for prospect</span></label>
-      </div>
+      <label class="sale-paid-label"><input type="checkbox" id="o-comp" class="task-check" onchange="onOrderCompChange()" /> <span>Complimentary</span></label>
     </div>
     <div class="form-group" id="o-paid-group">
       <label class="sale-paid-label"><input type="checkbox" id="o-paid" class="task-check" onchange="onOrderPaidChange()" /> <span>Paid</span></label>
@@ -8855,11 +8844,7 @@ function customerInsights(c) {
   var list = all.filter(function (o) { return !o.complimentary; });
   var gifts = all.filter(function (o) { return o.complimentary; });
   var out = { orders: list, n: list.length, bottles: 0, spent: 0, unpaid: 0, first: '', last: '', next: '', basis: '', daysLeft: null, status: 'none',
-    gifts: gifts, giftN: gifts.length, giftBottles: gifts.reduce(function (a, o) { return a + orderBottles(o); }, 0),
-    samples: gifts.filter(function (o) { return freeKind(o) === 'sample'; }),
-    comps: gifts.filter(function (o) { return freeKind(o) !== 'sample'; }) };
-  // Prospect: has had samples but never a real order yet.
-  out.prospect = !list.length && out.samples.length > 0;
+    gifts: gifts, giftN: gifts.length, giftBottles: gifts.reduce(function (a, o) { return a + orderBottles(o); }, 0) };
   list.forEach(function (o) { out.bottles += orderBottles(o); out.spent += orderTotal(o); if (!o.paid) out.unpaid += orderTotal(o); });
   if (!list.length) return out;
   out.first = list[0].date; out.last = list[list.length - 1].date;
@@ -8954,7 +8939,7 @@ function renderSales() {
   h += '<div class="crm-tabs">'
     + '<button type="button" class="crm-tab' + (salesTab === 'orders' ? ' active' : '') + '" onclick="setSalesTab(\'orders\')">Orders</button>'
     + '<button type="button" class="crm-tab' + (salesTab === 'customers' ? ' active' : '') + '" onclick="setSalesTab(\'customers\')">Customers</button>'
-    + '<button type="button" class="crm-tab' + (salesTab === 'gifts' ? ' active' : '') + '" onclick="setSalesTab(\'gifts\')">Freebies</button>'
+    + '<button type="button" class="crm-tab' + (salesTab === 'gifts' ? ' active' : '') + '" onclick="setSalesTab(\'gifts\')">Complimentary</button>'
     + '</div>';
   h += salesTab === 'customers' ? crmCustomersHtml() : salesTab === 'gifts' ? crmGiftsHtml() : crmOrdersHtml();
   body.innerHTML = h;
@@ -9048,7 +9033,7 @@ function crmOrdersHtml() {
     + '<div class="sales-stat"><div class="sales-stat-label">Revenue</div><div class="sales-stat-val">' + saleMoney(revenue) + '</div>'
     + '<div class="sales-stat-note">' + list.length + ' order' + (list.length === 1 ? '' : 's') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Bottles sold</div><div class="sales-stat-val">' + fmtNum(bottles) + '</div>'
-    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' given away (see freebies)' : '') + '</div></div>'
+    + '<div class="sales-stat-note">' + fmtNum(b750) + ' × 750 ml · ' + fmtNum(b375) + ' × 375 ml' + (compBottles ? '<br>+ ' + fmtNum(compBottles) + ' complimentary (see that tab)' : '') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Still to be paid</div><div class="sales-stat-val' + (unpaid > 0 ? ' warn' : '') + '">' + saleMoney(unpaid) + '</div>'
     + '<div class="sales-stat-note">' + (unpaidN ? unpaidN + ' unpaid order' + (unpaidN === 1 ? '' : 's') : 'all paid') + '</div></div>'
     + '<div class="sales-stat"><div class="sales-stat-label">Average per bottle</div><div class="sales-stat-val">' + saleMoney(bottles ? revenue / bottles : 0) + '</div>'
@@ -9085,41 +9070,34 @@ function crmOrdersHtml() {
 }
 // Gifts: complimentary orders (free bottles: samples, tastings, friends),
 // kept out of the orders table and the sales figures. Same period chips.
+// Complimentary tab: free bottles for existing clients (a gesture, a bottle
+// that wasn't good…), kept out of the orders table and the sales figures.
 function crmGiftsHtml() {
   var list = ordersForPeriod(salesPeriod).filter(function (o) { return o.complimentary; });
-  var tot = { sample: 0, complimentary: 0 }, n = { sample: 0, complimentary: 0 }, prospects = {};
+  var n375 = 0, n750 = 0, people = {};
   list.forEach(function (o) {
-    var k = freeKind(o);
-    tot[k] += orderBottles(o); n[k]++;
-    if (k === 'sample') { var c = customerForOrder(o); prospects[c ? 'c:' + c.id : 'n:' + String(o.customerName || '')] = c; }
+    (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') n375 += q; else if (String(l.size) === '750') n750 += q; });
+    people[String(o.customerId || o.customerName || '')] = 1;
   });
-  // Samples that turned into clients: a real order after their first sample (any time).
-  var keys = Object.keys(prospects), won = 0;
-  keys.forEach(function (k) {
-    var c = prospects[k]; if (!c) return;
-    var all = ordersOfCustomer(c);
-    var firstSample = all.filter(function (o) { return freeKind(o) === 'sample'; }).map(function (o) { return o.date || ''; }).sort()[0] || '';
-    if (all.some(function (o) { return !o.complimentary && (o.date || '') >= firstSample; })) won++;
-  });
+  var np = Object.keys(people).length;
   var h = '<div class="sales-periods">' + SALES_PERIODS.map(function (p) {
     return '<button type="button" class="sales-chip' + (p.key === salesPeriod ? ' active' : '') + '" onclick="setSalesPeriod(\'' + p.key + '\')">' + p.label + '</button>';
   }).join('') + '</div>';
   h += '<div class="sales-stats">'
-    + '<div class="sales-stat"><div class="sales-stat-label">Samples</div><div class="sales-stat-val">' + fmtNum(tot.sample) + '</div>'
-    + '<div class="sales-stat-note">bottles · to ' + keys.length + ' prospect' + (keys.length === 1 ? '' : 's') + (keys.length ? ' · ' + won + ' became client' + (won === 1 ? '' : 's') : '') + '</div></div>'
-    + '<div class="sales-stat"><div class="sales-stat-label">Complimentary</div><div class="sales-stat-val">' + fmtNum(tot.complimentary) + '</div>'
-    + '<div class="sales-stat-note">bottles · ' + n.complimentary + ' gesture' + (n.complimentary === 1 ? '' : 's') + ' to clients</div></div>'
-    + '<div class="sales-stat sales-stat-btn"><button class="btn-ghost" onclick="openGiftDrawer(\'sample\')">+ new sample</button><button class="btn-ghost" onclick="openGiftDrawer(\'complimentary\')">+ new complimentary</button></div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Bottles</div><div class="sales-stat-val">' + fmtNum(n375 + n750) + '</div>'
+    + '<div class="sales-stat-note">' + fmtNum(n750) + ' × 750 ml · ' + fmtNum(n375) + ' × 375 ml</div></div>'
+    + '<div class="sales-stat"><div class="sales-stat-label">Times given</div><div class="sales-stat-val">' + list.length + '</div>'
+    + '<div class="sales-stat-note">to ' + np + ' client' + (np === 1 ? '' : 's') + '</div></div>'
+    + '<div class="sales-stat sales-stat-btn"><button class="btn-ghost" onclick="openGiftDrawer()">+ new complimentary</button></div>'
     + '</div>';
-  if (!list.length) return h + '<div class="sales-empty">Nothing given away in this period.</div>';
+  if (!list.length) return h + '<div class="sales-empty">Nothing given in this period.</div>';
   h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table gifts-table"><thead><tr>'
-    + '<th>Date</th><th>Type</th><th>Given to</th><th>Items</th><th>Bottles</th><th>Note</th><th></th>'
+    + '<th>Date</th><th>Client</th><th>Items</th><th>Bottles</th><th>Note</th><th></th>'
     + '</tr></thead><tbody>';
   list.forEach(function (o) {
     var c = customerForOrder(o);
     h += '<tr>'
       + cellEd(esc(fmtDate(o.date)), { type: 'order', uid: o.id, field: 'date', input: 'date', cls: 'mono' })
-      + '<td><span class="free-kind free-' + freeKind(o) + '">' + freeKind(o) + '</span></td>'
       + '<td>' + (c ? '<button type="button" class="crm-link" onclick="openCustomerDrawer(\'' + esc(c.id) + '\')">' + esc(customerDisplayName(c)) + '</button>' : esc(o.customerName || '—')) + '</td>'
       + '<td class="crm-items">' + (orderItemsHtml(o) || '—') + '</td>'
       + '<td class="mono">' + fmtNum(orderBottles(o)) + '</td>'
@@ -9130,12 +9108,11 @@ function crmGiftsHtml() {
   });
   return h + '</tbody></table></div></div>';
 }
-function openGiftDrawer(kind) {
+function openGiftDrawer() {
   openOrderDrawer();
   var cb = document.getElementById('o-comp');
   if (cb && !cb.checked) { cb.checked = true; onOrderCompChange(); }
-  setOrderFreeKind(kind);
-  document.getElementById('order-title').textContent = kind === 'sample' ? 'New sample' : 'New complimentary';
+  document.getElementById('order-title').textContent = 'New complimentary';
 }
 function crmInvoiceIcon() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h4"></path></svg>';
@@ -9152,11 +9129,11 @@ function crmCustomersHtml() {
     h += '<tr>'
       + cellEd(c.alias ? '<strong>' + esc(c.alias) + '</strong>' : '<span class="muted">—</span>', { type: 'customer', uid: c.id, field: 'alias' })
       + cellEd(c.alias ? esc(c.name || '—') : '<strong>' + esc(c.name || '—') + '</strong>', { type: 'customer', uid: c.id, field: 'name' })
-      + cellEd(esc(c.type || 'b2c') + (ins.prospect ? '<div class="crm-gift-sub">prospect</div>' : ''), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'b2c:b2c,b2b:b2b', cls: 'mono' })
+      + cellEd(esc(c.type || 'b2c'), { type: 'customer', uid: c.id, field: 'type', input: 'select', options: 'b2c:b2c,b2b:b2b', cls: 'mono' })
       + cellEd(esc(c.phone ? fmtPhone(c.phone) : '—'), { type: 'customer', uid: c.id, field: 'phone', cls: 'mono' })
       + cellEd(esc(c.email || '—'), { type: 'customer', uid: c.id, field: 'email' })
       + cellEd('<div class="clip-inner muted">' + esc([c.address, c.area].filter(Boolean).join(' · ') || '—') + '</div>', { type: 'customer', uid: c.id, field: 'address', cls: 'notes-cell' })
-      + '<td class="mono">' + ins.n + (ins.samples.length ? '<div class="crm-gift-sub">+ ' + ins.samples.length + ' sample' + (ins.samples.length === 1 ? '' : 's') + '</div>' : '') + (ins.comps.length ? '<div class="crm-gift-sub">+ ' + ins.comps.length + ' complimentary</div>' : '') + '</td>'
+      + '<td class="mono">' + ins.n + (ins.giftN ? '<div class="crm-gift-sub" title="' + fmtNum(ins.giftBottles) + ' bottles">+ ' + ins.giftN + ' complimentary</div>' : '') + '</td>'
       + '<td class="mono">' + fmtNum(ins.bottles) + '</td>'
       + '<td class="mono' + (ins.unpaid > 0 ? ' crm-unpaid-val' : '') + '"' + (ins.unpaid > 0 ? ' title="' + saleMoney(ins.unpaid) + ' still unpaid"' : '') + '>' + saleMoney(ins.spent) + '</td>'
       + '<td class="mono">' + (ins.last ? esc(fmtDate(ins.last)) : '—') + '</td>'
@@ -9222,10 +9199,9 @@ function orderB2bWindow() {
   return b2bWindow(c, val('o-date'), editingOrderId, !!(ex && ex.checked));
 }
 function isOrderComp() { var el = document.getElementById('o-comp'); return !!(el && el.checked); }
-function orderFreeKindVal() { var el = document.querySelector('input[name="o-kind"]:checked'); return el && el.value === 'sample' ? 'sample' : 'complimentary'; }
-function setOrderFreeKind(k) { [].forEach.call(document.querySelectorAll('input[name="o-kind"]'), function (r) { r.checked = (r.value === (k === 'sample' ? 'sample' : 'complimentary')); }); }
-// What a freebie is: 'sample' (a prospect tries) or 'complimentary' (a gesture to a client).
-function freeKind(o) { return o && o.complimentary ? (o.freeKind === 'sample' ? 'sample' : 'complimentary') : ''; }
+// Complimentary orders are free bottles for existing clients. (Samples for
+// prospects are not entered here but as "consumed" in Bottle inventory.)
+function freeKind(o) { return o && o.complimentary ? 'complimentary' : ''; }
 // Complimentary order = a gift: free, every price 0, nothing to pay. The
 // bottles leave stock as "consumed" (backend), and it is listed under the
 // Gifts tab instead of Orders, outside the sales figures, the 30-day volume
@@ -9236,7 +9212,6 @@ function onOrderCompChange() {
     if (comp) { r.querySelector('.ol-price').value = '0.00'; r.removeAttribute('data-edited'); }
   });
   document.getElementById('o-paid-group').style.display = comp ? 'none' : '';
-  document.getElementById('o-free-kind').style.display = comp ? 'block' : 'none';
   if (!comp) applyAllLinePrices();
   updateOrderTotal();
 }
@@ -9345,7 +9320,7 @@ function openOrderDrawer(id) {
   var o = id ? findOrder(id) : null;
   editingOrderId = o ? o.id : null;
   refreshCrmDatalists();
-  document.getElementById('order-title').textContent = o ? (o.complimentary ? (freeKind(o) === 'sample' ? 'Edit sample' : 'Edit complimentary') : 'Edit order ' + (o.invoiceNo || '')) : 'New order';
+  document.getElementById('order-title').textContent = o ? (o.complimentary ? 'Edit complimentary' : 'Edit order ' + (o.invoiceNo || '')) : 'New order';
   document.getElementById('order-save-btn').textContent = o ? 'Update order' : 'Save order';
   document.getElementById('o-date').value = o ? (o.date || todayISO()) : todayISO();
   document.getElementById('o-customer').value = o ? (customerDisplayName(customerForOrder(o)) || o.customerName || '') : '';
@@ -9354,8 +9329,6 @@ function openOrderDrawer(id) {
   document.getElementById('o-paid-date').value = (o && o.paid) ? (o.paidDate || '') : '';
   onOrderPaidChange();
   document.getElementById('o-comp').checked = !!(o && o.complimentary);
-  setOrderFreeKind(freeKind(o));
-  document.getElementById('o-free-kind').style.display = (o && o.complimentary) ? 'block' : 'none';
   document.getElementById('o-paid-group').style.display = (o && o.complimentary) ? 'none' : '';
   document.getElementById('o-notes').value = o ? (o.notes || '') : '';
   document.getElementById('o-delivery').value = (o && (o.delivery === 'pickup' || o.delivery === 'delivery')) ? o.delivery : (o && o.delivery ? 'delivery' : '');
@@ -9495,7 +9468,7 @@ function saveOrder() {
     channel: val('o-channel'),
     paid: isOrderComp() ? true : document.getElementById('o-paid').checked,
     complimentary: isOrderComp(),
-    freeKind: isOrderComp() ? orderFreeKindVal() : '',
+    freeKind: isOrderComp() ? 'complimentary' : '',
     paidDate: isOrderComp() ? (prev ? (prev.paidDate || '') : '') : (document.getElementById('o-paid').checked ? (val('o-paid-date') || todayISO()) : ''),
     deductStock: true,   // an order's bottles always leave Bottle inventory
     notes: val('o-notes').trim(),
@@ -9591,8 +9564,8 @@ function customerHistoryHtml(c) {
     var b = l.reduce(function (a, o) { return a + orderBottles(o); }, 0);
     return '<div class="hint">' + lab + ': ' + l.length + ' time' + (l.length === 1 ? '' : 's') + ' · ' + fmtNum(b) + ' bottle' + (b === 1 ? '' : 's') + ' (' + l.map(function (o) { return fmtDate(o.date); }).join(', ') + ')</div>';
   }
-  var giftLine = freeLine('Samples', ins.samples) + freeLine('Complimentary', ins.comps);
-  if (!ins.n) return h + '<div class="hint">' + (ins.prospect ? 'Prospect: no orders yet, only samples.' : 'No orders yet.') + '</div>' + giftLine + '</div>';
+  var giftLine = freeLine('Complimentary', ins.gifts);
+  if (!ins.n) return h + '<div class="hint">No orders yet.</div>' + giftLine + '</div>';
   h += '<div class="crm-hist-stats">'
     + '<div><b>' + ins.n + '</b> order' + (ins.n === 1 ? '' : 's') + '</div>'
     + '<div><b>' + fmtNum(ins.bottles) + '</b> bottles</div>'
