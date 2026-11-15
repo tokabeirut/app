@@ -10407,7 +10407,7 @@ function bivFlavourRank(flavour) {
 // Top to bottom within a day: Recycled, Sold, Consumed, Filled, Atelier,
 // Other, Depot (an empty stage counts as Depot).
 function bivStageRank(stage) {
-  var order = ['recycled', 'sold', 'consumed', 'filled', 'atelier', 'other', 'depot'];
+  var order = ['check', 'recycled', 'sold', 'consumed', 'filled', 'atelier', 'other', 'depot'];   // stock check on top of its day
   var i = order.indexOf(stage || 'depot');
   return i < 0 ? order.length : i;
 }
@@ -10488,7 +10488,7 @@ function bivRowHtml(e, sub, newDate, extras) {
   });
   return h;
 }
-// Sort: latest date first, then (within a date) by stage (Recycled on top,
+// Sort: latest date first, then (within a date) by stage (stock check on top, then Recycled,
 // Depot at the bottom, see bivStageRank), then small above big, then by
 // flavour (Cardamom Sumac, Sumac, then the rest A–Z), then by notes.
 function bivSortedLog() {
