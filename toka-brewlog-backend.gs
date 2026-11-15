@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '61 (veloz: "order received" status)';
+var VERSION = '62 (freebies: complimentary or sample)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -666,7 +666,7 @@ function readAllIngredientPurchases_() {
 var SALES_SHEET = 'Sales';
 var SALES_LINES_SHEET = 'Sales lines';
 var CUSTOMERS_SHEET = 'Customers';
-var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary', 'delivery', 'delivery_fee', 'shopify_order', 'courier_ref', 'courier_status'];   // delivery_fee: paid to the courier, not toka revenue
+var ORDER_HEADERS = ['order_pk', 'invoice_no', 'order_date', 'customer_fk', 'customer_name', 'channel', 'paid', 'paid_date', 'deduct_stock', 'notes', 'complimentary', 'delivery', 'delivery_fee', 'shopify_order', 'courier_ref', 'courier_status', 'free_kind'];   // free_kind (complimentary orders): 'complimentary' (a client) or 'sample' (a prospect)   // delivery_fee: paid to the courier, not toka revenue
 var LINE_HEADERS = ['line_pk', 'order_fk', 'size', 'flavour', 'qty', 'unit_price', 'bottling', 'manual_price'];   // bottling: the batch sold (Bottle inventory key "<date>|<bottle IDs>"), empty = any
 var CUSTOMER_HEADERS = ['customer_pk', 'name', 'alias', 'type', 'contact_person', 'phone', 'email', 'address', 'area', 'reorder_days', 'notes', 'created_date', 'reached_out'];   // reached_out: date we last reached out about a reorder
 
@@ -735,7 +735,7 @@ function readAllOrders_() {
       id: String(o.order_pk), invoiceNo: String(o.invoice_no || ''), date: ymd_(o.order_date),
       customerId: String(o.customer_fk || ''), customerName: String(o.customer_name || ''),
       channel: String(o.channel || 'b2c').toLowerCase(), paid: truthy_(o.paid), paidDate: ymd_(o.paid_date),
-      deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''), complimentary: truthy_(o.complimentary),
+      deductStock: truthy_(o.deduct_stock), notes: String(o.notes || ''), complimentary: truthy_(o.complimentary), freeKind: truthy_(o.complimentary) ? (String(o.free_kind || '').toLowerCase() === 'sample' ? 'sample' : 'complimentary') : '',
       delivery: String(o.delivery || ''), deliveryFee: o.delivery_fee === '' || o.delivery_fee == null ? '' : o.delivery_fee, shopifyOrder: String(o.shopify_order || ''),
       courierRef: String(o.courier_ref || ''), courierStatus: String(o.courier_status || ''),
       lines: lines[String(o.order_pk)] || []
@@ -773,7 +773,7 @@ function saveOrder_(o, customer) {
     }
     var orow = rowFrom_({ order_pk: o.id, invoice_no: o.invoiceNo, order_date: o.date || '', customer_fk: o.customerId || '',
       customer_name: o.customerName || '', channel: String(o.channel || 'b2c').toLowerCase(), paid: o.paid ? 'yes' : '', paid_date: o.paidDate || '',
-      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '', complimentary: o.complimentary ? 'yes' : '',
+      deduct_stock: o.deductStock ? 'yes' : '', notes: o.notes || '', complimentary: o.complimentary ? 'yes' : '', free_kind: o.complimentary ? (o.freeKind === 'sample' ? 'sample' : 'complimentary') : '',
       delivery: String(o.delivery || '').toLowerCase(), delivery_fee: (o.deliveryFee == null ? '' : o.deliveryFee), shopify_order: o.shopifyOrder || '', courier_ref: o.courierRef || '', courier_status: String(o.courierStatus || '').toLowerCase() }, on, omap);
     var r = findRowByKey_(osh, omap, 'order_pk', o.id);
     if (r === -1) osh.appendRow(orow); else osh.getRange(r, 1, 1, on).setValues([orow]);
@@ -791,7 +791,7 @@ function saveOrder_(o, customer) {
       var irows = (o.lines || []).filter(function (l) { return parseFloat(l.qty) > 0; }).map(function (l) {
         // Complimentary bottles were given away, not sold: they leave the stock as 'consumed'.
         return buildBottleInvRow_({ id: Utilities.getUuid(), stage: o.complimentary ? 'consumed' : 'sold', date: o.date || '', size: invSizeLabel_(l.size), flavour: l.flavour || '',
-          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: (o.complimentary ? 'complimentary: ' : 'sold: ') + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
+          bottling: l.bottling || '', qty: -Math.abs(parseFloat(l.qty) || 0), notes: (o.complimentary ? (o.freeKind === 'sample' ? 'sample: ' : 'complimentary: ') : 'sold: ') + o.invoiceNo + ((o.customerLabel || o.customerName) ? ' · ' + (o.customerLabel || o.customerName) : ''), auto: true, orderId: o.id }, inN, imap);
       });
       if (irows.length) ish.getRange(ish.getLastRow() + 1, 1, irows.length, inN).setValues(irows);
     }
@@ -1019,17 +1019,19 @@ function buildBottleInvRow_(e, ncols, map) {
 // being complimentary. Runs on every read; only writes when something differs.
 function fixComplimentaryStock_() {
   var comp = {};
-  readSheetObjects_(getOrdersSheet_(), 'order_pk').forEach(function (o) { comp[String(o.order_pk)] = truthy_(o.complimentary); });
+  var kind = {};
+  readSheetObjects_(getOrdersSheet_(), 'order_pk').forEach(function (o) { comp[String(o.order_pk)] = truthy_(o.complimentary); kind[String(o.order_pk)] = String(o.free_kind || '').toLowerCase() === 'sample' ? 'sample: ' : 'complimentary: '; });
   var sh = getBottleInvSheet_(), map = headerMap_(sh), n = sh.getLastRow();
   if (n < 2 || map.order_fk == null || map.stage == null) return;
   var w = sh.getLastColumn(), vals = sh.getRange(2, 1, n - 1, w).getValues();
   vals.forEach(function (r, i) {
     var fk = String(r[map.order_fk] || ''), st = String(r[map.stage] || '');
     if (!fk || !(fk in comp) || (st !== 'sold' && st !== 'consumed')) return;
-    var want = comp[fk] ? 'consumed' : 'sold';
-    if (st === want) return;
-    sh.getRange(i + 2, map.stage + 1).setValue(want);
-    if (map.notes != null) sh.getRange(i + 2, map.notes + 1).setValue(String(r[map.notes] || '').replace(/^(sold|complimentary): /, want === 'consumed' ? 'complimentary: ' : 'sold: '));
+    var want = comp[fk] ? 'consumed' : 'sold', pre = comp[fk] ? kind[fk] : 'sold: ';
+    var note = String(r[map.notes] || ''), newNote = note.replace(/^(sold|complimentary|sample): /, pre);
+    if (st === want && newNote === note) return;
+    if (st !== want) sh.getRange(i + 2, map.stage + 1).setValue(want);
+    if (map.notes != null && newNote !== note) sh.getRange(i + 2, map.notes + 1).setValue(newNote);
   });
 }
 function readAllBottleInv_() {
