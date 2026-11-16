@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '62 (freebies: complimentary or sample)';
+var VERSION = '63 (expenses: paid back checkbox)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -1175,7 +1175,7 @@ function readAllExpenses_() {
     var obj = {};
     for (var j = 0; j < headers.length; j++) {
       var h = headers[j];
-      obj[h] = (h === 'date' && row[j] instanceof Date) ? ymd_(row[j]) : row[j];
+      obj[h] = ((h === 'date' || h === 'paidBack') && row[j] instanceof Date) ? ymd_(row[j]) : row[j];
     }
     obj._rowIndex = i + 1;
     out.push(obj);
@@ -1587,6 +1587,22 @@ function handleAction_(body) {
     return json_({ ok: false, error: 'Row not found' });
   }
 
+  // "Paid back" checkbox on Expenses: the date the person who paid was paid
+  // back (column paidBack, added when first used), or '' to clear it.
+  if (action === 'setExpensePaidBack') {
+    var pbSheet = getExpensesSheet_();
+    var pbHeaders = pbSheet.getRange(1, 1, 1, pbSheet.getLastColumn()).getValues()[0];
+    var pbCol = pbHeaders.indexOf('paidBack');
+    if (pbCol === -1) { pbCol = pbHeaders.length; pbSheet.getRange(1, pbCol + 1).setValue('paidBack').setFontWeight('bold'); }
+    var pbIds = pbSheet.getRange(1, pbHeaders.indexOf('id') + 1, pbSheet.getLastRow(), 1).getValues();
+    for (var pbi = 1; pbi < pbIds.length; pbi++) {
+      if (String(pbIds[pbi][0]) === String(body.id)) {
+        pbSheet.getRange(pbi + 1, pbCol + 1).setValue(body.paidBack ? String(body.paidBack) : '');
+        return json_({ ok: true });
+      }
+    }
+    return json_({ ok: false, error: 'Row not found' });
+  }
   if (action === 'updateExpense') {
     var ueSheet = getExpensesSheet_();
     var ueRows = ueSheet.getDataRange().getValues();

@@ -1555,6 +1555,8 @@
 #view-expenses .cell-edit:focus { outline: none; }
 #view-expenses select.cell-edit { padding: 5px 6px; }
 #view-expenses td.exp-ed { cursor: text; }
+#view-expenses td.paidback-cell { text-align: center; }
+#view-expenses td.paidback-cell input[type="checkbox"] { -webkit-appearance: checkbox; appearance: auto; width: 17px; height: 17px; min-width: 0; padding: 0; margin: 0; border: none; background: none; box-shadow: none; accent-color: var(--ink); cursor: pointer; vertical-align: middle; }
 #view-expenses td.exp-ed:hover { background: var(--terra-pale) !important; }
 #view-expenses #exp-date-filter-btn { color: var(--ink-faint); }
 #view-expenses #exp-date-filter-btn.active { color: var(--ink); }
@@ -2882,6 +2884,7 @@
               <th onclick="sortBy('name')">Item <span class="exp-sort-arrow" id="exp-s-name"></span></th>
               <th onclick="sortBy('vendor')">Paid to <span class="exp-sort-arrow" id="exp-s-vendor"></span></th>
               <th onclick="sortBy('amountUSD')">Amount <span class="exp-sort-arrow" id="exp-s-amountUSD"></span></th>
+              <th title="Has the person who paid been paid back?">Paid back</th>
               <th>Receipt</th>
               <th></th>
             </tr>
@@ -3883,6 +3886,23 @@ function stripAutoNote(notes, autoNote) {
 // rebuild a full 'update' payload from an existing expense record, the same
 // shape the inline-cell-edit feature already uses, so unspecified fields
 // are never accidentally blanked out
+// "Paid back" column: ticked when the person who paid (buyer) has been paid
+// back; the date is saved (hover shows it). Nothing to tick when Toka paid.
+function expPaidBackHtml(e) {
+  if (!e.buyer || String(e.buyer).toLowerCase() === 'toka') return '<span style="color:#d0c9bc">—</span>';
+  var d = e.paidBack ? expFmtDate(e.paidBack) : '';
+  return '<input type="checkbox" ' + (d ? 'checked ' : '') + 'title="' + (d ? 'paid back on ' + escHtml(d) : 'not paid back yet') + '" onclick="event.stopPropagation()" onchange="toggleExpensePaidBack(\'' + escHtml(e.id) + '\', this.checked)" />';
+}
+function toggleExpensePaidBack(id, on) {
+  var e = expenses.filter(function (x) { return String(x.id) === String(id); })[0];
+  if (!e) return;
+  var was = e.paidBack || '';
+  e.paidBack = on ? todayISO() : '';
+  renderExpTable();
+  apiPost({ action: 'setExpensePaidBack', id: e.id, paidBack: e.paidBack }, function (err, res) {
+    if (err || !res || !res.ok) { e.paidBack = was; renderExpTable(); toast('couldn’t save “paid back”. check your connection.'); }
+  });
+}
 function buildFullPatch(e, overrides) {
   var usd = getUSD(e);
   var patch = {
@@ -4227,6 +4247,7 @@ function renderExpTable() {
         + expCellEd('<strong>' + escHtml(e.name) + '</strong>' + (e.notes ? '<div class="desc-cell">' + escHtml(e.notes) + '</div>' : ''), { id: id, field: 'name',     input: 'text',   cls: 'item-cell' })
         + expCellEd(escHtml(e.vendor || ''),          { id: id, field: 'vendor',   input: 'text',   cls: 'desc-cell' })
         + expCellEd('<div class="usd">$' + fmtUSD(usd) + '</div><div class="lbp">' + fmtLBP(lbp) + ' LBP</div>', { id: id, field: 'amountUSD', input: 'number',  cls: 'amount-cell dual-cell' })
+        + '<td class="paidback-cell">' + expPaidBackHtml(e) + '</td>'
         + '<td style="text-align:center">' + receipt + '</td>'
         + '<td><div class="row-actions"><button class="btn-edit" onclick="openEditModal(\'' + id + '\')">edit</button><button class="btn btn-sm btn-danger" onclick="deleteExpense(\'' + id + '\')">✕</button></div></td>'
         + '</tr>';
@@ -4271,11 +4292,11 @@ function sortBy(key) {
 function exportCSV() {
   var filtered = getFiltered();
   if (!filtered.length) { toast('nothing to export.'); return; }
-  var rows = [['Date','Paid by','Category','Item','Paid to','USD','LBP','Rate at Entry','Notes','Receipt URL']];
+  var rows = [['Date','Paid by','Category','Item','Paid to','USD','LBP','Rate at Entry','Notes','Receipt URL','Paid back']];
   filtered.forEach(function(e) {
     var usd = getUSD(e), lbp = parseFloat(e.amountLBP) || Math.round(usd * rate);
     rows.push([expFmtDate(e.date), e.buyer||'', e.category, e.name, e.vendor||'',
-               usd.toFixed(2), lbp, e.rateAtEntry||rate, e.notes||'', e.receiptUrl||'']);
+               usd.toFixed(2), lbp, e.rateAtEntry||rate, e.notes||'', e.receiptUrl||'', e.paidBack ? expFmtDate(e.paidBack) : '']);
   });
   var csv = rows.map(function(r) {
     return r.map(function(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }).join(',');
