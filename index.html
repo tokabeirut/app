@@ -2884,8 +2884,8 @@
               <th onclick="sortBy('name')">Item <span class="exp-sort-arrow" id="exp-s-name"></span></th>
               <th onclick="sortBy('vendor')">Paid to <span class="exp-sort-arrow" id="exp-s-vendor"></span></th>
               <th onclick="sortBy('amountUSD')">Amount <span class="exp-sort-arrow" id="exp-s-amountUSD"></span></th>
-              <th title="Has the person who paid been paid back?">Paid back</th>
               <th>Receipt</th>
+              <th title="Has the person who paid been paid back?">Paid back</th>
               <th></th>
             </tr>
           </thead>
@@ -4247,8 +4247,8 @@ function renderExpTable() {
         + expCellEd('<strong>' + escHtml(e.name) + '</strong>' + (e.notes ? '<div class="desc-cell">' + escHtml(e.notes) + '</div>' : ''), { id: id, field: 'name',     input: 'text',   cls: 'item-cell' })
         + expCellEd(escHtml(e.vendor || ''),          { id: id, field: 'vendor',   input: 'text',   cls: 'desc-cell' })
         + expCellEd('<div class="usd">$' + fmtUSD(usd) + '</div><div class="lbp">' + fmtLBP(lbp) + ' LBP</div>', { id: id, field: 'amountUSD', input: 'number',  cls: 'amount-cell dual-cell' })
-        + '<td class="paidback-cell">' + expPaidBackHtml(e) + '</td>'
         + '<td style="text-align:center">' + receipt + '</td>'
+        + '<td class="paidback-cell">' + expPaidBackHtml(e) + '</td>'
         + '<td><div class="row-actions"><button class="btn-edit" onclick="openEditModal(\'' + id + '\')">edit</button><button class="btn btn-sm btn-danger" onclick="deleteExpense(\'' + id + '\')">✕</button></div></td>'
         + '</tr>';
     }).join('');
@@ -7575,8 +7575,56 @@ function startInline(td) {
 }
 // Bottle inventory: change the batch of a consumed row. The pick sets the
 // row's batch, flavour and size together (same list as the movement form).
+// Sold row: only the batch can change (flavour and size belong to the order).
+function soldBatchOptionsHtml(rec) {
+  var fl = String(rec.flavour || '').toLowerCase(), sz = rec.size || '';
+  var h = '<option value=""' + (rec.bottling ? '' : ' selected') + '>oldest batch first</option>';
+  var found = !rec.bottling;
+  bivBottlings().slice().reverse().forEach(function (g) {
+    if (String(g.flavour).toLowerCase() !== fl || !(g.made[sz] > 0)) return;
+    var left = g.left[sz] || 0, isCur = g.key === rec.bottling;
+    if (isCur) found = true;
+    if (left <= 0 && !isCur) return;
+    h += '<option value="' + esc(g.key) + '"' + (isCur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
+  });
+  if (!found) h += '<option value="' + esc(rec.bottling) + '" selected>' + esc(bivBottlingRefName(rec.bottling)) + '</option>';
+  return h;
+}
+function saveSoldRowBatch(rec, bottling) {
+  var o = findOrder(rec.orderId);
+  if (!o) { alert('The order of this row wasn’t found.'); renderBottleInventory(); return; }
+  var q = Math.abs(parseFloat(rec.qty) || 0), fl = String(rec.flavour || '').toLowerCase();
+  function same(l) { return String(rec.size || '').toLowerCase().indexOf(String(l.size)) !== -1 && String(l.flavour || '').toLowerCase() === fl && Math.abs(parseFloat(l.qty) || 0) === q; }
+  var line = (o.lines || []).filter(function (l) { return same(l) && String(l.bottling || '') === String(rec.bottling || ''); })[0]
+    || (o.lines || []).filter(same)[0];
+  if (!line) { alert('Couldn’t match this row to a line of order ' + (o.invoiceNo || '') + '. Open the order and save it once, then try again.'); renderBottleInventory(); return; }
+  line.bottling = bottling;
+  rec.bottling = bottling;
+  renderBottleInventory();
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: 'saveOrder', order: JSON.parse(JSON.stringify(o)) }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); }
+    else setSyncStatus('live', 'connected \u00b7 google sheets');
+    loadBottleInventory(function () { renderBottleInventory(); });
+  });
+}
 function startBatchInline(td, rec) {
   var el = document.createElement('select'); el.className = 'cell-edit';
+  if (rec.stage === 'sold' && rec.orderId) {
+    el.innerHTML = soldBatchOptionsHtml(rec);
+    var cur0 = el.value;
+    mountCellEditor(td, el);
+    var done0 = false;
+    var fin0 = function (save) {
+      if (done0) return; done0 = true; editingCell = false;
+      if (!save || el.value === cur0) { renderBottleInventory(); return; }
+      saveSoldRowBatch(rec, el.value);
+    };
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); fin0(true); } else if (e.key === 'Escape') { e.preventDefault(); fin0(false); } });
+    el.addEventListener('blur', function () { fin0(true); });
+    el.addEventListener('change', function () { fin0(true); });
+    return;
+  }
   el.innerHTML = bivBatchOptionsHtml(rec.bottling || '', rec.flavour || '', rec.size || '');
   var curV = el.value;
   mountCellEditor(td, el);
@@ -10171,7 +10219,17 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   var keep = (!matched && (selBottling || selFlavour)) ? '<option value="' + esc(cur) + '" selected>' + esc(productName(selFlavour || '') + ' ' + bivSizeShort(selSize || '') + (selBottling ? ' · ' + bivBottlingRefName(selBottling) : ' — any batch') + ' (as saved)') + '</option>' : '';
   // Orders: no batch choice, bottles always come off the oldest batch first
   // (a line saved earlier with a specific batch keeps it, shown "as saved").
-  if (sellOnly) return keep + any.replace(/ — any batch/g, '');
+  // A line whose batch was set in Bottle inventory keeps it, but Sales only
+  // shows the product: that option carries the batch in its value.
+  if (sellOnly) {
+    if (selBottling) {
+      var plainV = '||' + String(selFlavour || '').toLowerCase() + '||' + (selSize || '');
+      var re = new RegExp('<option value="' + esc(plainV).replace(/[|.*+?^${}()\[\]\\]/g, '\\$&') + '"[^>]*>', 'i');
+      if (re.test(any)) return any.replace(re, '<option value="' + esc(cur) + '" selected>').replace(/ — any batch/g, '');
+      return '<option value="' + esc(cur) + '" selected>' + esc(productName(selFlavour || '') + ' ' + bivSizeShort(selSize || '')) + '</option>' + any.replace(/ — any batch/g, '');
+    }
+    return keep + any.replace(/ — any batch/g, '');
+  }
   return keep + '<optgroup label="any batch (oldest first)">' + any + '</optgroup>' + (h ? '<optgroup label="batches">' + h + '</optgroup>' : '');
 }
 function bivParseBatch(v) {
@@ -10533,13 +10591,14 @@ function bivPairs() {
   return { autoOf: autoOf, partnerOf: partnerOf };
 }
 // Flavour cell. Consumed rows: click to pick the batch (sets flavour + size
-// too). Sold rows come from a Sales order, so a click opens that order,
-// where the batch is changed per line. Other rows: flavour select.
+// too). Sold rows (from a Sales order): click to pick which batch the bottles
+// came from; it is saved on the order line (not shown in Sales) so it stays
+// when the order is saved again. Other rows: flavour select.
 function bivFlavourCellHtml(e) {
   var inner = esc(productName(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
-  if ((e.stage === 'sold' || e.stage === 'consumed') && e.orderId) return '<td class="biv-sold-batch" onclick="openOrderDrawer(\'' + esc(e.orderId) + '\')" title="Open the order">' + inner + '</td>';
+  if (e.stage === 'sold' && e.orderId) return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
   return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
 }
 function bivRowHtml(e, sub, newDate, extras) {
