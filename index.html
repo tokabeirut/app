@@ -393,6 +393,7 @@
   .biv-stat-btlrow.biv-btl-link .biv-btl-id { color: var(--terra); }
   .biv-stat-btlrow.biv-btl-link:hover .biv-btl-id { text-decoration: underline; }
   .biv-sold-batch { cursor: pointer; }
+  .biv-batch-fifo { font-style: italic; }
   .biv-batch-ref { font-family: 'DM Sans', sans-serif; font-size: 0.75rem; color: var(--ink-faint); margin-top: 2px; }
   .biv-stat-btlval { font-size: 0.72rem; color: var(--ink-faint); font-family: 'DM Sans', sans-serif; font-weight: 400; letter-spacing: 0.03em; font-variant-numeric: tabular-nums lining-nums; text-align: right; }
   /* Auto-generated counterpart rows (the debit half of a depot->atelier
@@ -10093,6 +10094,14 @@ function bivToggleAllFlavours() {
 // row that names its bottling (e.bottling = the bottling's key) comes off
 // that bottling; the rest come off the oldest bottlings of that flavour
 // first (first in, first out). Newest bottling first.
+// Which batch(es) the oldest-first rule took each sold/consumed row from
+// (rows that don't name a batch), filled in by bivBottlings().
+var bivFifoAlloc = {};
+function bivFifoText(e) {
+  var a = bivFifoAlloc[e.id];
+  if (!a || !a.length) return '';
+  return a.map(function (x) { return bivBottlingRefName(x[0]) + (a.length > 1 ? ' ×' + fmtNum(x[1]) : ''); }).join(' + ');
+}
 function bivBottlings() {
   var groups = {}, order = [];
   bottleInventory.forEach(function (e) {
@@ -10124,14 +10133,15 @@ function bivBottlings() {
     else if (st === 'check') ev.push({ d: e.date || '', o: 2, i: idx, e: e });
   });
   ev.sort(function (a, c) { return a.d < c.d ? -1 : a.d > c.d ? 1 : (a.o - c.o) || (a.i - c.i); });
-  var debt = {};
-  function fifo(fl, sz, q) {
+  var debt = {}, alloc = {};   // alloc: row id → [[bottling key, bottles], …] for rows without a batch
+  function note(id, key, n) { if (!id || !n) return; (alloc[id] = alloc[id] || []).push([key, n]); }
+  function fifo(fl, sz, q, id) {
     for (var i = 0; i < list.length && q > 0; i++) {
       var g = list[i];
       if (flk(g.flavour) !== flk(fl) || !(g.left[sz] > 0)) continue;
-      var t = Math.min(q, g.left[sz]); g.left[sz] -= t; q -= t;
+      var t = Math.min(q, g.left[sz]); g.left[sz] -= t; q -= t; note(id, g.key, t);
     }
-    if (q > 0) debt[flk(fl) + '|' + sz] = (debt[flk(fl) + '|' + sz] || 0) + q;
+    if (q > 0) (debt[flk(fl) + '|' + sz] = debt[flk(fl) + '|' + sz] || []).push({ id: id, q: q });
   }
   ev.forEach(function (x) {
     var e = x.e, fl = e.flavour || '(unspecified)', sz = e.size || '(unspecified)', q = parseFloat(e.qty) || 0, g;
@@ -10140,19 +10150,24 @@ function bivBottlings() {
       g = find((e.date || '') + '|' + (m ? m[1] : 'filled by hand'), fl);
       if (!g) return;
       g.left[sz] = (g.left[sz] || 0) + q;
-      var dk = flk(fl) + '|' + sz, owed = debt[dk] || 0;
-      if (owed > 0) { var t = Math.min(owed, Math.max(0, g.left[sz])); g.left[sz] -= t; debt[dk] = owed - t; }
+      var dk = flk(fl) + '|' + sz, owed = debt[dk] || [];
+      while (owed.length && g.left[sz] > 0) {
+        var d = owed[0], t = Math.min(d.q, g.left[sz]);
+        g.left[sz] -= t; d.q -= t; note(d.id, g.key, t);
+        if (d.q <= 0) owed.shift();
+      }
     } else if (x.o === 1) {
       q = Math.abs(q);
       g = e.bottling ? find(e.bottling, fl) : null;
       if (g) { var take = Math.min(q, Math.max(0, g.left[sz] || 0)); g.left[sz] = (g.left[sz] || 0) - take; q -= take; }
-      if (q > 0) fifo(fl, sz, q);
+      if (q > 0) fifo(fl, sz, q, e.id);
     } else {
       g = e.bottling ? find(e.bottling, fl) : null;
       if (g) g.left[sz] = Math.max(0, (g.left[sz] || 0) + q);
     }
   });
   list.forEach(function (g) { Object.keys(g.made).forEach(function (sz) { if (g.left[sz] == null) g.left[sz] = 0; }); });
+  bivFifoAlloc = alloc;
   return list.reverse();
 }
 // "2026-10-20|BTL-…-CS" -> "BTL-…-CS" (for a stored bottling key).
@@ -10596,7 +10611,7 @@ function bivPairs() {
 // when the order is saved again. Other rows: flavour select.
 function bivFlavourCellHtml(e) {
   var inner = esc(productName(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
-    : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref">any batch</div>' : ''));
+    : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref biv-batch-fifo" title="no batch chosen: taken from the oldest batch first">' + (bivFifoText(e) ? esc(bivFifoText(e)) + ' · oldest first' : 'any batch') + '</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
   if (e.stage === 'sold' && e.orderId) return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
   return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
@@ -10852,6 +10867,7 @@ function bivLogTableHtml() {
 function renderBottleInventory() {
   var body = document.getElementById('biv-body');
   if (!body) return;
+  bivBottlings();   // fills bivFifoAlloc for the "oldest first" batch under each row
   body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml() + bivLabelsHtml();
 }
 // Label count (front + back pairs). Every bottle filled from the start date
