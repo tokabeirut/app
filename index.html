@@ -5874,12 +5874,7 @@ function batchBranchNoteHtml(b) {
   var p = b.parentUid ? batchByUid(b.parentUid) : null;
   // e.g. "split off TANK 2 on 27 Oct · 4 L"
   if (b.parentUid) lines.push('split off ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitDate ? ' on ' + String(fmtDate(b.splitDate)).replace(/\s+\d{4}$/, '') : '') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : ''));
-  function shortName(x) { return (x.vessel || x.id) + (x.date ? ' (' + String(fmtDate(x.date)).replace(/\s+\d{4}$/, '') + ')' : ''); }
-  var srcs = starterSources(b);
-  if (srcs.length) lines.push('scoby from ' + srcs.map(function (s) { var st = batchByUid(s.uid); return (st ? shortName(st) : 'deleted batch') + (s.l !== '' && srcs.length > 1 ? ' · ' + fmtNum(parseFloat(s.l) || 0) + ' L' : ''); }).join(' + '));
-  var used = [];
-  batches.forEach(function (x) { starterSources(x).forEach(function (s) { if (String(s.uid) === String(b.uid)) used.push(shortName(x) + (s.l !== '' ? ' · ' + fmtNum(parseFloat(s.l) || 0) + ' L' : '')); }); });
-  if (used.length) lines.push('scoby used for ' + used.join(', '));
+  // SCOBY sources are saved (starterUid) and shown in the edit drawer only.
   var kids = batchBranches(b);
   if (kids.length) {
     lines.push(kids.map(function (k) { return fmtNum(parseFloat(k.splitLitres) || 0) + ' L \u2192 ' + (k.vessel || k.id); }).join(', ')
