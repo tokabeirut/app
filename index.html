@@ -217,13 +217,11 @@
   .f1-table th:nth-child(2), .f1-table td:nth-child(2) { width: 75px; }
   .f1-table th:nth-child(3), .f1-table td:nth-child(3) { width: 110px; }
   .f1-table th:nth-child(4), .f1-table td:nth-child(4) { width: 75px; }
-  .f1-table th:nth-child(5), .f1-table td:nth-child(5) { width: 105px; }
-  .f1-table th:nth-child(6), .f1-table td:nth-child(6) { width: 80px; }
-  .f1-table th:nth-child(7), .f1-table td:nth-child(7) { width: 115px; }
-  .f1-table th:nth-child(8), .f1-table td:nth-child(8) { width: 60px; }
-  .f1-table th:nth-child(9), .f1-table td:nth-child(9) { width: 170px; }
-  .f1-table th:nth-child(10), .f1-table td:nth-child(10) { width: 75px; }
-  .f1-table th:nth-child(11), .f1-table td:nth-child(11) { width: 100px; }
+  .f1-table th:nth-child(5), .f1-table td:nth-child(5) { width: 175px; }   /* sugar: type • kg */
+  .f1-table th:nth-child(6), .f1-table td:nth-child(6) { width: 165px; }   /* tea: type • g */
+  .f1-table th:nth-child(7), .f1-table td:nth-child(7) { width: 170px; }
+  .f1-table th:nth-child(8), .f1-table td:nth-child(8) { width: 75px; }
+  .f1-table th:nth-child(9), .f1-table td:nth-child(9) { width: 100px; }
   .bottling-table { table-layout: fixed; min-width: 1391px; width: 1391px; width: max(1391px, 100%); }
   /* 210px: room for a group row like "▸ BTL-20260728-104→107". */
   .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 210px; }
@@ -1644,6 +1642,7 @@
   .sc-src-row .sc-src-sel { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
   .sc-src-row .sc-src-l { width: 70px; -webkit-flex: 0 0 70px; flex: 0 0 70px; }
   .sc-add-src { margin-top: 2px; }
+  .f1-branch-note.f1-left { color: #C4613A; }   /* terracotta, like the split arrow */
   .jar-mark { display: inline-block; width: 13px; height: 13px; margin-right: 6px; vertical-align: -1px; color: #C4613A; }   /* terracotta accent */
   .jar-mark svg { width: 13px; height: 13px; display: block; -webkit-transform: rotate(90deg); transform: rotate(90deg); }   /* arrows point right */
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
@@ -1813,8 +1812,8 @@
         <thead>
           <tr>
             <th>Batch ID</th><th>Volume</th><th>Created on</th><th>Vessel</th>
-            <th>Sugar type</th><th>Sugar</th>
-            <th>Tea type</th><th>Tea</th>
+            <th>Sugar</th>
+            <th>Tea</th>
             <th>Water (hot / cold)</th>
             <th>SCOBY</th><th></th>
           </tr>
@@ -1835,8 +1834,8 @@
           <thead>
             <tr>
               <th>Batch ID</th><th>Volume</th><th>Created on</th><th>Vessel</th>
-              <th>Sugar type</th><th>Sugar</th>
-              <th>Tea type</th><th>Tea</th>
+              <th>Sugar</th>
+              <th>Tea</th>
               <th>Water (hot / cold)</th>
               <th>SCOBY</th><th></th>
             </tr>
@@ -5801,6 +5800,13 @@ function jarMark(v) {
   return isJarVessel(v) ? '<span class="jar-mark" title="jar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 15V9"/><path d="M8 9L3.5 3.5"/><path d="M8 9l4.5-5.5"/><path d="M3 6.5V3h3.5"/><path d="M13 6.5V3H9.5"/></svg></span>' : '';
 }
 function vesselHtml(v) { var t = String(v || ''); return t ? esc(t) : '\u2014'; }
+function typeAmountHtml(type, amount) {
+  var t = String(type || '').replace(/\s*\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim();
+  var a = String(amount || '').trim();
+  if (a === '\u2014' || a === '') a = '';
+  if (!t && !a) return '<span class="muted">\u2014</span>';
+  return '<span title="' + esc(String(type || '')) + '">' + esc(t) + (t && a ? ' \u2022 ' : '') + esc(a) + '</span>';
+}
 function rowHtml(b) {
   var u = esc(b.uid);
   var lineageBtn = '';   // Lineage page removed
@@ -5817,10 +5823,10 @@ function rowHtml(b) {
     + cellEd(((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014') + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
-    + cellEd(ellipNoParen(b.sugarSource, 130), { type: 'batch', uid: b.uid, field: 'sugarSource', input: 'text' })
-    + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
-    + cellEd(ellipNoParen(b.teaType, 140), { type: 'batch', uid: b.uid, field: 'teaType', input: 'text' })
-    + cellEd(fmtTea(b.tea), { type: 'batch', uid: b.uid, field: 'tea', input: 'number', cls: 'num' })
+    // Sugar and tea: "type • amount" in one cell; a click edits the amount,
+    // the type is changed in the edit drawer.
+    + cellEd(typeAmountHtml(b.sugarSource, fmtQty(b.sugar, 'kg')), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number' })
+    + cellEd(typeAmountHtml(b.teaType, fmtTea(b.tea)), { type: 'batch', uid: b.uid, field: 'tea', input: 'number' })
     + waterCellHtml(b)
     + cellEd(fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
     + '<td class="row-actions">' + actions + '</td>'
@@ -5919,7 +5925,7 @@ function batchRemainingL(b) {
 // just "→ 15 L" (what is left in it). Split-off details live in the edit drawer.
 function batchBranchNoteHtml(b) {
   if (!batchBranches(b).length || !(batchTotalL(b) > 0)) return '';
-  return '<div class="f1-branch-note">' + esc('\u2192 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L') + '</div>';
+  return '<div class="f1-branch-note f1-left">' + esc('\u2192 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L') + '</div>';
 }
 function splitIconSvg() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="12" r="2"></circle><path d="M6 7v10"></path><path d="M6 9c0 3 4 3 10 3"></path></svg>';
