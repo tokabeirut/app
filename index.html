@@ -5799,8 +5799,8 @@ function rowHtml(b) {
       + '<button class="icon-btn" title="Archive" onclick="setArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>';
   return '<tr data-uid="' + esc(b.uid) + '">'
-    + cellEd(jarMark(b.vessel) + esc(b.id) + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
-    + cellEd((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014', { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
+    + cellEd(jarMark(b.vessel) + esc(b.id), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
+    + cellEd(((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014') + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
     + cellEd(ellipNoParen(b.sugarSource, 130), { type: 'batch', uid: b.uid, field: 'sugarSource', input: 'text' })
@@ -5901,8 +5901,8 @@ function batchBranches(b) { return batches.filter(function (x) { return x.parent
 function batchRemainingL(b) {
   return batchTotalL(b) - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0);
 }
-// Under the batch ID of a batch that had something split off: just
-// "→ 15 L left". Split-off details live in the edit drawer.
+// Under the total (Total column) of a batch that had something split off:
+// just "→ 15 L left". Split-off details live in the edit drawer.
 function batchBranchNoteHtml(b) {
   if (!batchBranches(b).length || !(batchTotalL(b) > 0)) return '';
   return '<div class="f1-branch-note">' + esc('\u2192 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L left') + '</div>';
