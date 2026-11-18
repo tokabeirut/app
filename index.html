@@ -210,6 +210,20 @@
      an iPhone every column's text spilled over the next one (letters even
      stacking vertically) instead of the table scrolling sideways. Now it
      fills the screen on a laptop and scrolls sideways on a phone. */
+  /* First fermentation tables: fixed widths so no column (e.g. sugar type)
+     soaks up the spare width. */
+  .f1-table { table-layout: fixed; min-width: 1150px; width: 100%; }
+  .f1-table th:nth-child(1), .f1-table td:nth-child(1) { width: 185px; }
+  .f1-table th:nth-child(2), .f1-table td:nth-child(2) { width: 75px; }
+  .f1-table th:nth-child(3), .f1-table td:nth-child(3) { width: 110px; }
+  .f1-table th:nth-child(4), .f1-table td:nth-child(4) { width: 75px; }
+  .f1-table th:nth-child(5), .f1-table td:nth-child(5) { width: 105px; }
+  .f1-table th:nth-child(6), .f1-table td:nth-child(6) { width: 80px; }
+  .f1-table th:nth-child(7), .f1-table td:nth-child(7) { width: 115px; }
+  .f1-table th:nth-child(8), .f1-table td:nth-child(8) { width: 60px; }
+  .f1-table th:nth-child(9), .f1-table td:nth-child(9) { width: 170px; }
+  .f1-table th:nth-child(10), .f1-table td:nth-child(10) { width: 75px; }
+  .f1-table th:nth-child(11), .f1-table td:nth-child(11) { width: 100px; }
   .bottling-table { table-layout: fixed; min-width: 1391px; width: 1391px; width: max(1391px, 100%); }
   /* 210px: room for a group row like "▸ BTL-20260728-104→107". */
   .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 210px; }
@@ -1795,7 +1809,7 @@
   </div>
   <div class="table-wrap">
     <div class="table-scroll">
-      <table>
+      <table class="f1-table">
         <thead>
           <tr>
             <th>Batch ID</th><th>Volume</th><th>Created on</th><th>Vessel</th>
@@ -1817,7 +1831,7 @@
     </div>
     <div class="table-wrap">
       <div class="table-scroll">
-        <table>
+        <table class="f1-table">
           <thead>
             <tr>
               <th>Batch ID</th><th>Volume</th><th>Created on</th><th>Vessel</th>
