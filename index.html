@@ -1626,6 +1626,10 @@
   .sales-table.gifts-table th:nth-child(4), .sales-table.gifts-table td:nth-child(4) { width: 80px; }
   .sales-table.gifts-table th:nth-child(5), .sales-table.gifts-table td:nth-child(5) { width: auto; }
   .sales-table.gifts-table th:nth-child(6), .sales-table.gifts-table td:nth-child(6) { width: 80px; }
+  .sc-src-row { display: -webkit-flex; display: flex; gap: 8px; -webkit-align-items: center; align-items: center; margin-bottom: 6px; }
+  .sc-src-row .sc-src-sel { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
+  .sc-src-row .sc-src-l { width: 70px; -webkit-flex: 0 0 70px; flex: 0 0 70px; }
+  .sc-add-src { margin-top: 2px; }
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
@@ -3171,8 +3175,9 @@
         <input type="number" id="f-starter" min="0" step="0.001" placeholder="e.g. 20" />
       </div>
       <div class="form-group">
-        <label for="f-starter-from">SCOBY from</label>
-        <select id="f-starter-from"></select>
+        <label>SCOBY from</label>
+        <div id="f-starter-from"></div>
+        <button type="button" class="btn-ghost sc-add-src" onclick="addStarterSourceRow('', '')">+ add a scoby</button>
       </div>
     </div>
 
@@ -5612,7 +5617,7 @@ function openEdit(u) {
   document.getElementById('f-cold').value = (b.coldWater != null ? b.coldWater : '');
   document.getElementById('f-water-src').value = b.waterSource || '';
   document.getElementById('f-starter').value = (b.starter != null ? b.starter : '');
-  document.getElementById('f-starter-from').innerHTML = starterFromOptionsHtml(b.starterUid || '', b.uid);
+  renderStarterSources(starterSources(b), b.uid);
   document.getElementById('f-notes').value = b.notes || '';
   document.getElementById('add-drawer').classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
@@ -5630,7 +5635,7 @@ function resetForm() {
   document.getElementById('f-cold').value = '';
   document.getElementById('f-water-src').value = 'Filter';
   document.getElementById('f-starter').value = '';
-  document.getElementById('f-starter-from').innerHTML = starterFromOptionsHtml('', '');
+  renderStarterSources([], '');
   document.getElementById('f-notes').value = '';
   maybeAutoId();
 }
@@ -5667,7 +5672,7 @@ function saveBatch() {
     coldWater: val('f-cold').trim(),
     waterSource: val('f-water-src').trim(),
     starter: val('f-starter').trim(),
-    starterUid: val('f-starter-from'),
+    starterUid: readStarterSources(),
     notes: val('f-notes').trim(),
     archived: isEdit ? origArchived : false,
     // Not in the drawer — carried over so editing never drops them.
@@ -5811,8 +5816,42 @@ function batchTotalL(b) {
   if (!isNaN(t) && t > 0) return t;
   return (parseFloat(b.hotWater) || 0) + (parseFloat(b.coldWater) || 0) + (parseFloat(b.starter) || 0);
 }
-// "SCOBY from": the batch (usually a jar split off a tank) whose SCOBY
-// started this one. Split-offs and jars first, newest first.
+// "SCOBY from": the batch(es) (usually jars split off a tank) whose SCOBY
+// started this one, with litres each: saved as "uid:4;uid:2" in starterUid
+// (sheet column starter_f1_pk). An older single uid = all of b.starter.
+function starterSources(b) {
+  var raw = String((b && b.starterUid) || '').trim();
+  if (!raw) return [];
+  if (raw.indexOf(':') === -1 && raw.indexOf(';') === -1) return [{ uid: raw, l: (b.starter != null ? String(b.starter) : '') }];
+  return raw.split(';').map(function (p) { var i = p.lastIndexOf(':'); return i === -1 ? { uid: p.trim(), l: '' } : { uid: p.slice(0, i).trim(), l: p.slice(i + 1).trim() }; })
+    .filter(function (x) { return x.uid; });
+}
+var starterSelfUid = '';
+function renderStarterSources(list, selfUid) {
+  starterSelfUid = selfUid || '';
+  document.getElementById('f-starter-from').innerHTML = '';
+  (list.length ? list : [{ uid: '', l: '' }]).forEach(function (x) { addStarterSourceRow(x.uid, x.l); });
+}
+function addStarterSourceRow(uid, l) {
+  var wrap = document.getElementById('f-starter-from'), row = document.createElement('div');
+  row.className = 'sc-src-row';
+  row.innerHTML = '<select class="sc-src-sel" onchange="syncStarterTotal()">' + starterFromOptionsHtml(uid, starterSelfUid) + '</select>'
+    + '<input type="number" class="sc-src-l" min="0" step="0.1" placeholder="L" value="' + esc(l || '') + '" oninput="syncStarterTotal()" />'
+    + '<button type="button" class="icon-btn" title="Remove" onclick="this.parentNode.remove(); syncStarterTotal()">&times;</button>';
+  wrap.appendChild(row);
+}
+function readStarterSources() {
+  return [].map.call(document.querySelectorAll('#f-starter-from .sc-src-row'), function (r) {
+    var u = r.querySelector('.sc-src-sel').value, l = r.querySelector('.sc-src-l').value.trim();
+    return u ? u + ':' + l : '';
+  }).filter(Boolean).join(';');
+}
+// SCOBY (L) follows the sum of the litres per scoby when those are filled in.
+function syncStarterTotal() {
+  var sum = 0, any = false;
+  [].forEach.call(document.querySelectorAll('#f-starter-from .sc-src-l'), function (i) { var v = parseFloat(i.value); if (!isNaN(v)) { sum += v; any = true; } });
+  if (any) document.getElementById('f-starter').value = Math.round(sum * 1000) / 1000;
+}
 function starterFromOptionsHtml(sel, selfUid) {
   var list = batches.filter(function (x) { return String(x.uid) !== String(selfUid || ''); })
     .sort(function (a, c) { return String(c.date || '').localeCompare(String(a.date || '')); });
@@ -5835,9 +5874,12 @@ function batchBranchNoteHtml(b) {
   var p = b.parentUid ? batchByUid(b.parentUid) : null;
   // e.g. "split off TANK 2 on 27 Oct · 4 L"
   if (b.parentUid) lines.push('split off ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitDate ? ' on ' + String(fmtDate(b.splitDate)).replace(/\s+\d{4}$/, '') : '') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : ''));
-  if (b.starterUid) { var st = batchByUid(b.starterUid); lines.push('scoby from ' + (st ? (st.vessel || st.id) + (st.date ? ' (' + String(fmtDate(st.date)).replace(/\s+\d{4}$/, '') + ')' : '') : 'deleted batch')); }
-  var used = batches.filter(function (x) { return x.starterUid && String(x.starterUid) === String(b.uid); });
-  if (used.length) lines.push('scoby used for ' + used.map(function (x) { return (x.vessel || x.id) + (x.date ? ' (' + String(fmtDate(x.date)).replace(/\s+\d{4}$/, '') + ')' : ''); }).join(', '));
+  function shortName(x) { return (x.vessel || x.id) + (x.date ? ' (' + String(fmtDate(x.date)).replace(/\s+\d{4}$/, '') + ')' : ''); }
+  var srcs = starterSources(b);
+  if (srcs.length) lines.push('scoby from ' + srcs.map(function (s) { var st = batchByUid(s.uid); return (st ? shortName(st) : 'deleted batch') + (s.l !== '' && srcs.length > 1 ? ' · ' + fmtNum(parseFloat(s.l) || 0) + ' L' : ''); }).join(' + '));
+  var used = [];
+  batches.forEach(function (x) { starterSources(x).forEach(function (s) { if (String(s.uid) === String(b.uid)) used.push(shortName(x) + (s.l !== '' ? ' · ' + fmtNum(parseFloat(s.l) || 0) + ' L' : '')); }); });
+  if (used.length) lines.push('scoby used for ' + used.join(', '));
   var kids = batchBranches(b);
   if (kids.length) {
     lines.push(kids.map(function (k) { return fmtNum(parseFloat(k.splitLitres) || 0) + ' L \u2192 ' + (k.vessel || k.id); }).join(', ')
