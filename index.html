@@ -5901,18 +5901,9 @@ function batchBranches(b) { return batches.filter(function (x) { return x.parent
 function batchRemainingL(b) {
   return batchTotalL(b) - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0);
 }
-function batchBranchNoteHtml(b) {
-  var lines = [];
-  var p = b.parentUid ? batchByUid(b.parentUid) : null;
-  // The "split off TANK 2 on …" details are in the edit drawer (Split off section).
-  // SCOBY sources are saved (starterUid) and shown in the edit drawer only.
-  var kids = batchBranches(b);
-  if (kids.length) {
-    lines.push(kids.map(function (k) { return fmtNum(parseFloat(k.splitLitres) || 0) + ' L \u2192 ' + (k.vessel || k.id); }).join(', ')
-      + (batchTotalL(b) > 0 ? ' \u00b7 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L left' : ''));
-  }
-  return lines.map(function (l) { return '<div class="f1-branch-note">' + esc(l) + '</div>'; }).join('');
-}
+// No notes under the batch ID any more: split-off details live in the edit
+// drawer, and the "4 L → JAR 3 · 15 L left" line is not shown.
+function batchBranchNoteHtml(b) { return ''; }
 function splitIconSvg() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="12" r="2"></circle><path d="M6 7v10"></path><path d="M6 9c0 3 4 3 10 3"></path></svg>';
 }
