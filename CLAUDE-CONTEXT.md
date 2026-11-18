@@ -193,3 +193,4 @@ subtotal={{ subtotal_price }}<br>
 - **SCOBY from, several** (index v138, no backend change): `starterUid` now holds a list "uid:litres;uid:litres" (an old single uid = all of SCOBY (L)), read by `starterSources(b)`. Drawer: one row per scoby (batch select + litres + ×), "+ add a scoby"; SCOBY (L) follows the sum of the litres (`syncStarterTotal`). Notes: "scoby from JAR 3 (27 Oct) · 4 L + JAR 5 (30 Oct) · 2 L"; source batch: "scoby used for TANK 1 (17 Nov) · 4 L".
 - SCOBY from is not shown in the first fermentation table (index v141): only saved, visible in the batch's edit drawer.
 - First fermentation and infusion tables (index v143): jar rows recede (`tr.row-jar`: page-cream background, warm grey text); tank rows stay white with dark text. `isJarVessel(v)`.
+- SCOBY from options show just the batch ID (index v144).

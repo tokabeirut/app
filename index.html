@@ -5865,7 +5865,7 @@ function starterFromOptionsHtml(sel, selfUid) {
   function isJar(x) { return !!x.parentUid || /^JAR/i.test(String(x.vessel || '')); }
   function opt(x) {
     return '<option value="' + esc(x.uid) + '"' + (String(x.uid) === String(sel) ? ' selected' : '') + '>'
-      + esc((x.vessel || '?') + ' · ' + fmtDate(x.date) + (x.id ? ' · ' + x.id : '') + (x.archived ? ' (archived)' : '')) + '</option>';
+      + esc(x.id || ((x.vessel || '?') + ' · ' + fmtDate(x.date))) + '</option>';
   }
   var jars = list.filter(isJar), rest = list.filter(function (x) { return !isJar(x); });
   return '<option value="">&mdash;</option>'
