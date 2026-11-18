@@ -5940,14 +5940,26 @@ function starterFromOptionsHtml(sel, selfUid) {
     + (rest.length ? '<optgroup label="other batches">' + rest.map(opt).join('') + '</optgroup>' : '');
 }
 function batchBranches(b) { return batches.filter(function (x) { return x.parentUid && String(x.parentUid) === String(b.uid); }); }
-function batchRemainingL(b) {
-  return batchTotalL(b) - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0);
+// Litres of this batch used as SCOBY in other batches ("SCOBY from" with litres).
+function batchScobyOutL(b) {
+  var n = 0;
+  batches.forEach(function (x) { starterSources(x).forEach(function (s) { if (String(s.uid) === String(b.uid)) n += parseFloat(s.l) || 0; }); });
+  return n;
 }
-// Under the total (Total column) of a batch that had something split off:
-// just "→ 15 L" (what is left in it). Split-off details live in the edit drawer.
+// What is left in the vessel: volume − split-offs − litres used as SCOBY elsewhere.
+function batchRemainingL(b) {
+  return (batchTotalL(b) || parseFloat(b.splitLitres) || 0)
+    - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0)
+    - batchScobyOutL(b);
+}
+// Under the volume (Volume column) of a batch that had something split off or
+// was partly used as SCOBY for another batch: just "→ 15 L" (what is left in
+// it). Details live in the edit drawers.
 function batchBranchNoteHtml(b) {
-  if (!batchBranches(b).length || !(batchTotalL(b) > 0)) return '';
-  return '<div class="f1-branch-note f1-left">' + esc('\u2192 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L') + '</div>';
+  if ((!batchBranches(b).length && !(batchScobyOutL(b) > 0)) || !((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0)) return '';
+  var left = Math.round(batchRemainingL(b) * 100) / 100;
+  if (left === 0) return '';   // nothing left: no line (the batch gets archived); below 0 shows e.g. "→ -2 L"
+  return '<div class="f1-branch-note f1-left">' + esc('\u2192 ' + (left < 0 ? '-' + fmtNum(-left) : fmtNum(left)) + ' L') + '</div>';
 }
 function splitIconSvg() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="12" r="2"></circle><path d="M6 7v10"></path><path d="M6 9c0 3 4 3 10 3"></path></svg>';
