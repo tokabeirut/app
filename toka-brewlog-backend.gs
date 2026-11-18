@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '63 (expenses: paid back checkbox)';
+var VERSION = '64 (first fermentation: starter SCOBY batch)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -37,7 +37,9 @@ var HEADERS = [
   'notes', 'archived',
   // Split-off branches: the batch this one was taken from, when, and how
   // many litres. Empty for normal batches.
-  'parent_f1_pk', 'split_date', 'split_l'
+  'parent_f1_pk', 'split_date', 'split_l',
+  // The batch (usually a split-off jar) whose SCOBY started this one.
+  'starter_f1_pk'
 ];
 
 // Vessel display order. Used as the same-date tie-breaker.
@@ -143,6 +145,7 @@ function buildRow_(b, ncols, map) {
   set('parent_f1_pk', b.parentUid || '');
   set('split_date', b.splitDate || '');
   set('split_l', plain_(b.splitLitres));
+  set('starter_f1_pk', b.starterUid || '');
   return row;
 }
 
@@ -185,7 +188,8 @@ function readAll_() {
       archived: truthy_(g(r, 'archived')),
       parentUid: String(g(r, 'parent_f1_pk') || ''),
       splitDate: ymd_(g(r, 'split_date')),
-      splitLitres: g(r, 'split_l')
+      splitLitres: g(r, 'split_l'),
+      starterUid: String(g(r, 'starter_f1_pk') || '')
     });
   }
   out.sort(sortBatches_);
