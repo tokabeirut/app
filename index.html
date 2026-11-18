@@ -5800,6 +5800,20 @@ function jarMark(v) {
   return isJarVessel(v) ? '<span class="jar-mark" title="jar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 15V9"/><path d="M8 9L3.5 3.5"/><path d="M8 9l4.5-5.5"/><path d="M3 6.5V3h3.5"/><path d="M13 6.5V3H9.5"/></svg></span>' : '';
 }
 function vesselHtml(v) { var t = String(v || ''); return t ? esc(t) : '\u2014'; }
+// Ratios for a split-off row (parentUid), from its own amounts and volume:
+// sugar and tea in g/L, SCOBY as % of the volume. '' when not a split-off
+// or when the numbers are missing.
+function splitVolL(b) { return batchTotalL(b) || parseFloat(b.splitLitres) || 0; }
+function splitRatio(b, what) {
+  if (!b || !b.parentUid) return '';
+  var v = splitVolL(b);
+  if (!(v > 0)) return '';
+  function r1(x) { return Math.round(x * 10) / 10; }
+  if (what === 'sugar') { var kg = parseFloat(b.sugar); return isNaN(kg) ? '' : fmtNum(r1(kg * 1000 / v)) + ' g/L'; }
+  if (what === 'tea') { var g = parseFloat(b.tea); return isNaN(g) ? '' : fmtNum(r1(g / v)) + ' g/L'; }
+  if (what === 'scoby') { var l = parseFloat(b.starter); return isNaN(l) ? '' : fmtNum(Math.round(l / v * 100)) + '%'; }
+  return '';
+}
 function typeAmountHtml(type, amount) {
   var t = String(type || '').replace(/\s*\([^)]*\)/g, '').replace(/\s{2,}/g, ' ').trim();
   var a = String(amount || '').trim();
@@ -5825,10 +5839,12 @@ function rowHtml(b) {
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
     // Sugar and tea: "type • amount" in one cell; a click edits the amount,
     // the type is changed in the edit drawer.
-    + cellEd(typeAmountHtml(b.sugarSource, fmtQty(b.sugar, 'kg')), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number' })
-    + cellEd(typeAmountHtml(b.teaType, fmtTea(b.tea)), { type: 'batch', uid: b.uid, field: 'tea', input: 'number' })
+    // Split-off rows show the recipe as ratios (g/L, %), since their amounts
+    // are only their share of the tank; tanks show the real amounts.
+    + cellEd(typeAmountHtml(b.sugarSource, splitRatio(b, 'sugar') || fmtQty(b.sugar, 'kg')), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number' })
+    + cellEd(typeAmountHtml(b.teaType, splitRatio(b, 'tea') || fmtTea(b.tea)), { type: 'batch', uid: b.uid, field: 'tea', input: 'number' })
     + waterCellHtml(b)
-    + cellEd(fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
+    + cellEd(splitRatio(b, 'scoby') || fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
 }
@@ -5840,8 +5856,14 @@ function waterCellHtml(b) {
   var h = parseFloat(b.hotWater), c = parseFloat(b.coldWater);
   var hasH = !isNaN(h), hasC = !isNaN(c), inner;
   if (!hasH && !hasC) inner = '\u2014';
-  else inner = fmtQty(Math.round(((hasH ? h : 0) + (hasC ? c : 0)) * 1000) / 1000, 'L')
-    + ' <span class="wtr-parts">(' + (hasH ? fmtNum(h) : '\u2014') + ' / ' + (hasC ? fmtNum(c) : '\u2014') + ')</span>';
+  else {
+    var tw = (hasH ? h : 0) + (hasC ? c : 0);
+    // Split-off rows: hot / cold as a share of the water, e.g. "3.2 L (25% / 75%)".
+    var parts = (b.parentUid && tw > 0)
+      ? (hasH ? Math.round(h / tw * 100) + '%' : '\u2014') + ' / ' + (hasC ? Math.round(c / tw * 100) + '%' : '\u2014')
+      : (hasH ? fmtNum(h) : '\u2014') + ' / ' + (hasC ? fmtNum(c) : '\u2014');
+    inner = fmtQty(Math.round(tw * 1000) / 1000, 'L') + ' <span class="wtr-parts">(' + parts + ')</span>';
+  }
   return cellEd(inner, { type: 'batch', uid: b.uid, field: 'hotWater', input: 'water', cls: 'num' });
 }
 
