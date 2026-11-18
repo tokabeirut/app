@@ -1802,7 +1802,7 @@
             <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
             <th>Sugar</th><th>Sugar source</th>
             <th>Tea</th><th>Tea type</th><th>Steep</th>
-            <th>Water (hot/cold)</th><th>Water source</th>
+            <th>Water (hot/cold)</th>
             <th>SCOBY</th><th></th>
           </tr>
         </thead>
@@ -1824,7 +1824,7 @@
               <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
               <th>Sugar</th><th>Sugar source</th>
               <th>Tea</th><th>Tea type</th><th>Steep</th>
-              <th>Water (hot/cold)</th><th>Water source</th>
+              <th>Water (hot/cold)</th>
               <th>SCOBY</th><th></th>
             </tr>
           </thead>
@@ -3135,7 +3135,7 @@
       </div>
       <div class="form-group">
         <label>Sugar source</label>
-        <input type="text" id="f-sugar-src" value="White sugar (Najjar Modern Mills)" data-hist-field="sugarSource" autocomplete="off" />
+        <input type="text" id="f-sugar-src" value="white sugar (Najjar Modern Mills)" data-hist-field="sugarSource" autocomplete="off" />
       </div>
     </div>
 
@@ -3147,7 +3147,7 @@
       </div>
       <div class="form-group">
         <label>Tea type</label>
-        <input type="text" id="f-tea-type" value="Black, CTC Malawi (Satemwa)" data-hist-field="teaType" autocomplete="off" />
+        <input type="text" id="f-tea-type" value="CTC Assamica (Malawi • Satemwa)" data-hist-field="teaType" autocomplete="off" />
       </div>
       <div class="form-group">
         <label>Steep time (min)</label>
@@ -3164,10 +3164,6 @@
       <div class="form-group">
         <label>Cold water (L)</label>
         <input type="number" id="f-cold" min="0" step="0.001" placeholder="e.g. 60" />
-      </div>
-      <div class="form-group">
-        <label>Water source</label>
-        <input type="text" id="f-water-src" value="Filter" data-hist-field="waterSource" autocomplete="off" />
       </div>
     </div>
 
@@ -5618,7 +5614,6 @@ function openEdit(u) {
   document.getElementById('f-steep').value = steepToMin(b.steep);
   document.getElementById('f-hot').value = (b.hotWater != null ? b.hotWater : '');
   document.getElementById('f-cold').value = (b.coldWater != null ? b.coldWater : '');
-  document.getElementById('f-water-src').value = b.waterSource || '';
   document.getElementById('f-starter').value = (b.starter != null ? b.starter : '');
   renderStarterSources(starterSources(b), b.uid);
   document.getElementById('f-notes').value = b.notes || '';
@@ -5630,13 +5625,12 @@ function resetForm() {
   document.getElementById('f-date').value = todayISO();
   document.getElementById('f-vessel').value = 'TANK 1';
   document.getElementById('f-sugar').value = '';
-  document.getElementById('f-sugar-src').value = 'White sugar (Najjar Modern Mills)';
+  document.getElementById('f-sugar-src').value = 'white sugar (Najjar Modern Mills)';
   document.getElementById('f-tea').value = '';
-  document.getElementById('f-tea-type').value = 'Black, CTC Malawi (Satemwa)';
+  document.getElementById('f-tea-type').value = 'CTC Assamica (Malawi • Satemwa)';
   document.getElementById('f-steep').value = '5';
   document.getElementById('f-hot').value = '';
   document.getElementById('f-cold').value = '';
-  document.getElementById('f-water-src').value = 'Filter';
   document.getElementById('f-starter').value = '';
   renderStarterSources([], '');
   document.getElementById('f-notes').value = '';
@@ -5673,7 +5667,7 @@ function saveBatch() {
     steep: val('f-steep').trim(),
     hotWater: val('f-hot').trim(),
     coldWater: val('f-cold').trim(),
-    waterSource: val('f-water-src').trim(),
+    waterSource: orig ? (orig.waterSource || '') : '',   // field removed from the form; old values kept
     starter: val('f-starter').trim(),
     starterUid: readStarterSources(),
     notes: val('f-notes').trim(),
@@ -5790,7 +5784,6 @@ function rowHtml(b) {
     + cellEd(ellipNoParen(b.teaType, 140), { type: 'batch', uid: b.uid, field: 'teaType', input: 'text' })
     + cellEd(fmtSteep(b.steep), { type: 'batch', uid: b.uid, field: 'steep', input: 'number', cls: 'num' })
     + waterCellHtml(b)
-    + cellEd(ellip(b.waterSource, 88), { type: 'batch', uid: b.uid, field: 'waterSource', input: 'text' })
     + cellEd(fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
