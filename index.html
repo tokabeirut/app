@@ -3931,6 +3931,29 @@ function expPaidBackHtml(e) {
   var d = e.paidBack ? expFmtDate(e.paidBack) : '';
   return '<input type="checkbox" ' + (d ? 'checked ' : '') + 'title="' + (d ? 'paid back on ' + escHtml(d) : 'not paid back yet') + '" onclick="event.stopPropagation()" onchange="toggleExpensePaidBack(\'' + escHtml(e.id) + '\', this.checked)" />';
 }
+// "copy" button: the same expense again, dated today, without the receipt,
+// not paid back and not linked; LBP at today's rate.
+function copyExpense(id) {
+  var e = expenses.filter(function (x) { return String(x.id) === String(id); })[0];
+  if (!e) return;
+  var usd = parseFloat(e.amountUSD) || 0, r = parseFloat(rate) || parseFloat(e.rateAtEntry) || 0;
+  setSyncStatus('saving', 'saving…');
+  apiPost({
+    action: 'addExpense',
+    date: todayISO(), buyer: e.buyer || '', name: e.name || '', vendor: e.vendor || '', notes: e.notes || '',
+    category: e.category || '',
+    amountUSD: parseFloat(usd.toFixed(2)),
+    amountLBP: Math.round(usd * r),
+    rateAtEntry: r,
+    receiptData: '', receiptName: '', receiptType: '',
+    linkedTo: '', autoNote: ''
+  }, function (err, res) {
+    if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); toast('couldn’t copy the expense. check your connection.'); return; }
+    setSyncStatus('live', 'connected · google sheets');
+    toast('expense copied with today’s date ✓');
+    loadExpensesData();
+  });
+}
 function toggleExpensePaidBack(id, on) {
   var e = expenses.filter(function (x) { return String(x.id) === String(id); })[0];
   if (!e) return;
@@ -4287,7 +4310,7 @@ function renderExpTable() {
         + expCellEd('<div class="usd">$' + fmtUSD(usd) + '</div><div class="lbp">' + fmtLBP(lbp) + ' LBP</div>', { id: id, field: 'amountUSD', input: 'number',  cls: 'amount-cell dual-cell' })
         + '<td style="text-align:center">' + receipt + '</td>'
         + '<td class="paidback-cell">' + expPaidBackHtml(e) + '</td>'
-        + '<td><div class="row-actions"><button class="btn-edit" onclick="openEditModal(\'' + id + '\')">edit</button><button class="btn btn-sm btn-danger" onclick="deleteExpense(\'' + id + '\')">✕</button></div></td>'
+        + '<td><div class="row-actions"><button class="btn-edit" onclick="openEditModal(\'' + id + '\')">edit</button><button class="btn-edit" title="Copy this expense with today\'s date (without the receipt)" onclick="copyExpense(\'' + id + '\')">copy</button><button class="btn btn-sm btn-danger" onclick="deleteExpense(\'' + id + '\')">✕</button></div></td>'
         + '</tr>';
     }).join('');
   }
