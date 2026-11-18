@@ -210,8 +210,9 @@
      an iPhone every column's text spilled over the next one (letters even
      stacking vertically) instead of the table scrolling sideways. Now it
      fills the screen on a laptop and scrolls sideways on a phone. */
-  .bottling-table { table-layout: fixed; min-width: 1341px; width: 1341px; width: max(1341px, 100%); }
-  .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 160px; }
+  .bottling-table { table-layout: fixed; min-width: 1391px; width: 1391px; width: max(1391px, 100%); }
+  /* 210px: room for a group row like "▸ BTL-20260728-104→107". */
+  .bottling-table th:nth-child(1), .bottling-table td:nth-child(1) { width: 210px; }
   .bottling-table th:nth-child(2), .bottling-table td:nth-child(2) { width: 160px; }
   .bottling-table th:nth-child(3), .bottling-table td:nth-child(3) { width: 120px; }
   .bottling-table th:nth-child(4), .bottling-table td:nth-child(4) { width: 120px; }
@@ -13406,14 +13407,14 @@ function cmpData(u) {
   return d;
 }
 
+// Only the actual amounts are shown (no per-litre / share rows); the per-litre
+// values (norm) are still computed and used to decide whether a row differs.
 var CMP_ROWS = [
   { sec: 'Bottle' },
   { k: 'bottleId', l: 'Bottle' },
   { k: 'volume', l: 'Volume' },
   { k: 'flavour', l: 'Spices', norm: 'spicesPerL' },
-  { k: 'spicesPerL', l: 'Spices per litre' },
   { k: 'sugarG', l: 'Sugar', norm: 'btlSugarPerL' },
-  { k: 'btlSugarPerL', l: 'Sugar per litre' },
   { k: 'yeastMg', l: 'Yeast' },
   { k: 'source', l: 'Source' },
   { sec: 'Fermentation time' },
@@ -13425,11 +13426,8 @@ var CMP_ROWS = [
   { k: 'f1Batch', l: 'Batch' },
   { k: 'f1Volume', l: 'Volume' },
   { k: 'scoby', l: 'SCOBY', norm: 'scobyPct' },
-  { k: 'scobyPct', l: 'SCOBY share' },
   { k: 'tea', l: 'Tea', norm: 'teaPerL' },
-  { k: 'teaPerL', l: 'Tea per litre' },
   { k: 'sugar', l: 'Sugar', norm: 'sugarPerL' },
-  { k: 'sugarPerL', l: 'Sugar per litre' },
   { sec: 'Labo' },
   { k: 'f1StartBrix', l: 'F1 start Brix' },
   { k: 'f1StartPh', l: 'F1 start pH' },
