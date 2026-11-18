@@ -1630,6 +1630,9 @@
   .sc-src-row .sc-src-sel { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
   .sc-src-row .sc-src-l { width: 70px; -webkit-flex: 0 0 70px; flex: 0 0 70px; }
   .sc-add-src { margin-top: 2px; }
+  tr.row-jar > td { background: var(--bg); color: #8A8278; }
+  tr.row-jar > td .muted, tr.row-jar > td .f1-branch-note { color: #a59d90; }
+  tr.row-jar:hover > td { background: var(--surface2); }
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
@@ -5761,6 +5764,10 @@ function lineageIconSvg() {
   return '<svg class="lineage-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="20" cy="12" r="2"></circle><line x1="6" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="18" y2="12"></line></svg>';
 }
 
+// Fermentation tables: tanks are the main batches; jar rows recede (lighter
+// background, softer text) so tanks stand out at a glance (tr.row-jar).
+function isJarVessel(v) { return /^jar/i.test(String(v || '')); }
+function vesselHtml(v) { var t = String(v || ''); return t ? esc(t) : '\u2014'; }
 function rowHtml(b) {
   var u = esc(b.uid);
   var lineageBtn = '';   // Lineage page removed
@@ -5772,10 +5779,10 @@ function rowHtml(b) {
       + '<button class="icon-btn" title="Split off into a new vessel" onclick="openSplitDrawer(\'' + u + '\')">' + splitIconSvg() + '</button>'
       + '<button class="icon-btn" title="Archive" onclick="setArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>';
-  return '<tr data-uid="' + esc(b.uid) + '">'
+  return '<tr data-uid="' + esc(b.uid) + '"' + (isJarVessel(b.vessel) ? ' class="row-jar"' : '') + '>'
     + cellEd(esc(b.id) + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
-    + cellEd(esc(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
+    + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
     + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
     + cellEd(ellipNoParen(b.sugarSource, 130), { type: 'batch', uid: b.uid, field: 'sugarSource', input: 'text' })
     + cellEd(fmtTea(b.tea), { type: 'batch', uid: b.uid, field: 'tea', input: 'number', cls: 'num' })
@@ -6288,11 +6295,11 @@ function infusionRowHtml(inf) {
     : lineageBtn + '<button class="edit-btn" title="Edit" onclick="openInfusionEdit(\'' + u + '\')">✎</button>'
       + '<button class="icon-btn" title="Archive" onclick="setInfusionArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteInfusion(\'' + u + '\')">&times;</button>';
-  return '<tr data-uid="' + esc(inf.uid) + '">'
+  return '<tr data-uid="' + esc(inf.uid) + '"' + (isJarVessel(inf.vessel) ? ' class="row-jar"' : '') + '>'
     + cellEd(esc(inf.id), { type: 'infusion', uid: inf.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + '<td class="id-cell muted src-cell">' + bottleSourceCellHtml(inf, true) + '</td>'
     + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
-    + cellEd(esc(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
+    + cellEd(vesselHtml(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
     + cellEd((inf.volumeL !== '' && inf.volumeL != null) ? fmtQty(inf.volumeL, 'L') : '—', { type: 'infusion', uid: inf.uid, field: 'volumeL', input: 'number', cls: 'num' })
     + cellEd(infusionSpicesText(inf, '<br>'), { type: 'infusion', uid: inf.uid, field: 'flavours', input: 'spices', cls: 'spices-cell' })
     + cellEd('<div class="clip-inner muted">' + (inf.notes ? esc(inf.notes) : '—') + '</div>', { type: 'infusion', uid: inf.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
