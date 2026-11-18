@@ -1798,7 +1798,7 @@
       <table>
         <thead>
           <tr>
-            <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
+            <th>Batch ID</th><th>Volume</th><th>Created on</th><th>Vessel</th>
             <th>Sugar type</th><th>Sugar</th>
             <th>Tea type</th><th>Tea</th>
             <th>Water (hot / cold)</th>
@@ -1820,7 +1820,7 @@
         <table>
           <thead>
             <tr>
-              <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
+              <th>Batch ID</th><th>Volume</th><th>Created on</th><th>Vessel</th>
               <th>Sugar type</th><th>Sugar</th>
               <th>Tea type</th><th>Tea</th>
               <th>Water (hot / cold)</th>
@@ -5902,10 +5902,10 @@ function batchRemainingL(b) {
   return batchTotalL(b) - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0);
 }
 // Under the total (Total column) of a batch that had something split off:
-// just "→ 15 L left". Split-off details live in the edit drawer.
+// just "→ 15 L" (what is left in it). Split-off details live in the edit drawer.
 function batchBranchNoteHtml(b) {
   if (!batchBranches(b).length || !(batchTotalL(b) > 0)) return '';
-  return '<div class="f1-branch-note">' + esc('\u2192 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L left') + '</div>';
+  return '<div class="f1-branch-note">' + esc('\u2192 ' + fmtNum(Math.round(batchRemainingL(b) * 100) / 100) + ' L') + '</div>';
 }
 function splitIconSvg() {
   return '<svg class="arch-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5" r="2"></circle><circle cx="6" cy="19" r="2"></circle><circle cx="18" cy="12" r="2"></circle><path d="M6 7v10"></path><path d="M6 9c0 3 4 3 10 3"></path></svg>';
