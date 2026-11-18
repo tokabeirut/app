@@ -1630,9 +1630,8 @@
   .sc-src-row .sc-src-sel { -webkit-flex: 1 1 auto; flex: 1 1 auto; min-width: 0; }
   .sc-src-row .sc-src-l { width: 70px; -webkit-flex: 0 0 70px; flex: 0 0 70px; }
   .sc-add-src { margin-top: 2px; }
-  tr.row-jar > td { background: var(--bg); color: #8A8278; }
-  tr.row-jar > td .muted, tr.row-jar > td .f1-branch-note { color: #a59d90; }
-  tr.row-jar:hover > td { background: var(--surface2); }
+  .jar-mark { display: inline-block; width: 13px; height: 13px; margin-right: 6px; vertical-align: -1px; color: #8A8278; }
+  .jar-mark svg { width: 13px; height: 13px; display: block; }
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
@@ -3177,6 +3176,22 @@
         <label>SCOBY from</label>
         <div id="f-starter-from"></div>
         <button type="button" class="btn-ghost sc-add-src" onclick="addStarterSourceRow('', '')">+ add a scoby</button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">Split off</div>
+      <div class="form-group">
+        <label for="f-parent">Split off from</label>
+        <select id="f-parent"></select>
+      </div>
+      <div class="form-group">
+        <label for="f-split-date">Split date</label>
+        <input type="date" id="f-split-date" />
+      </div>
+      <div class="form-group">
+        <label for="f-split-l">Litres split off</label>
+        <input type="number" id="f-split-l" min="0" step="0.1" placeholder="e.g. 4" />
       </div>
     </div>
 
@@ -5616,6 +5631,9 @@ function openEdit(u) {
   document.getElementById('f-cold').value = (b.coldWater != null ? b.coldWater : '');
   document.getElementById('f-starter').value = (b.starter != null ? b.starter : '');
   renderStarterSources(starterSources(b), b.uid);
+  document.getElementById('f-parent').innerHTML = parentOptionsHtml(b.parentUid || '', b.uid);
+  document.getElementById('f-split-date').value = b.splitDate || '';
+  document.getElementById('f-split-l').value = (b.splitLitres != null ? b.splitLitres : '');
   document.getElementById('f-notes').value = b.notes || '';
   document.getElementById('add-drawer').classList.add('open');
   document.getElementById('drawer-overlay').classList.add('open');
@@ -5633,6 +5651,9 @@ function resetForm() {
   document.getElementById('f-cold').value = '';
   document.getElementById('f-starter').value = '';
   renderStarterSources([], '');
+  document.getElementById('f-parent').innerHTML = parentOptionsHtml('', '');
+  document.getElementById('f-split-date').value = '';
+  document.getElementById('f-split-l').value = '';
   document.getElementById('f-notes').value = '';
   maybeAutoId();
 }
@@ -5674,9 +5695,9 @@ function saveBatch() {
     archived: isEdit ? origArchived : false,
     // Not in the drawer — carried over so editing never drops them.
     totalVolume: orig ? orig.totalVolume : '',
-    parentUid: orig ? (orig.parentUid || '') : '',
-    splitDate: orig ? (orig.splitDate || '') : '',
-    splitLitres: orig ? orig.splitLitres : ''
+    parentUid: val('f-parent'),
+    splitDate: val('f-parent') ? val('f-split-date') : '',
+    splitLitres: val('f-parent') ? val('f-split-l').trim() : ''
   };
   var btn = document.getElementById('save-btn');
   var origLabel = isEdit ? 'Update batch' : 'Save batch';
@@ -5758,9 +5779,13 @@ function lineageIconSvg() {
   return '<svg class="lineage-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="20" cy="12" r="2"></circle><line x1="6" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="18" y2="12"></line></svg>';
 }
 
-// Fermentation tables: tanks are the main batches; jar rows recede (lighter
-// background, softer text) so tanks stand out at a glance (tr.row-jar).
+// Fermentation tables: a small split symbol (a line forking into two arrows)
+// before the batch ID of jars, so
+// the main batches (tanks) and the small jars are told apart at a glance.
 function isJarVessel(v) { return /^jar/i.test(String(v || '')); }
+function jarMark(v) {
+  return isJarVessel(v) ? '<span class="jar-mark" title="jar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 15V9"/><path d="M8 9L3.5 3.5"/><path d="M8 9l4.5-5.5"/><path d="M3 6.5V3h3.5"/><path d="M13 6.5V3H9.5"/></svg></span>' : '';
+}
 function vesselHtml(v) { var t = String(v || ''); return t ? esc(t) : '\u2014'; }
 function rowHtml(b) {
   var u = esc(b.uid);
@@ -5773,8 +5798,8 @@ function rowHtml(b) {
       + '<button class="icon-btn" title="Split off into a new vessel" onclick="openSplitDrawer(\'' + u + '\')">' + splitIconSvg() + '</button>'
       + '<button class="icon-btn" title="Archive" onclick="setArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>';
-  return '<tr data-uid="' + esc(b.uid) + '"' + (isJarVessel(b.vessel) ? ' class="row-jar"' : '') + '>'
-    + cellEd(esc(b.id) + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
+  return '<tr data-uid="' + esc(b.uid) + '">'
+    + cellEd(jarMark(b.vessel) + esc(b.id) + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + cellEd((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014', { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
@@ -5852,6 +5877,14 @@ function syncStarterTotal() {
   [].forEach.call(document.querySelectorAll('#f-starter-from .sc-src-l'), function (i) { var v = parseFloat(i.value); if (!isNaN(v)) { sum += v; any = true; } });
   if (any) document.getElementById('f-starter').value = Math.round(sum * 1000) / 1000;
 }
+// "Split off from" in the edit drawer: any other batch, newest first.
+function parentOptionsHtml(sel, selfUid) {
+  var list = batches.filter(function (x) { return String(x.uid) !== String(selfUid || ''); })
+    .sort(function (a, c) { return String(c.date || '').localeCompare(String(a.date || '')); });
+  return '<option value="">&mdash; not split off &mdash;</option>' + list.map(function (x) {
+    return '<option value="' + esc(x.uid) + '"' + (String(x.uid) === String(sel) ? ' selected' : '') + '>' + esc(x.id || x.vessel) + '</option>';
+  }).join('');
+}
 function starterFromOptionsHtml(sel, selfUid) {
   var list = batches.filter(function (x) { return String(x.uid) !== String(selfUid || ''); })
     .sort(function (a, c) { return String(c.date || '').localeCompare(String(a.date || '')); });
@@ -5872,8 +5905,7 @@ function batchRemainingL(b) {
 function batchBranchNoteHtml(b) {
   var lines = [];
   var p = b.parentUid ? batchByUid(b.parentUid) : null;
-  // e.g. "split off TANK 2 on 27 Oct · 4 L"
-  if (b.parentUid) lines.push('split off ' + (p ? (p.vessel || p.id) : 'deleted batch') + (b.splitDate ? ' on ' + String(fmtDate(b.splitDate)).replace(/\s+\d{4}$/, '') : '') + (b.splitLitres !== '' && b.splitLitres != null ? ' \u00b7 ' + fmtNum(parseFloat(b.splitLitres) || 0) + ' L' : ''));
+  // The "split off TANK 2 on …" details are in the edit drawer (Split off section).
   // SCOBY sources are saved (starterUid) and shown in the edit drawer only.
   var kids = batchBranches(b);
   if (kids.length) {
@@ -6288,8 +6320,8 @@ function infusionRowHtml(inf) {
     : lineageBtn + '<button class="edit-btn" title="Edit" onclick="openInfusionEdit(\'' + u + '\')">✎</button>'
       + '<button class="icon-btn" title="Archive" onclick="setInfusionArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteInfusion(\'' + u + '\')">&times;</button>';
-  return '<tr data-uid="' + esc(inf.uid) + '"' + (isJarVessel(inf.vessel) ? ' class="row-jar"' : '') + '>'
-    + cellEd(esc(inf.id), { type: 'infusion', uid: inf.uid, field: 'id', input: 'text', cls: 'id-cell' })
+  return '<tr data-uid="' + esc(inf.uid) + '">'
+    + cellEd(jarMark(inf.vessel) + esc(inf.id), { type: 'infusion', uid: inf.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + '<td class="id-cell muted src-cell">' + bottleSourceCellHtml(inf, true) + '</td>'
     + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
     + cellEd(vesselHtml(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
