@@ -194,3 +194,4 @@ subtotal={{ subtotal_price }}<br>
 - SCOBY from is not shown in the first fermentation table (index v141): only saved, visible in the batch's edit drawer.
 - First fermentation and infusion tables (index v143): jar rows recede (`tr.row-jar`: page-cream background, warm grey text); tank rows stay white with dark text. `isJarVessel(v)`.
 - SCOBY from options show just the batch ID (index v144).
+- First fermentation table (index v145): "Total" column after Batch ID (`batchTotalL`: saved total volume, else hot + cold + SCOBY; click to edit the total); the Notes column is gone from the table (notes stay in the edit drawer).

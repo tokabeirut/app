@@ -1799,11 +1799,11 @@
       <table>
         <thead>
           <tr>
-            <th>Batch ID</th><th>Created on</th><th>Vessel</th>
+            <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
             <th>Sugar</th><th>Sugar source</th>
             <th>Tea</th><th>Tea type</th><th>Steep</th>
             <th>Water (hot/cold)</th><th>Water source</th>
-            <th>SCOBY</th><th>Notes</th><th></th>
+            <th>SCOBY</th><th></th>
           </tr>
         </thead>
         <tbody id="f1-tbody"></tbody>
@@ -1821,11 +1821,11 @@
         <table>
           <thead>
             <tr>
-              <th>Batch ID</th><th>Created on</th><th>Vessel</th>
+              <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
               <th>Sugar</th><th>Sugar source</th>
               <th>Tea</th><th>Tea type</th><th>Steep</th>
               <th>Water (hot/cold)</th><th>Water source</th>
-              <th>SCOBY</th><th>Notes</th><th></th>
+              <th>SCOBY</th><th></th>
             </tr>
           </thead>
           <tbody id="f1-archived-tbody"></tbody>
@@ -5781,6 +5781,7 @@ function rowHtml(b) {
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>';
   return '<tr data-uid="' + esc(b.uid) + '"' + (isJarVessel(b.vessel) ? ' class="row-jar"' : '') + '>'
     + cellEd(esc(b.id) + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
+    + cellEd((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014', { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
     + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
@@ -5791,7 +5792,6 @@ function rowHtml(b) {
     + waterCellHtml(b)
     + cellEd(ellip(b.waterSource, 88), { type: 'batch', uid: b.uid, field: 'waterSource', input: 'text' })
     + cellEd(fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
-    + cellEd('<div class="clip-inner muted">' + (b.notes ? esc(b.notes) : '\u2014') + '</div>', { type: 'batch', uid: b.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
 }
