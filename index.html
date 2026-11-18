@@ -1799,9 +1799,9 @@
         <thead>
           <tr>
             <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
-            <th>Sugar</th><th>Sugar source</th>
-            <th>Tea</th><th>Tea type</th><th>Steep</th>
-            <th>Water (hot/cold)</th>
+            <th>Sugar type</th><th>Sugar</th>
+            <th>Tea type</th><th>Tea</th>
+            <th>Water (hot / cold)</th>
             <th>SCOBY</th><th></th>
           </tr>
         </thead>
@@ -1821,9 +1821,9 @@
           <thead>
             <tr>
               <th>Batch ID</th><th>Total</th><th>Created on</th><th>Vessel</th>
-              <th>Sugar</th><th>Sugar source</th>
-              <th>Tea</th><th>Tea type</th><th>Steep</th>
-              <th>Water (hot/cold)</th>
+              <th>Sugar type</th><th>Sugar</th>
+              <th>Tea type</th><th>Tea</th>
+              <th>Water (hot / cold)</th>
               <th>SCOBY</th><th></th>
             </tr>
           </thead>
@@ -3133,7 +3133,7 @@
         <input type="number" id="f-sugar" min="0" step="0.001" placeholder="e.g. 1.4" />
       </div>
       <div class="form-group">
-        <label>Sugar source</label>
+        <label>Sugar type</label>
         <input type="text" id="f-sugar-src" value="white sugar (Najjar Modern Mills)" data-hist-field="sugarSource" autocomplete="off" />
       </div>
     </div>
@@ -5803,26 +5803,25 @@ function rowHtml(b) {
     + cellEd((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014', { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
-    + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
     + cellEd(ellipNoParen(b.sugarSource, 130), { type: 'batch', uid: b.uid, field: 'sugarSource', input: 'text' })
-    + cellEd(fmtTea(b.tea), { type: 'batch', uid: b.uid, field: 'tea', input: 'number', cls: 'num' })
+    + cellEd(fmtQty(b.sugar, 'kg'), { type: 'batch', uid: b.uid, field: 'sugar', input: 'number', cls: 'num' })
     + cellEd(ellipNoParen(b.teaType, 140), { type: 'batch', uid: b.uid, field: 'teaType', input: 'text' })
-    + cellEd(fmtSteep(b.steep), { type: 'batch', uid: b.uid, field: 'steep', input: 'number', cls: 'num' })
+    + cellEd(fmtTea(b.tea), { type: 'batch', uid: b.uid, field: 'tea', input: 'number', cls: 'num' })
     + waterCellHtml(b)
     + cellEd(fmtQty(b.starter, 'L'), { type: 'batch', uid: b.uid, field: 'starter', input: 'number', cls: 'num' })
     + '<td class="row-actions">' + actions + '</td>'
     + '</tr>';
 }
 
-// First fermentation: one "Water (hot/cold)" column — the total, with the
-// hot + cold parts after it, e.g. "16 L (9 L + 7 L)". Clicking it opens a
+// First fermentation: one "Water (hot / cold)" column — the total, with the
+// hot / cold parts after it, e.g. "34 L (8 / 26)". Clicking it opens a
 // small two-field editor (startWaterInline) that saves both values at once.
 function waterCellHtml(b) {
   var h = parseFloat(b.hotWater), c = parseFloat(b.coldWater);
   var hasH = !isNaN(h), hasC = !isNaN(c), inner;
   if (!hasH && !hasC) inner = '\u2014';
   else inner = fmtQty(Math.round(((hasH ? h : 0) + (hasC ? c : 0)) * 1000) / 1000, 'L')
-    + ' <span class="wtr-parts">(' + fmtQty(b.hotWater, 'L') + ' + ' + fmtQty(b.coldWater, 'L') + ')</span>';
+    + ' <span class="wtr-parts">(' + (hasH ? fmtNum(h) : '\u2014') + ' / ' + (hasC ? fmtNum(c) : '\u2014') + ')</span>';
   return cellEd(inner, { type: 'batch', uid: b.uid, field: 'hotWater', input: 'water', cls: 'num' });
 }
 
