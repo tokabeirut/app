@@ -13596,6 +13596,18 @@ function cmpData(u) {
   // infusion), and the bottle's own latest reading.
   var firstR = f1s.map(function (b, i) { return cmpF1ReadingsUntil(b, f1Cut[i])[0] || null; });
   var lastR = f1s.map(function (b, i) { var L = cmpF1ReadingsUntil(b, f1Cut[i]); return L.length ? L[L.length - 1] : null; });
+  // SCOBY: the end reading of the batch(es) the SCOBY came from, i.e. their
+  // last reading up to the day this first fermentation was brewed.
+  var scR = [];
+  f1s.forEach(function (b) {
+    starterSources(b).forEach(function (x) {
+      var sb = batchByUid(x.uid); if (!sb) return;
+      var L = cmpF1ReadingsUntil(sb, b.date || '');
+      scR.push(L.length ? L[L.length - 1] : null);
+    });
+  });
+  d.scobyEndBrix = cmpJoin(scR.map(function (r) { return cmpReadingText(r, 'brix', '%'); }));
+  d.scobyEndPh = cmpJoin(scR.map(function (r) { return cmpReadingText(r, 'ph', ''); }));
   d.f1StartBrix = cmpJoin(firstR.map(function (r) { return cmpReadingText(r, 'brix', '%'); }));
   d.f1StartPh = cmpJoin(firstR.map(function (r) { return cmpReadingText(r, 'ph', ''); }));
   d.f1EndBrix = cmpJoin(lastR.map(function (r) { return cmpReadingText(r, 'brix', '%'); }));
@@ -13658,9 +13670,11 @@ var CMP_ROWS = [
   { k: 'teaPerL', l: 'Tea per litre' },
   { k: 'sugarPerL', l: 'Sugar per litre' },
   { sec: 'Labo' },
+  { k: 'scobyEndBrix', l: 'SCOBY end Brix' },
   { k: 'f1StartBrix', l: 'F1 start Brix' },
   { k: 'infEndBrix', l: 'INF end Brix', inf: true },
   { k: 'btlBrix', l: 'BOT Brix' },
+  { k: 'scobyEndPh', l: 'SCOBY end pH' },
   { k: 'f1StartPh', l: 'F1 start pH' },
   { k: 'infEndPh', l: 'INF end pH', inf: true },
   { k: 'btlPh', l: 'BOT pH' }
