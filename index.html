@@ -1005,6 +1005,7 @@
     .cmp-table col.cmp-lcol { width: 120px; }
     .cmp-table { min-width: 0; }
     #view-sales .sales-periods, #view-sales .sales-stats, #view-sales .sales-mix, #view-sales .crm-tabs { padding-left: 20px; padding-right: 20px; }
+    #view-sales .search-box { margin-left: 20px; margin-right: 20px; }
     #view-sales .crm-nudge { margin-left: 20px; margin-right: 20px; }
     .crm-wide-drawer { width: 100%; }
     #view-sales .sales-empty { padding: 24px 20px; }
@@ -1645,6 +1646,11 @@
   .f1-branch-note.f1-left { color: #C4613A; }   /* terracotta, like the split arrow */
   .jar-mark { display: inline-block; width: 13px; height: 13px; margin-right: 6px; vertical-align: -1px; color: #C4613A; }   /* terracotta accent */
   .jar-mark svg { width: 13px; height: 13px; display: block; -webkit-transform: rotate(90deg); transform: rotate(90deg); }   /* arrows point right */
+  .search-box { position: relative; max-width: 420px; margin: 18px 0 14px; }
+  .search-box input { width: 100%; padding-right: 34px; }
+  #view-sales .search-box { margin: 0 48px 16px; }
+  .search-x { position: absolute; right: 6px; top: 50%; -webkit-transform: translateY(-50%); transform: translateY(-50%); border: none; background: none; font-size: 1.25rem; line-height: 1; color: var(--ink-faint); cursor: pointer; padding: 4px 6px; }
+  .search-x:hover { color: var(--ink); }
   .courier-ref { font-size: 0.8rem; color: var(--ink-faint); margin-top: 3px; }
   .o-paid-date { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 10px; margin-top: 8px; padding-left: 28px; }
   .o-paid-date label { margin: 0; }
@@ -2830,14 +2836,14 @@
           <select id="exp-filter-cat" onchange="renderExpTable()">
             <option value="">all categories</option>
             <option value="ingredients">ingredients</option>
-            <option value="production">production costs</option>
+            <option value="production">production</option>
             <option value="utilities">utilities</option>
-            <option value="maintenance">maintenance &amp; repairs</option>
+            <option value="maintenance">maintenance</option>
             <option value="packaging">packaging</option>
-            <option value="marketing">marketing &amp; sales</option>
-            <option value="rnd">r&amp;d &amp; education</option>
+            <option value="marketing">marketing</option>
+            <option value="rnd">r&amp;d</option>
             <option value="equipment">equipment</option>
-            <option value="capex">capital expenditures</option>
+            <option value="capex">capex</option>
             <option value="atelier">atelier supplies</option>
             <option value="legal">legal</option>
             <option value="other">other</option>
@@ -3521,6 +3527,8 @@ try { rate = parseFloat(localStorage.getItem(RATE_KEY) || '89550'); } catch (e) 
 var pendingFile = null;
 var lastAutoNote = ''; // tracks the auto-generated "linked entry" note so it can be replaced/removed cleanly
 
+// Category names here are also the filter options on the Expenses page
+// (keep the filter's <option> labels the same).
 var CATS = {
   ingredients: { label: 'ingredients', badge: 'badge-ingredients' },
   production:  { label: 'production',  badge: 'badge-production'  },
@@ -5815,12 +5823,12 @@ function lineageIconSvg() {
   return '<svg class="lineage-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="20" cy="12" r="2"></circle><line x1="6" y1="12" x2="10" y2="12"></line><line x1="14" y1="12" x2="18" y2="12"></line></svg>';
 }
 
-// Fermentation tables: a small split symbol (a line forking into two arrows)
-// before the batch ID of jars, so
-// the main batches (tanks) and the small jars are told apart at a glance.
+// First fermentation table: a small split symbol (a line forking into two
+// arrows) before the batch ID of a batch split off another one (parentUid),
+// so the split-offs are told apart at a glance. New batches get none.
 function isJarVessel(v) { return /^jar/i.test(String(v || '')); }
-function jarMark(v) {
-  return isJarVessel(v) ? '<span class="jar-mark" title="jar"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 15V9"/><path d="M8 9L3.5 3.5"/><path d="M8 9l4.5-5.5"/><path d="M3 6.5V3h3.5"/><path d="M13 6.5V3H9.5"/></svg></span>' : '';
+function jarMark(b) {
+  return (b && b.parentUid) ? '<span class="jar-mark" title="split off"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 15V9"/><path d="M8 9L3.5 3.5"/><path d="M8 9l4.5-5.5"/><path d="M3 6.5V3h3.5"/><path d="M13 6.5V3H9.5"/></svg></span>' : '';
 }
 function vesselHtml(v) { var t = String(v || ''); return t ? esc(t) : '\u2014'; }
 // Ratios for a split-off row (parentUid), from its own amounts and volume:
@@ -5856,7 +5864,7 @@ function rowHtml(b) {
       + '<button class="icon-btn" title="Archive" onclick="setArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteBatch(\'' + u + '\')">&times;</button>';
   return '<tr data-uid="' + esc(b.uid) + '">'
-    + cellEd(jarMark(b.vessel) + esc(b.id), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
+    + cellEd(jarMark(b) + esc(b.id), { type: 'batch', uid: b.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + cellEd(((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0 ? fmtQty(batchTotalL(b) || parseFloat(b.splitLitres), 'L') : '\u2014') + batchBranchNoteHtml(b), { type: 'batch', uid: b.uid, field: 'totalVolume', input: 'number', cls: 'num' })
     + cellEd(fmtDate(b.date), { type: 'batch', uid: b.uid, field: 'date', input: 'date' })
     + cellEd(vesselHtml(b.vessel), { type: 'batch', uid: b.uid, field: 'vessel', input: 'select', options: VESSEL_OPTS })
@@ -6391,7 +6399,7 @@ function infusionRowHtml(inf) {
       + '<button class="icon-btn" title="Archive" onclick="setInfusionArchived(\'' + u + '\', true)">' + archiveIconSvg(false) + '</button>'
       + '<button class="del-btn" title="Delete" onclick="deleteInfusion(\'' + u + '\')">&times;</button>';
   return '<tr data-uid="' + esc(inf.uid) + '">'
-    + cellEd(jarMark(inf.vessel) + esc(inf.id), { type: 'infusion', uid: inf.uid, field: 'id', input: 'text', cls: 'id-cell' })
+    + cellEd(esc(inf.id), { type: 'infusion', uid: inf.uid, field: 'id', input: 'text', cls: 'id-cell' })
     + '<td class="id-cell muted src-cell">' + bottleSourceCellHtml(inf, true) + '</td>'
     + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
     + cellEd(vesselHtml(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
@@ -9162,6 +9170,42 @@ function crmContactButtons(c) {
 }
 
 /* ---- render ---- */
+/* ---- Search boxes (Sales, Bottle inventory) ----
+   Typing filters the table below; the × clears it. Only the part under the
+   box is redrawn while typing, so the box keeps its focus. Every word must
+   appear somewhere in the row (dates as shown, e.g. "12 nov"). */
+function searchBoxHtml(id, val, onInput, ph) {
+  return '<div class="search-box"><input type="text" id="' + id + '" value="' + esc(val || '') + '" placeholder="' + esc(ph || 'search…') + '" autocomplete="off" oninput="' + onInput + '(this.value)" />'
+    + '<button type="button" class="search-x" title="Clear" onclick="var i=document.getElementById(\'' + id + '\'); i.value=\'\'; ' + onInput + '(\'\'); i.focus();"' + (val ? '' : ' style="visibility:hidden"') + '>&times;</button></div>';
+}
+function searchHit(q, parts) {
+  var words = String(q || '').toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return true;
+  var hay = parts.map(function (p) { return String(p == null ? '' : p); }).join(' \u0001 ').toLowerCase();
+  return words.every(function (w) { return hay.indexOf(w) !== -1; });
+}
+function searchXToggle(id, v) {
+  var b = document.getElementById(id); b = b && b.parentNode.querySelector('.search-x');
+  if (b) b.style.visibility = v ? '' : 'hidden';
+}
+var salesQuery = '';
+function setSalesQuery(v) {
+  salesQuery = v || '';
+  searchXToggle('sales-search', salesQuery);
+  var el = document.getElementById('sales-tab-body');
+  if (el) el.innerHTML = salesTabBodyHtml();
+}
+function salesTabBodyHtml() {
+  return salesTab === 'customers' ? crmCustomersHtml() : salesTab === 'gifts' ? crmGiftsHtml() : crmOrdersHtml();
+}
+function orderSearchHit(o) {
+  var c = customerForOrder(o);
+  return searchHit(salesQuery, [o.invoiceNo, o.shopifyOrder, o.date, fmtDate(o.date), o.customerName, c ? customerDisplayName(c) : '', c ? c.name : '', c ? c.alias : '',
+    orderItemsText(o), o.notes, o.courierRef, o.courierStatus, o.channel, o.paid ? 'paid' : 'unpaid', o.delivery, saleMoney(orderTotal(o))]);
+}
+function customerSearchHit(c) {
+  return searchHit(salesQuery, [c.name, c.alias, c.type, c.phone, fmtPhone(c.phone), c.email, c.address, c.area, c.notes]);
+}
 function renderSales() {
   var body = document.getElementById('sales-body');
   if (!body) return;
@@ -9176,7 +9220,8 @@ function renderSales() {
     + '<button type="button" class="crm-tab' + (salesTab === 'customers' ? ' active' : '') + '" onclick="setSalesTab(\'customers\')">Customers</button>'
     + '<button type="button" class="crm-tab' + (salesTab === 'gifts' ? ' active' : '') + '" onclick="setSalesTab(\'gifts\')">Complimentary</button>'
     + '</div>';
-  h += salesTab === 'customers' ? crmCustomersHtml() : salesTab === 'gifts' ? crmGiftsHtml() : crmOrdersHtml();
+  h += searchBoxHtml('sales-search', salesQuery, 'setSalesQuery', salesTab === 'customers' ? 'search customers: name, phone, area…' : 'search orders: customer, invoice, items, notes…');
+  h += '<div id="sales-tab-body">' + salesTabBodyHtml() + '</div>';
   body.innerHTML = h;
 }
 // B2B businesses in the last 2 days of a 30-day period (day 28–30): they can still
@@ -9250,7 +9295,7 @@ function crmNudgeHtml() {
     }).join('') + '</div></div>';
 }
 function crmOrdersHtml() {
-  var all = ordersForPeriod(salesPeriod);
+  var all = ordersForPeriod(salesPeriod).filter(orderSearchHit);
   var list = all.filter(function (o) { return !o.complimentary; });   // gifts have their own tab
   var revenue = 0, bottles = 0, b750 = 0, b375 = 0, unpaid = 0, unpaidN = 0, b2b = 0, b2c = 0, compBottles = 0, compN = 0;
   all.forEach(function (o) { if (o.complimentary) { compBottles += orderBottles(o); compN++; } });
@@ -9279,7 +9324,7 @@ function crmOrdersHtml() {
     h += '<div class="sales-mix"><div class="sales-mix-labels"><span>B2B · ' + saleMoney(b2b) + ' · ' + pb + '%</span><span>B2C · ' + saleMoney(b2c) + ' · ' + pc + '%</span></div>'
       + '<div class="sales-mix-bar"><div class="sales-mix-b2b" style="width:' + pb + '%"></div></div></div>';
   }
-  if (!list.length) return h + '<div class="sales-empty">' + (orders.length ? 'No orders in this period.' : 'No orders yet.') + '</div>';
+  if (!list.length) return h + '<div class="sales-empty">' + (salesQuery ? 'No orders match “' + esc(salesQuery) + '” in this period.' : orders.length ? 'No orders in this period.' : 'No orders yet.') + '</div>';
   h += '<div class="table-wrap"><div class="table-scroll"><table class="sales-table"><thead><tr>'
     + '<th>Invoice</th><th>Date</th><th>Customer</th><th>Items</th><th>Bottles</th><th>Total</th><th>Paid</th><th>Notes</th><th></th>'
     + '</tr></thead><tbody>';
@@ -9308,7 +9353,7 @@ function crmOrdersHtml() {
 // Complimentary tab: free bottles for existing clients (a gesture, a bottle
 // that wasn't good…), kept out of the orders table and the sales figures.
 function crmGiftsHtml() {
-  var list = ordersForPeriod(salesPeriod).filter(function (o) { return o.complimentary; });
+  var list = ordersForPeriod(salesPeriod).filter(function (o) { return o.complimentary && orderSearchHit(o); });
   var n375 = 0, n750 = 0, people = {};
   list.forEach(function (o) {
     (o.lines || []).forEach(function (l) { var q = parseFloat(l.qty) || 0; if (String(l.size) === '375') n375 += q; else if (String(l.size) === '750') n750 += q; });
@@ -9353,8 +9398,9 @@ function crmInvoiceIcon() {
 }
 function crmCustomersHtml() {
   if (!customers.length) return '<div class="sales-empty">No customers yet — they’re added automatically with their first order, or with “+ new customer”.</div>';
-  var rows = customers.map(function (c) { return { c: c, ins: customerInsights(c) }; })
+  var rows = customers.filter(customerSearchHit).map(function (c) { return { c: c, ins: customerInsights(c) }; })
     .sort(function (a, b) { return String(b.ins.last).localeCompare(String(a.ins.last)) || customerDisplayName(a.c).localeCompare(customerDisplayName(b.c)); });
+  if (!rows.length) return '<div class="sales-empty">No customers match “' + esc(salesQuery) + '”.</div>';
   var h = '<div class="table-wrap"><div class="table-scroll"><table class="crm-table"><thead><tr>'
     + '<th>Alias</th><th>Official name</th><th>Type</th><th>Phone</th><th>Email</th><th>Address</th><th>Orders</th><th>Bottles</th><th>Spent</th><th>Last order</th><th></th>'
     + '</tr></thead><tbody>';
@@ -10974,8 +11020,22 @@ document.addEventListener('scroll', function (e) {
     hideBivFilterMenu();
   }
 }, true);
+var bivQuery = '';
+function setBivQuery(v) {
+  bivQuery = v || '';
+  searchXToggle('biv-search', bivQuery);
+  var el = document.getElementById('biv-log');
+  if (el) el.innerHTML = bivLogTableHtml();
+}
+function bivSearchHit(e) {
+  if (!bivQuery) return true;
+  var o = e.orderId && typeof findOrder === 'function' ? findOrder(e.orderId) : null;
+  return searchHit(bivQuery, [e.date, fmtDate(e.date), bivStageLabel ? bivStageLabel(e.stage) : e.stage, e.stage, e.size, e.flavour, productName(e.flavour), e.qty, e.notes,
+    e.bottling ? bivBottlingRefName(e.bottling) : '', bivFifoText(e), o ? o.invoiceNo : '', o ? o.customerName : '', o ? o.courierRef : '']);
+}
 function bivFilteredSortedLog() {
   return bivSortedLog().filter(function (e) {
+    if (!bivSearchHit(e)) return false;
     for (var field in bivColumnFilters) {
       var active = bivColumnFilters[field];
       if (active.length && active.indexOf(bivDisplayValueForField(e, field)) === -1) return false;
@@ -11020,7 +11080,7 @@ function bivLogTableHtml() {
   }
   if (!rows) {
     rows = '<tr><td colspan="7" class="muted" style="text-align:center;padding:24px 0;">'
-      + (bivActiveFilterCount() ? 'No movements match the current filters. <span class="pt-filter-clear-link" onclick="bivClearFilters()">Clear filters</span>' : 'No movements logged yet.')
+      + (bivQuery ? 'No movements match “' + esc(bivQuery) + '”. ' : '') + (bivActiveFilterCount() ? 'No movements match the current filters. <span class="pt-filter-clear-link" onclick="bivClearFilters()">Clear filters</span>' : 'No movements logged yet.')
       + '</td></tr>';
   }
   return '<div class="an-section"><div class="sec-title">Movement log</div>'
@@ -11033,7 +11093,9 @@ function renderBottleInventory() {
   var body = document.getElementById('biv-body');
   if (!body) return;
   bivBottlings();   // fills bivFifoAlloc for the "oldest first" batch under each row
-  body.innerHTML = bivKpisHtml() + bivAddFormsHtml() + bivLogTableHtml() + bivLabelsHtml();
+  body.innerHTML = bivKpisHtml() + bivAddFormsHtml()
+    + searchBoxHtml('biv-search', bivQuery, 'setBivQuery', 'search movements: batch, customer, invoice, notes…')
+    + '<div id="biv-log">' + bivLogTableHtml() + '</div>' + bivLabelsHtml();
 }
 // Label count (front + back pairs). Every bottle filled from the start date
 // on used one pair of its size (1 small bottle = 1 small pair, 1 big = 1 big
