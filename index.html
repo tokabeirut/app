@@ -972,6 +972,9 @@
   /* -- BOTTLE COMPARISON -- */
   .cmp-top { padding: 0 48px 22px; display: -webkit-flex; display: flex; -webkit-align-items: flex-end; align-items: flex-end; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 12px 16px; }
   #cmp-diff-btn { margin-bottom: 6px; }
+  .cmp-pickers { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; gap: 0 16px; -webkit-flex: 1 1 auto; flex: 1 1 auto; }
+  .cmp-pickers .form-group { width: 300px; max-width: 100%; }
+  .cmp-pickers .cmp-select { width: 100%; }
   .cmp-table { table-layout: fixed; min-width: 560px; }
   .cmp-table col.cmp-lcol { width: 190px; }
   .cmp-table td { white-space: normal; padding: 10px 14px; vertical-align: top; }
@@ -13463,7 +13466,7 @@ function renderProduction() {
    recipe behind it (incl. SCOBY), Labo readings and tasting notes. Read-only;
    rows whose values differ are marked so the differences stand out. The
    picks are remembered on this device. */
-var CMP_SLOTS = 3;
+// Any number of bottles: the picked ones plus one empty picker to add another.
 var cmpOnlyDiff = false;
 function cmpUnits() {
   var list = bottles.slice().sort(cmpBottles);
@@ -13484,13 +13487,15 @@ function cmpUnitSpices(u) {
 function cmpGetSel() {
   var s = [];
   try { s = JSON.parse(lsGet('toka_cmp_sel') || '[]') || []; } catch (e) { s = []; }
-  while (s.length < CMP_SLOTS) s.push('');
-  return s.slice(0, CMP_SLOTS);
+  s = s.filter(Boolean);
+  s.push('');
+  while (s.length < 2) s.push('');
+  return s;
 }
 function cmpSetSlot(i, key) {
   var s = cmpGetSel();
   s[i] = key || '';
-  lsSet('toka_cmp_sel', JSON.stringify(s));
+  lsSet('toka_cmp_sel', JSON.stringify(s.filter(Boolean)));
   renderCompare();
 }
 function cmpToggleDiff() { cmpOnlyDiff = !cmpOnlyDiff; renderCompare(); }
@@ -13690,9 +13695,9 @@ function renderCompare() {
 
   // Pickers
   var ph = '';
-  for (var i = 0; i < CMP_SLOTS; i++) {
+  for (var i = 0; i < sel.length; i++) {
     var cur = sel[i] && byKey[sel[i]];
-    var emptyTxt = i < 2 ? '\u2014 pick a bottle \u2014' : '\u2014 none \u2014';
+    var emptyTxt = sel[i] ? '\u2014 remove \u2014' : (i < 2 ? '\u2014 pick a bottle \u2014' : '\u2014 add a bottle \u2014');
     var opt = function (u) {
       var sp = cmpUnitSpices(u);
       return '<option value="' + esc(u.key) + '"' + (sel[i] === u.key ? ' selected' : '') + '>' + esc(u.id + (sp ? ' \u00b7 ' + sp : '')) + '</option>';
@@ -13702,7 +13707,7 @@ function renderCompare() {
     var opts = '<option value=""' + (cur ? '' : ' selected') + '>' + emptyTxt + '</option>'
       + (act ? '<optgroup label="active">' + act + '</optgroup>' : '')
       + (arc ? '<optgroup label="archived">' + arc + '</optgroup>' : '');
-    ph += '<div class="form-group"><label>Bottle ' + (i + 1) + (i === 2 ? ' (optional)' : '') + '</label>'
+    ph += '<div class="form-group"><label>Bottle ' + (i + 1) + (i >= 2 && !sel[i] ? ' (optional)' : '') + '</label>'
       + '<select class="cmp-select" onchange="cmpSetSlot(' + i + ', this.value)">' + opts + '</select></div>';
   }
   pick.innerHTML = ph;
@@ -13718,7 +13723,7 @@ function renderCompare() {
 
   var data = chosen.map(cmpData);
   var anyInf = data.some(function (d) { return d._hasInf; });
-  var h = '<div class="table-scroll"><table class="cmp-table"><colgroup><col class="cmp-lcol">';
+  var h = '<div class="table-scroll"><table class="cmp-table" style="min-width:' + (190 + chosen.length * 170) + 'px"><colgroup><col class="cmp-lcol">';
   chosen.forEach(function () { h += '<col>'; });
   h += '</colgroup><tbody>';
   // A row differs when its filled values aren't all the same. An amount row
