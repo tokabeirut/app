@@ -2139,7 +2139,7 @@
     <div class="pt-field-row">
       <div class="form-group">
         <label>Amount taken (L)</label>
-        <input type="number" id="sp-litres" min="0" step="any" placeholder="e.g. 4" oninput="updateSplitPreview()" />
+        <input type="number" id="sp-litres" min="0" step="any" placeholder="e.g. 4" oninput="this.dataset.auto='';updateSplitPreview()" />
       </div>
       <div class="form-group">
         <label>New vessel</label>
@@ -2153,7 +2153,7 @@
         <textarea id="sp-notes" placeholder="Why you split it, what you plan to do with it."></textarea>
       </div>
     </div>
-    <div class="hint">The new batch keeps the original creation date in its ID, gets the recipe scaled to the litres taken, and shows the original batch&rsquo;s Labo readings up to today.</div>
+    <div class="hint">The new batch keeps the original creation date in its ID, gets the recipe scaled to the litres taken, and shows the original batch&rsquo;s Labo readings up to the split date. Pick the original&rsquo;s own vessel to make what stays there its own branch too (it gets -B in its ID; the original is archived once it&rsquo;s empty).</div>
   </div>
   <div class="drawer-foot">
     <button class="btn-ghost" onclick="closeSplitDrawer()">Cancel</button>
@@ -6008,10 +6008,14 @@ function openSplitDrawer(u) {
   var total = batchTotalL(b), left = batchRemainingL(b);
   document.getElementById('split-from').textContent = (b.id || b.vessel) + (total > 0 ? ' \u00b7 ' + fmtNum(Math.round(left * 100) / 100) + ' L in the vessel' : '');
   document.getElementById('sp-date').value = todayISO();
-  document.getElementById('sp-litres').value = '';
+  document.getElementById('sp-litres').value = ''; document.getElementById('sp-litres').dataset.auto = '';
   var sel = document.getElementById('sp-vessel');
-  sel.innerHTML = VESSEL_OPTS.split(',').filter(function (v) { return v !== String(b.vessel || '').toUpperCase(); })
-    .map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('');
+  var own = String(b.vessel || '').toUpperCase();
+  // The original's own vessel is offered too: "the rest stays here" becomes its
+  // own branch (e.g. 20 L to TANK 1, the other 20 L stays in TANK 2 with its own sugar).
+  sel.innerHTML = VESSEL_OPTS.split(',').filter(function (v) { return v !== own; })
+    .map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('')
+    + (own ? '<option value="' + esc(own) + '">' + esc(own + ' (same vessel: the rest stays here)') + '</option>' : '');
   // Default to the first jar that no active batch is using.
   var busy = {};
   batches.forEach(function (x) { if (!x.archived) busy[String(x.vessel || '').toUpperCase()] = true; });
@@ -6030,9 +6034,14 @@ function splitChildRecord(p, litres, vessel, splitDate, notes) {
   var total = batchTotalL(p);
   var f = total > 0 ? litres / total : 0;
   function sc(v, dp) { var n = parseFloat(v); if (isNaN(n) || !f) return ''; var m = Math.pow(10, dp); return String(Math.round(n * f * m) / m); }
+  // Unique ID: a split into a vessel that already has this ID (e.g. the
+  // original's own tank) gets -B, -C… added.
+  var baseId = 'F1-' + dateCode(p.date) + '-' + vesselCode(vessel), newId = baseId, n = 1;
+  var taken = {}; batches.forEach(function (x) { taken[String(x.id || '').toUpperCase()] = true; });
+  while (taken[newId.toUpperCase()]) { n++; newId = baseId + '-' + String.fromCharCode(64 + n); }
   return {
     uid: uid(),
-    id: 'F1-' + dateCode(p.date) + '-' + vesselCode(vessel),
+    id: newId,
     date: p.date, vessel: vessel,
     sugar: sc(p.sugar, 3), sugarSource: p.sugarSource || '',
     tea: sc(p.tea, 1), teaType: p.teaType || '', steep: p.steep || '',
@@ -6043,16 +6052,24 @@ function splitChildRecord(p, litres, vessel, splitDate, notes) {
     parentUid: p.uid, splitDate: splitDate, splitLitres: String(litres)
   };
 }
+function splitIsSameVessel(p) { return !!p && String(val('sp-vessel') || '').toUpperCase() === String(p.vessel || '').toUpperCase(); }
 function updateSplitPreview() {
   var p = batchByUid(splittingUid), el = document.getElementById('split-preview');
   if (!p || !el) return;
+  var same = splitIsSameVessel(p), leftNow = Math.round(batchRemainingL(p) * 100) / 100;
+  // Same vessel: by default the whole rest becomes the new branch.
+  var lit = document.getElementById('sp-litres');
+  if (same && !lit.value && leftNow > 0) { lit.value = leftNow; lit.dataset.auto = '1'; }
+  else if (!same && lit.dataset.auto === '1') { lit.value = ''; lit.dataset.auto = ''; }
   var l = parseFloat(val('sp-litres'));
   var c = splitChildRecord(p, l > 0 ? l : 0, val('sp-vessel'), val('sp-date'), '');
   var bits = ['New ID: ' + c.id];
   if (l > 0 && batchTotalL(p) > 0) {
     if (c.tea) bits.push('tea ' + c.tea + ' g');
     if (c.sugar) bits.push('sugar ' + c.sugar + ' kg');
-    bits.push(fmtNum(Math.round((batchRemainingL(p) - l) * 100) / 100) + ' L stays in ' + (p.vessel || p.id));
+    var rest = Math.round((batchRemainingL(p) - l) * 100) / 100;
+    if (same && rest <= 0) bits.push('the original batch is then empty and gets archived');
+    else bits.push(fmtNum(rest) + ' L stays in ' + (p.vessel || p.id));
   }
   el.textContent = bits.join(' \u00b7 ');
 }
@@ -6064,8 +6081,10 @@ function saveSplit() {
   var date = val('sp-date') || todayISO();
   if (!(litres > 0)) { alert('Enter how many litres you took.'); return; }
   if (!vessel) { alert('Pick the new vessel.'); return; }
-  var left = batchRemainingL(p);
-  if (batchTotalL(p) > 0 && litres >= left) { alert('That\u2019s more than the ' + fmtNum(Math.round(left * 100) / 100) + ' L left in ' + (p.vessel || p.id) + '.'); return; }
+  var left = batchRemainingL(p), same = splitIsSameVessel(p);
+  // Same vessel may take all that's left (the rest becomes its own branch); another vessel must leave some.
+  if (batchTotalL(p) > 0 && (same ? litres > left + 1e-9 : litres >= left)) { alert('That\u2019s more than the ' + fmtNum(Math.round(left * 100) / 100) + ' L left in ' + (p.vessel || p.id) + '.'); return; }
+  var emptied = same && batchTotalL(p) > 0 && litres >= left - 1e-9;
   var c = splitChildRecord(p, litres, vessel, date, val('sp-notes').trim());
   var btn = document.getElementById('split-save-btn');
   btn.disabled = true; btn.textContent = 'saving\u2026';
@@ -6074,7 +6093,13 @@ function saveSplit() {
     btn.disabled = false; btn.textContent = 'Split off';
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. If this keeps happening, redeploy the latest toka-brewlog-backend.gs as a new version.'); return; }
     closeSplitDrawer();
-    loadData();
+    // Everything left moved into its own branch in the same vessel: the
+    // original is empty now, so it's archived (its readings stay and are
+    // still shown on both branches up to the split date).
+    if (emptied) {
+      var pc = JSON.parse(JSON.stringify(p)); pc.archived = true;
+      apiPost({ action: 'update', batch: pc }, function () { loadData(); });
+    } else loadData();
   });
 }
 
