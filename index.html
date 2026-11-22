@@ -19,6 +19,8 @@
 <title>toka</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet"/>
 <style>
+  /* iPhone Safari enlarges text in wide (sideways-scrolling) tables on its own; keep every size as set. */
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   :root {
     --bg: #faf8f4;
     --surface: #ffffff;
@@ -7761,7 +7763,8 @@ function soldBatchOptionsHtml(rec) {
     if (String(g.flavour).toLowerCase() !== fl || !(g.made[sz] > 0)) return;
     var left = g.left[sz] || 0, isCur = g.key === rec.bottling;
     if (isCur) found = true;
-    if (left <= 0 && !isCur) return;
+    // Every batch of this flavour and size is listed, also those with none
+    // left: "oldest first" can make a batch look empty when it isn't.
     h += '<option value="' + esc(g.key) + '"' + (isCur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
   });
   if (!found) h += '<option value="' + esc(rec.bottling) + '" selected>' + esc(bivBottlingRefName(rec.bottling)) + '</option>';
@@ -7787,7 +7790,7 @@ function saveSoldRowBatch(rec, bottling) {
 }
 function startBatchInline(td, rec) {
   var el = document.createElement('select'); el.className = 'cell-edit';
-  if (rec.stage === 'sold' && rec.orderId) {
+  if (rec.stage === 'sold') {
     el.innerHTML = soldBatchOptionsHtml(rec);
     var cur0 = el.value;
     mountCellEditor(td, el);
@@ -7795,7 +7798,15 @@ function startBatchInline(td, rec) {
     var fin0 = function (save) {
       if (done0) return; done0 = true; editingCell = false;
       if (!save || el.value === cur0) { renderBottleInventory(); return; }
-      saveSoldRowBatch(rec, el.value);
+      if (rec.orderId) { saveSoldRowBatch(rec, el.value); return; }
+      // Sold row typed in by hand (no order): the batch is saved on the row itself.
+      rec.bottling = el.value;
+      renderBottleInventory();
+      setSyncStatus('saving', 'saving\u2026');
+      apiPost({ action: 'updateBottleInvEntry', entry: JSON.parse(JSON.stringify(rec)) }, function (err, res) {
+        if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); loadBottleInventory(); return; }
+        setSyncStatus('live', 'connected \u00b7 google sheets');
+      });
     };
     el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); fin0(true); } else if (e.key === 'Escape') { e.preventDefault(); fin0(false); } });
     el.addEventListener('blur', function () { fin0(true); });
@@ -10540,12 +10551,22 @@ function bivFlavourOptionsHtml() { return bivOptionsHtml(bivFlavourOptsString())
 // entry does (and whether a flavour is needed), so there's a single place to
 // log anything instead of a separate box per stage.
 var BIV_MOVES = [
-  ['depot', 'empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
-  ['atelier', 'empty bottles at atelier', 'e.g. brought back by Claire from the depot'],
-  ['filled', 'filled bottles at atelier', 'optional'],
-  ['consumed', 'consumed bottles', 'e.g. gave to Kevin'],
-  ['consumed-empty', 'consumed empty bottles', 'e.g. broke one, used for a test']
-];   // no "recycled" anymore: bottles aren't recycled (old recycled rows stay in the log)
+  ['depot', 'depot \u2022 empty bottles sitting at the depot', 'e.g. new delivery to Karl’s depot'],
+  ['atelier', 'atelier \u2022 empty bottles brought to the atelier', 'e.g. brought back by Claire from the depot'],
+  ['filled', 'filled \u2022 bottled kombucha at the atelier, ready to sell', 'optional'],
+  ['consumed', 'consumed \u2022 used up without a sale: tasted, given away, tested, broken', 'e.g. gave to Kevin, broke an empty one']
+];
+// Consumed: besides a batch, the picker offers "empty" (a broken empty
+// bottle, one used for a test…). Picking it shows the Size box; it saves a
+// 'consumed-empty' row: off the empty stock at the atelier, not off a batch.
+var BIV_EMPTY_PICK = '__empty__';
+function bivEmptyBottleOptionsHtml() {
+  return '<option value="' + BIV_EMPTY_PICK + '">empty</option>';
+}
+function bivConsumedPickChanged() {
+  if (val('biv-move') !== 'consumed') return;
+  document.getElementById('biv-mv-size-row').style.display = (val('biv-mv-flavour') === BIV_EMPTY_PICK) ? '' : 'none';
+}   // no "recycled" anymore: bottles aren't recycled (old recycled rows stay in the log)
 function bivAddFormsHtml() {
   var today = todayISO();
   var moveOpts = BIV_MOVES.map(function (m) { return '<option value="' + m[0] + '">' + esc(m[1]) + '</option>'; }).join('');
@@ -10554,7 +10575,7 @@ function bivAddFormsHtml() {
     + '<div class="plan-field-row"><label class="plan-field-label">Movement</label><div class="plan-field-input"><select id="biv-move" onchange="bivMoveChanged()">' + moveOpts + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" id="biv-mv-date" value="' + today + '" /></div></div>'
     + '<div class="plan-field-row" id="biv-mv-size-row"><label class="plan-field-label">Size</label><div class="plan-field-input"><select id="biv-mv-size">' + bivSizeOptionsHtml() + '</select></div></div>'
-    + '<div class="plan-field-row" id="biv-mv-flavour-row" style="display:none"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-mv-flavour">' + bivFlavourOptionsHtml() + '</select></div></div>'
+    + '<div class="plan-field-row" id="biv-mv-flavour-row" style="display:none"><label class="plan-field-label">Flavour</label><div class="plan-field-input"><select id="biv-mv-flavour" onchange="bivConsumedPickChanged()">' + bivFlavourOptionsHtml() + '</select></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Quantity</label><div class="plan-field-input"><input type="number" min="1" step="1" id="biv-mv-qty" placeholder="e.g. 24" /></div></div>'
     + '<div class="plan-field-row"><label class="plan-field-label">Notes</label><div class="plan-field-input"><input type="text" id="biv-mv-notes" placeholder="' + esc(BIV_MOVES[0][2]) + '" /></div></div>'
     + '<button type="button" class="btn-primary" onclick="bivAddMovement()">+ Add</button>'
@@ -10588,7 +10609,7 @@ function bivMoveChanged() {
   if (fsel && needsFlavour) {
     if (mv === 'consumed') {
       // Which batch: a bottling with bottles left of this size, or any batch of a flavour.
-      fsel.innerHTML = bivBatchOptionsHtml('', '', '');
+      fsel.innerHTML = bivBatchOptionsHtml('', '', '') + bivEmptyBottleOptionsHtml();
     } else {
       fsel.innerHTML = bivFlavourOptionsHtml();
       fsel.value = 'Cardamom Sumac';
@@ -10601,7 +10622,8 @@ function bivAddMovement() {
   var mv = val('biv-move');
   var size = val('biv-mv-size');
   var flavour = val('biv-mv-flavour').trim(), bottling = '';
-  if (mv === 'consumed') { var pb = bivParseBatch(flavour); flavour = String(pb.flavour || '').toLowerCase(); bottling = pb.bottling; size = pb.size || size; }
+  if (mv === 'consumed' && flavour === BIV_EMPTY_PICK) { mv = 'consumed-empty'; flavour = 'empty'; }
+  else if (mv === 'consumed') { var pb = bivParseBatch(flavour); flavour = String(pb.flavour || '').toLowerCase(); bottling = pb.bottling; size = pb.size || size; }
   var qty = parseFloat(val('biv-mv-qty'));
   var date = val('biv-mv-date') || todayISO();
   var notes = val('biv-mv-notes').trim();
@@ -10614,7 +10636,7 @@ function bivAddMovement() {
   else if (mv === 'filled') body = { action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } };
   else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, bottling: bottling, qty: -qty, notes: notes } };
   // An empty bottle used up (broken, a test…): leaves the empty stock at the atelier.
-  else if (mv === 'consumed-empty') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed-empty', size: size, date: date, qty: -qty, notes: notes } };
+  else if (mv === 'consumed-empty') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed-empty', size: size, date: date, flavour: flavour, qty: -qty, notes: notes } };
   else return;
   setSyncStatus('saving', 'saving…');
   apiPost(body, function (err, res) {
@@ -10628,7 +10650,7 @@ function bivStageLabel(stage) {
   if (stage === 'atelier') return 'atelier';
   if (stage === 'filled') return 'filled';
   if (stage === 'consumed') return 'consumed';
-  if (stage === 'consumed-empty') return 'consumed (empty)';
+  if (stage === 'consumed-empty') return 'consumed';
   if (stage === 'recycled') return 'recycled';
   if (stage === 'sold') return 'sold';
   if (stage === 'other') return 'other';
@@ -10833,11 +10855,11 @@ function bivPairs() {
 // came from; it is saved on the order line (not shown in Sales) so it stays
 // when the order is saved again. Other rows: flavour select.
 function bivFlavourCellHtml(e) {
-  if (e.stage === 'consumed-empty') return '<td class="muted">\u2014</td>';
+  if (e.stage === 'consumed-empty') return '<td>' + esc(e.flavour || 'empty') + '</td>';
   var inner = esc(productName(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref biv-batch-fifo" title="no batch chosen: taken from the oldest batch first">' + (bivFifoText(e) ? esc(bivFifoText(e)) + ' · oldest first' : 'any batch') + '</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
-  if (e.stage === 'sold' && e.orderId) return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
+  if (e.stage === 'sold') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
   return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'select', options: bivFlavourOptsString(e.flavour) });
 }
 function bivRowHtml(e, sub, newDate, extras) {
