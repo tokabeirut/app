@@ -10429,8 +10429,10 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   // line always finds its own batch again.
   var curL = cur.toLowerCase(), matched = false;
   function isCur(v) { if (!matched && v.toLowerCase() === curL) { matched = true; return true; } return false; }
-  var h = '', flavours = bivActiveFlavours().slice();
+  var h = '', hTrial = '', flavours = bivActiveFlavours().slice();
   var gl = bivBottlings().slice();
+  // Consumed: newest batch first, split into the flavours we sell and trials.
+  if (!sellOnly) gl.sort(function (a, b) { return String(a.date || '') < String(b.date || '') ? 1 : String(a.date || '') > String(b.date || '') ? -1 : 0; });
   // Orders: oldest batch first.
   if (sellOnly) gl.sort(function (a, b) { return String(a.date || '') < String(b.date || '') ? -1 : String(a.date || '') > String(b.date || '') ? 1 : 0; });
   gl.forEach(function (g) {
@@ -10442,15 +10444,23 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
       // Orders (one flavour on sale): "BTL-20261030-375-CS · 30 Oct 2026 · 94 left";
       // elsewhere the flavour is named too.
       var showFl = !(sellOnly && SELL_FLAVOURS.length === 1);
+      if (!sellOnly) {
+        // Just the batch id (it says the date, size and flavour); a bottling
+        // filled by hand has no id, so that one keeps flavour, size and date.
+        var lab = g.ids.length ? bivBottlingName(g) : bivBottlingName(g) + ' · ' + productName(g.flavour) + ' ' + bivSizeShort(sz) + ' · ' + fmtDate(g.date);
+        var o = '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(lab + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
+        if (isSellFlavour(g.flavour)) h += o; else hTrial += o;
+        return;
+      }
       h += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(bivBottlingName(g) + (showFl ? ' · ' + productName(g.flavour) : '') + (g.ids.length ? '' : ' ' + bivSizeShort(sz)) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
       if (flavours.indexOf(g.flavour) === -1) flavours.push(g.flavour);
     });
   });
-  if (sellOnly) flavours = flavours.filter(isSellFlavour);
+  flavours = flavours.filter(isSellFlavour);   // "any batch" only for the flavours we sell; trials always name their batch
   // One option per flavour, whatever its capitals (lowercase wins).
   var seenF = {};
   flavours = flavours.map(function (f) { return String(f || '').toLowerCase(); }).filter(function (f) { if (seenF[f]) return false; seenF[f] = 1; return true; });
-  if (selFlavour && !flavours.some(function (f) { return String(f).toLowerCase() === String(selFlavour).toLowerCase(); })) flavours.push(selFlavour);
+  if (selFlavour && (sellOnly || !selBottling) && !flavours.some(function (f) { return String(f).toLowerCase() === String(selFlavour).toLowerCase(); })) flavours.push(selFlavour);
   var any = '';
   flavours.forEach(function (f) {
     BIV_SIZES.forEach(function (sz) {
@@ -10474,7 +10484,10 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
     }
     return keep + any.replace(/ — any batch/g, '');
   }
-  return keep + '<optgroup label="any batch (oldest first)">' + any + '</optgroup>' + (h ? '<optgroup label="batches">' + h + '</optgroup>' : '');
+  var sellName = SELL_FLAVOURS.length === 1 ? productName(SELL_FLAVOURS[0]) + ' batches' : 'batches';
+  return keep + '<optgroup label="any batch (oldest first)">' + any + '</optgroup>'
+    + (h ? '<optgroup label="' + esc(sellName) + '">' + h + '</optgroup>' : '')
+    + (hTrial ? '<optgroup label="trials">' + hTrial + '</optgroup>' : '');
 }
 function bivParseBatch(v) {
   var p = String(v || '').split('||');
@@ -10561,7 +10574,7 @@ var BIV_MOVES = [
 // 'consumed-empty' row: off the empty stock at the atelier, not off a batch.
 var BIV_EMPTY_PICK = '__empty__';
 function bivEmptyBottleOptionsHtml() {
-  return '<option value="' + BIV_EMPTY_PICK + '">empty</option>';
+  return '<optgroup label="no batch"><option value="' + BIV_EMPTY_PICK + '">empty</option></optgroup>';
 }
 function bivConsumedPickChanged() {
   if (val('biv-move') !== 'consumed') return;
