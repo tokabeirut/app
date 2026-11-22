@@ -10151,6 +10151,10 @@ function bivBalances() {
       sold[scat] = (sold[scat] || 0) + Math.abs(q);
       soldByFlavourSize[fcat] = soldByFlavourSize[fcat] || {};
       soldByFlavourSize[fcat][scat] = (soldByFlavourSize[fcat][scat] || 0) + Math.abs(q);
+    } else if (stage === 'consumed-empty') {
+      // Empty bottle used up (broken, a test…): out of the empty stock at the atelier.
+      atelierEmpty[scat] = (atelierEmpty[scat] || 0) - Math.abs(q);
+      add(atelierOut, scat, Math.abs(q));
     } else if (stage === 'atelier') {
       atelierEmpty[scat] = (atelierEmpty[scat] || 0) + q;
       if (q >= 0) add(atelierIn, scat, q); else add(atelierOut, scat, -q);
@@ -10491,7 +10495,7 @@ function bivFlavourBottlingsHtml(fl, sizes) {
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
 var BIV_SIZE_OPTS = 'small (375ml),big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
-var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,other:Other';
+var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,consumed-empty:Consumed (empty),other:Other';
 // Old recycled rows keep "Recycled" in their own stage picker; no other row offers it.
 function bivStageOpts(e) { return e && e.stage === 'recycled' ? BIV_STAGE_OPTS.replace(',other:', ',recycled:Recycled,other:') : BIV_STAGE_OPTS; }
 function bivOptionsHtml(optStr) {
@@ -10539,7 +10543,8 @@ var BIV_MOVES = [
   ['depot', 'empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
   ['atelier', 'empty bottles at atelier', 'e.g. brought back by Claire from the depot'],
   ['filled', 'filled bottles at atelier', 'optional'],
-  ['consumed', 'consumed bottles', 'e.g. gave to Kevin']
+  ['consumed', 'consumed bottles', 'e.g. gave to Kevin'],
+  ['consumed-empty', 'consumed empty bottles', 'e.g. broke one, used for a test']
 ];   // no "recycled" anymore: bottles aren't recycled (old recycled rows stay in the log)
 function bivAddFormsHtml() {
   var today = todayISO();
@@ -10608,6 +10613,8 @@ function bivAddMovement() {
   else if (mv === 'atelier') body = { action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes } };
   else if (mv === 'filled') body = { action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } };
   else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, bottling: bottling, qty: -qty, notes: notes } };
+  // An empty bottle used up (broken, a test…): leaves the empty stock at the atelier.
+  else if (mv === 'consumed-empty') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed-empty', size: size, date: date, qty: -qty, notes: notes } };
   else return;
   setSyncStatus('saving', 'saving…');
   apiPost(body, function (err, res) {
@@ -10621,6 +10628,7 @@ function bivStageLabel(stage) {
   if (stage === 'atelier') return 'atelier';
   if (stage === 'filled') return 'filled';
   if (stage === 'consumed') return 'consumed';
+  if (stage === 'consumed-empty') return 'consumed (empty)';
   if (stage === 'recycled') return 'recycled';
   if (stage === 'sold') return 'sold';
   if (stage === 'other') return 'other';
@@ -10788,7 +10796,7 @@ function bivFlavourRank(flavour) {
 // Top to bottom within a day: Recycled, Sold, Consumed, Filled, Atelier,
 // Other, Depot (an empty stage counts as Depot).
 function bivStageRank(stage) {
-  var order = ['check', 'recycled', 'sold', 'consumed', 'filled', 'atelier', 'other', 'depot'];   // stock check on top of its day
+  var order = ['check', 'recycled', 'sold', 'consumed', 'consumed-empty', 'filled', 'atelier', 'other', 'depot'];   // stock check on top of its day
   var i = order.indexOf(stage || 'depot');
   return i < 0 ? order.length : i;
 }
@@ -10825,6 +10833,7 @@ function bivPairs() {
 // came from; it is saved on the order line (not shown in Sales) so it stays
 // when the order is saved again. Other rows: flavour select.
 function bivFlavourCellHtml(e) {
+  if (e.stage === 'consumed-empty') return '<td class="muted">\u2014</td>';
   var inner = esc(productName(e.flavour) || '—') + (e.bottling ? '<div class="biv-batch-ref">' + esc(bivBottlingRefName(e.bottling)) + '</div>'
     : ((e.stage === 'consumed' || e.stage === 'sold') ? '<div class="biv-batch-ref biv-batch-fifo" title="no batch chosen: taken from the oldest batch first">' + (bivFifoText(e) ? esc(bivFifoText(e)) + ' · oldest first' : 'any batch') + '</div>' : ''));
   if (e.stage === 'consumed') return cellEd(inner, { type: 'bottleinv', uid: e.id, field: 'flavour', input: 'batch' });
@@ -10837,7 +10846,7 @@ function bivRowHtml(e, sub, newDate, extras) {
   var qtyDisp = (qtyNum > 0 ? '+' : '') + fmtNum(qtyNum);
   // Exits (sold, consumed) take bottles out of stock: always shown as -n,
   // on one line with no counter line.
-  if ((e.stage === 'sold' || e.stage === 'consumed') && qtyNum) qtyDisp = '-' + fmtNum(Math.abs(qtyNum));
+  if ((e.stage === 'sold' || e.stage === 'consumed' || e.stage === 'consumed-empty') && qtyNum) qtyDisp = '-' + fmtNum(Math.abs(qtyNum));
   var autoTag = '';
   var cls = [];
   // Main movements are always in normal type, even when written
