@@ -119,8 +119,9 @@
   .home-section { margin-bottom: 40px; }
   .home-section:last-child { margin-bottom: 0; }
   .home-section-title { font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0.02em; color: var(--ink-faint); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
-  .home-section-grid { display: -webkit-grid; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .feature-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+  .home-section-grid { display: -webkit-grid; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }   /* 4 cards per row */
+  @media (max-width: 980px) { .home-section-grid { grid-template-columns: repeat(2, 1fr); } }
+  .feature-card { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 18px; box-shadow: var(--shadow); }
   .feature-card.clickable { cursor: pointer; -webkit-transition: border-color .15s, box-shadow .15s, -webkit-transform .15s; transition: border-color .15s, box-shadow .15s, transform .15s; }
   .feature-card.clickable:hover { border-color: var(--terra-light); box-shadow: var(--shadow-lg); -webkit-transform: translateY(-2px); transform: translateY(-2px); }
   .feature-card .card-head { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 11px; margin-bottom: 9px; }
@@ -5982,17 +5983,34 @@ function batchScobyOutL(b) {
   batches.forEach(function (x) { starterSources(x).forEach(function (s) { if (String(s.uid) === String(b.uid)) n += parseFloat(s.l) || 0; }); });
   return n;
 }
-// What is left in the vessel: volume − split-offs − litres used as SCOBY elsewhere.
+// Litres of this batch that went into infusions: the amount noted per source,
+// or, for an infusion with only this one source, the infusion's volume.
+function batchInfusionOutL(b) {
+  var n = 0;
+  infusions.forEach(function (inf) {
+    var ents = sourceEntries(inf);
+    ents.forEach(function (e) {
+      if (String(e.uid) !== String(b.uid)) return;
+      var a = parseFloat(e.amount);
+      if (a > 0) n += a;
+      else if (ents.length === 1) n += parseFloat(inf.volumeL) || 0;
+    });
+  });
+  return n;
+}
+// What is left in the vessel: volume − split-offs − litres used as SCOBY
+// elsewhere − litres taken into infusions.
 function batchRemainingL(b) {
   return (batchTotalL(b) || parseFloat(b.splitLitres) || 0)
     - batchBranches(b).reduce(function (a, x) { return a + (parseFloat(x.splitLitres) || 0); }, 0)
-    - batchScobyOutL(b);
+    - batchScobyOutL(b)
+    - batchInfusionOutL(b);
 }
 // Under the volume (Volume column) of a batch that had something split off or
 // was partly used as SCOBY for another batch: just "→ 15 L" (what is left in
 // it). Details live in the edit drawers.
 function batchBranchNoteHtml(b) {
-  if ((!batchBranches(b).length && !(batchScobyOutL(b) > 0)) || !((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0)) return '';
+  if ((!batchBranches(b).length && !(batchScobyOutL(b) > 0) && !(batchInfusionOutL(b) > 0)) || !((batchTotalL(b) || parseFloat(b.splitLitres) || 0) > 0)) return '';
   var left = Math.round(batchRemainingL(b) * 100) / 100;
   if (left === 0) return '';   // nothing left: no line (the batch gets archived); below 0 shows e.g. "→ -2 L"
   return '<div class="f1-branch-note f1-left">' + esc('\u2192 ' + (left < 0 ? '-' + fmtNum(-left) : fmtNum(left)) + ' L') + '</div>';

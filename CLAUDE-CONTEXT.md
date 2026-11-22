@@ -223,3 +223,5 @@ subtotal={{ subtotal_price }}<br>
 - Sold-row batch picker (index v180): newest batch first, labels batch id · n left (date only for hand-filled). Consumed picker was already newest first. Rows with a chosen batch never show 'oldest first' (only FIFO rows without bottling do).
 - Consumed row batch picker in the movement log (index v182): only batches / 'any batch' of the row's own bottle size (bivBatchOptionsHtml 5th param onlySize). Add form still lists both sizes (it has no size picked).
 - Split drawer (index v183): the original's own vessel is offered ('TANK 2 (same vessel: the rest stays here)'); picking it prefills all litres left and may take all of it; the new branch's ID gets -B, -C… when the ID already exists (splitChildRecord makes IDs unique); if the split empties the original, the original is archived after saving.
+- Home cards (index v184): 4 per row (2 below 980px, 1 on phones), padding 18px, gap 12px.
+- Fermentation remaining litres (index v185): batchRemainingL also subtracts batchInfusionOutL = litres taken into infusions (amount per source if given, else the infusion's volume when it has only that one source).
