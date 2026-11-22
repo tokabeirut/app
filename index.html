@@ -7814,7 +7814,7 @@ function startBatchInline(td, rec) {
     el.addEventListener('change', function () { fin0(true); });
     return;
   }
-  el.innerHTML = bivBatchOptionsHtml(rec.bottling || '', rec.flavour || '', rec.size || '');
+  el.innerHTML = bivBatchOptionsHtml(rec.bottling || '', rec.flavour || '', rec.size || '', false, rec.size || '');
   var curV = el.value;
   mountCellEditor(td, el);
   var done = false;
@@ -10423,7 +10423,9 @@ function bivBottlingByKey(key, flavour) {
 // Values: "<bottling key>||<flavour>||<size>", or "||<flavour>||<size>".
 var BIV_SIZES = ['small (375ml)', 'big (750ml)'];
 function bivSizeShort(sizeLabel) { var m = /(\d+)\s*ml/i.exec(String(sizeLabel || '')); return m ? m[1] + ' ml' : String(sizeLabel || ''); }
-function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
+// onlySize (a row in the movement log): only batches and "any batch" options of that bottle size.
+function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly, onlySize) {
+  var onlySz = onlySize ? String(onlySize).toLowerCase() : '';
   if (!selBottling && !selFlavour) { selFlavour = 'cardamom sumac'; selSize = selSize || BIV_SIZES[0]; }   // default: cardamom sumac 375 ml, any batch
   var cur = (selBottling || '') + '||' + (selFlavour || '') + '||' + (selSize || '');
   // Matched without caring about capitals ("Sumac" = "sumac"), so an older
@@ -10438,6 +10440,7 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   if (sellOnly) gl.sort(function (a, b) { return String(a.date || '') < String(b.date || '') ? -1 : String(a.date || '') > String(b.date || '') ? 1 : 0; });
   gl.forEach(function (g) {
     Object.keys(g.made).forEach(function (sz) {
+      if (onlySz && String(sz).toLowerCase() !== onlySz && (g.key + '||' + g.flavour + '||' + sz).toLowerCase() !== curL) return;
       var left = g.left[sz] || 0, v = g.key + '||' + g.flavour + '||' + sz;
       if ((g.made[sz] || 0) <= 0 && v.toLowerCase() !== curL) return;
       if (sellOnly && left <= 0 && v.toLowerCase() !== curL) return;   // orders: only batches with bottles left
@@ -10465,6 +10468,7 @@ function bivBatchOptionsHtml(selBottling, selFlavour, selSize, sellOnly) {
   var any = '';
   flavours.forEach(function (f) {
     BIV_SIZES.forEach(function (sz) {
+      if (onlySz && String(sz).toLowerCase() !== onlySz) return;
       var v = '||' + f + '||' + sz;
       any += '<option value="' + esc(v) + '"' + (isCur(v) ? ' selected' : '') + '>' + esc(productName(f) + ' ' + bivSizeShort(sz) + ' — any batch') + '</option>';
     });
