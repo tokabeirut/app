@@ -10491,7 +10491,9 @@ function bivFlavourBottlingsHtml(fl, sizes) {
 // for the movement log's inline select editors (data-eo, see cellEd/startInline).
 var BIV_SIZE_OPTS = 'small (375ml),big (750ml)';
 var BIV_FLAVOUR_OPTS = 'Sumac,Cardamom Sumac';
-var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,recycled:Recycled,other:Other';
+var BIV_STAGE_OPTS = 'depot:Depot,atelier:Atelier,filled:Filled,sold:Sold,consumed:Consumed,other:Other';
+// Old recycled rows keep "Recycled" in their own stage picker; no other row offers it.
+function bivStageOpts(e) { return e && e.stage === 'recycled' ? BIV_STAGE_OPTS.replace(',other:', ',recycled:Recycled,other:') : BIV_STAGE_OPTS; }
 function bivOptionsHtml(optStr) {
   var parts = optStr.split(','), h = '';
   for (var i = 0; i < parts.length; i++) {
@@ -10537,9 +10539,8 @@ var BIV_MOVES = [
   ['depot', 'empty bottles at depot', 'e.g. new delivery to Karl’s depot'],
   ['atelier', 'empty bottles at atelier', 'e.g. brought back by Claire from the depot'],
   ['filled', 'filled bottles at atelier', 'optional'],
-  ['consumed', 'consumed bottles', 'e.g. gave to Kevin'],
-  ['recycled', 'recycled bottles', 'e.g. returned by a customer']
-];
+  ['consumed', 'consumed bottles', 'e.g. gave to Kevin']
+];   // no "recycled" anymore: bottles aren't recycled (old recycled rows stay in the log)
 function bivAddFormsHtml() {
   var today = todayISO();
   var moveOpts = BIV_MOVES.map(function (m) { return '<option value="' + m[0] + '">' + esc(m[1]) + '</option>'; }).join('');
@@ -10607,7 +10608,7 @@ function bivAddMovement() {
   else if (mv === 'atelier') body = { action: 'bringFromDepot', bring: { size: size, qty: qty, date: date, notes: notes } };
   else if (mv === 'filled') body = { action: 'fillBottles', fill: { size: size, flavour: flavour, qty: qty, date: date, notes: notes } };
   else if (mv === 'consumed') body = { action: 'createBottleInvEntry', entry: { stage: 'consumed', size: size, date: date, flavour: flavour, bottling: bottling, qty: -qty, notes: notes } };
-  else body = { action: 'createBottleInvEntry', entry: { stage: 'recycled', size: size, date: date, qty: qty, notes: notes } };
+  else return;
   setSyncStatus('saving', 'saving…');
   apiPost(body, function (err, res) {
     if (err || !res || !res.ok) { setSyncStatus('error', 'save failed'); alert('Could not save. Check your connection and try again.'); return; }
@@ -10847,7 +10848,7 @@ function bivRowHtml(e, sub, newDate, extras) {
   if (newDate) cls.push('date-start');   // orange line between dates, as on Bottling
   var h = '<tr' + (cls.length ? ' class="' + cls.join(' ') + '"' : '') + '>'
     + cellEd(fmtDate(e.date), { type: 'bottleinv', uid: e.id, field: 'date', input: 'date' })
-    + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: BIV_STAGE_OPTS })
+    + cellEd(esc(bivStageLabel(e.stage)), { type: 'bottleinv', uid: e.id, field: 'stage', input: 'select', options: bivStageOpts(e) })
     + cellEd(esc(e.size || '—'), { type: 'bottleinv', uid: e.id, field: 'size', input: 'select', options: BIV_SIZE_OPTS })
     + bivFlavourCellHtml(e)
     + cellEd(qtyDisp, { type: 'bottleinv', uid: e.id, field: 'qty', input: 'number', cls: 'num' })
