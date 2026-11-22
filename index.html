@@ -10540,7 +10540,7 @@ function bivFlavourOptsString(current) {
     if (e.stage === 'filled' || e.stage === 'sold' || e.stage === 'consumed') stock[e.flavour] = (stock[e.flavour] || 0) + (e.stage === 'filled' ? 1 : -1) * Math.abs(parseFloat(e.qty) || 0);
   });
   Object.keys(stock).forEach(function (f) { if (stock[f] > 0) rest.push(f); });
-  ['Cardamom Sumac', 'Sumac'].forEach(add);
+  ['cardamom sumac', 'sumac'].forEach(add);
   rest.sort(function (a, c) { return a.localeCompare(c); }).forEach(add);
   if (current) add(current);
   return list.filter(function (f) { return f.indexOf(',') === -1 && f.indexOf(':') === -1; })
@@ -10587,7 +10587,7 @@ function bivAddFormsHtml() {
 function bivActiveFlavours() {
   var seen = {}, out = [];
   function add(f) { f = String(f || '').trim(); var k = f.toLowerCase(); if (f && !seen[k]) { seen[k] = 1; out.push(f); } }
-  add('Cardamom Sumac');
+  add('cardamom sumac');
   var rest = [];
   bottles.forEach(function (b) {
     if (b.archived) return;
@@ -10612,7 +10612,7 @@ function bivMoveChanged() {
       fsel.innerHTML = bivBatchOptionsHtml('', '', '') + bivEmptyBottleOptionsHtml();
     } else {
       fsel.innerHTML = bivFlavourOptionsHtml();
-      fsel.value = 'Cardamom Sumac';
+      fsel.value = 'cardamom sumac';
     }
   }
   var m = BIV_MOVES.filter(function (x) { return x[0] === mv; })[0];
