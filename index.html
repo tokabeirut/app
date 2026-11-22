@@ -1715,17 +1715,17 @@
     <button type="button" class="view-tab" data-view="spices" onclick="showView('spices')">Spice<br>inventory</button>
   </div>
   <div class="view-tab-divider"></div>
-  <div class="view-tab-group" style="-webkit-flex-grow:5;flex-grow:5">
+  <div class="view-tab-group" style="-webkit-flex-grow:4;flex-grow:4">
     <button type="button" class="view-tab" data-view="f1" onclick="showView('f1')">Fermentation</button>
     <button type="button" class="view-tab" data-view="infusion" onclick="showView('infusion')">Infusion</button>
     <button type="button" class="view-tab" data-view="bottling" onclick="showView('bottling')">Bottling</button>
     <button type="button" class="view-tab" data-view="readings" onclick="showView('readings')">Labo</button>
-    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
   </div>
   <div class="view-tab-divider"></div>
-  <div class="view-tab-group" style="-webkit-flex-grow:2;flex-grow:2">
+  <div class="view-tab-group" style="-webkit-flex-grow:3;flex-grow:3">
     <button type="button" class="view-tab" data-view="today" onclick="showView('today')">Daily<br>operations</button>
     <button type="button" class="view-tab" data-view="production" onclick="showView('production')">Production<br>timeline</button>
+    <button type="button" class="view-tab" data-view="compare" onclick="showView('compare')">Bottle<br>comparison</button>
   </div>
 </nav>
 
@@ -1783,10 +1783,6 @@
         <div class="card-head"><span class="name">Labo</span></div>
         <div class="desc">Brix %, pH &amp; temperature readings for every batch, logged over time.</div>
       </div>
-      <div class="feature-card clickable" onclick="showView('compare')">
-        <div class="card-head"><span class="name">Bottle comparison</span></div>
-        <div class="desc">Bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
-      </div>
     </div>
   </div>
 
@@ -1800,6 +1796,10 @@
       <div class="feature-card clickable" onclick="showView('production')">
         <div class="card-head"><span class="name">Production timeline</span></div>
         <div class="desc">Everything that isn&rsquo;t brewing &mdash; logistics, labelling, procurement &amp; the like &mdash; sorted into now, next &amp; later.</div>
+      </div>
+      <div class="feature-card clickable" onclick="showView('compare')">
+        <div class="card-head"><span class="name">Bottle comparison</span></div>
+        <div class="desc">Bottles side by side &mdash; spices, sugar, fermentation time, SCOBY, recipe &amp; Labo readings.</div>
       </div>
     </div>
   </div>
@@ -7759,13 +7759,14 @@ function soldBatchOptionsHtml(rec) {
   var fl = String(rec.flavour || '').toLowerCase(), sz = rec.size || '';
   var h = '<option value=""' + (rec.bottling ? '' : ' selected') + '>oldest batch first</option>';
   var found = !rec.bottling;
-  bivBottlings().slice().reverse().forEach(function (g) {
+  // Newest batch at the top, oldest at the bottom.
+  bivBottlings().slice().sort(function (a, b) { return String(a.date || '') < String(b.date || '') ? 1 : String(a.date || '') > String(b.date || '') ? -1 : 0; }).forEach(function (g) {
     if (String(g.flavour).toLowerCase() !== fl || !(g.made[sz] > 0)) return;
     var left = g.left[sz] || 0, isCur = g.key === rec.bottling;
     if (isCur) found = true;
     // Every batch of this flavour and size is listed, also those with none
     // left: "oldest first" can make a batch look empty when it isn't.
-    h += '<option value="' + esc(g.key) + '"' + (isCur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + ' · ' + fmtDate(g.date) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
+    h += '<option value="' + esc(g.key) + '"' + (isCur ? ' selected' : '') + '>' + esc(bivBottlingName(g) + (g.ids.length ? '' : ' · ' + fmtDate(g.date)) + ' · ' + (left > 0 ? fmtNum(left) + ' left' : 'none left')) + '</option>';
   });
   if (!found) h += '<option value="' + esc(rec.bottling) + '" selected>' + esc(bivBottlingRefName(rec.bottling)) + '</option>';
   return h;
