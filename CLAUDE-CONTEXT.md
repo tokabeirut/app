@@ -225,3 +225,4 @@ subtotal={{ subtotal_price }}<br>
 - Split drawer (index v183): the original's own vessel is offered ('TANK 2 (same vessel: the rest stays here)'); picking it prefills all litres left and may take all of it; the new branch's ID gets -B, -C… when the ID already exists (splitChildRecord makes IDs unique); if the split empties the original, the original is archived after saving.
 - Home cards (index v184): 4 per row (2 below 980px, 1 on phones), padding 18px, gap 12px.
 - Fermentation remaining litres (index v185): batchRemainingL also subtracts batchInfusionOutL = litres taken into infusions (amount per source if given, else the infusion's volume when it has only that one source).
+- Infusion volume (index v186): '→ x L' left under the volume (infusionLeftNoteHtml) = volumeL − infusionOutL: bottlings sourced from it (count × volumeMl/1000, or the per-source amount when several sources) and other infusions sourced from it. Hidden at 0, negative shown.

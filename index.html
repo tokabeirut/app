@@ -5998,6 +5998,41 @@ function batchInfusionOutL(b) {
   });
   return n;
 }
+// Litres of an infusion that went out: into bottlings (bottles × size, or
+// the amount noted per source when a bottling has several sources) and into
+// other infusions (amount per source, or their volume if it's the only source).
+function infusionOutL(inf) {
+  var n = 0, me = String(inf.uid);
+  bottles.forEach(function (bt) {
+    var ents = sourceEntries(bt);
+    ents.forEach(function (e) {
+      if (String(e.uid) !== me) return;
+      var a = parseFloat(e.amount);
+      if (a > 0) n += a;
+      else if (ents.length === 1) n += (parseFloat(bt.count) || 0) * (parseFloat(bt.volumeMl) || 0) / 1000;
+    });
+  });
+  infusions.forEach(function (x) {
+    if (String(x.uid) === me) return;
+    var ents = sourceEntries(x);
+    ents.forEach(function (e) {
+      if (String(e.uid) !== me) return;
+      var a = parseFloat(e.amount);
+      if (a > 0) n += a;
+      else if (ents.length === 1) n += parseFloat(x.volumeL) || 0;
+    });
+  });
+  return n;
+}
+// Under an infusion's volume: "→ x L" still in the vessel once something was
+// bottled from it (hidden at 0, shown when negative), like on Fermentation.
+function infusionLeftNoteHtml(inf) {
+  var vol = parseFloat(inf.volumeL) || 0, out = infusionOutL(inf);
+  if (!(vol > 0) || !(out > 0)) return '';
+  var left = Math.round((vol - out) * 100) / 100;
+  if (left === 0) return '';
+  return '<div class="f1-branch-note f1-left">' + esc('\u2192 ' + (left < 0 ? '-' + fmtNum(-left) : fmtNum(left)) + ' L') + '</div>';
+}
 // What is left in the vessel: volume − split-offs − litres used as SCOBY
 // elsewhere − litres taken into infusions.
 function batchRemainingL(b) {
@@ -6451,7 +6486,7 @@ function infusionRowHtml(inf) {
     + '<td class="id-cell muted src-cell">' + bottleSourceCellHtml(inf, true) + '</td>'
     + cellEd(fmtDate(inf.startDate), { type: 'infusion', uid: inf.uid, field: 'startDate', input: 'date' })
     + cellEd(vesselHtml(inf.vessel), { type: 'infusion', uid: inf.uid, field: 'vessel', input: 'text' })
-    + cellEd((inf.volumeL !== '' && inf.volumeL != null) ? fmtQty(inf.volumeL, 'L') : '—', { type: 'infusion', uid: inf.uid, field: 'volumeL', input: 'number', cls: 'num' })
+    + cellEd(((inf.volumeL !== '' && inf.volumeL != null) ? fmtQty(inf.volumeL, 'L') : '—') + infusionLeftNoteHtml(inf), { type: 'infusion', uid: inf.uid, field: 'volumeL', input: 'number', cls: 'num' })
     + cellEd(infusionSpicesText(inf, '<br>'), { type: 'infusion', uid: inf.uid, field: 'flavours', input: 'spices', cls: 'spices-cell' })
     + cellEd('<div class="clip-inner muted">' + (inf.notes ? esc(inf.notes) : '—') + '</div>', { type: 'infusion', uid: inf.uid, field: 'notes', input: 'textarea', cls: 'notes-cell' })
     + '<td class="row-actions">' + actions + '</td>'
