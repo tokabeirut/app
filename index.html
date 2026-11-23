@@ -9139,8 +9139,17 @@ function renderSupplyInventory() {
   var list = supplyPurchases().sort(function (a, b) { return (b.date || '').localeCompare(a.date || '') || String(b.id).localeCompare(String(a.id)); });
   h += '<div class="content-head ing-log-head"><div class="content-title">Entries</div><div class="content-sub">Bought and used by hand. The first label stock is built in.</div></div>';
   h += '<div class="table-wrap"><div class="table-scroll"><table class="ing-table"><thead><tr><th>Date</th><th>Item</th><th></th><th>Pieces</th><th>Notes</th><th></th></tr></thead><tbody>';
-  list.forEach(function (p) {
-    var a = ingNum(p.amount);
+  // Built-in label rows join the logged entries; all newest date first.
+  var rows = list.map(function (p) { return { date: p.date || '', p: p }; });
+  SUPPLY_LABELS.forEach(function (l) {
+    rows.push({ date: LABEL_STOCK.purchased, html: '<tr class="muted"><td class="mono">' + esc(fmtDate(LABEL_STOCK.purchased)) + '</td><td>' + esc(l.name) + '</td><td>bought</td><td class="mono">' + esc(fmtNum(LABEL_STOCK.bought[l.size] || 0)) + '</td><td>first label stock (built in)</td><td></td></tr>' });
+    var fx = LABEL_STOCK.usedUpTo[l.size];
+    if (fx) rows.push({ date: fx.date, html: '<tr class="muted"><td class="mono">' + esc(fmtDate(fx.date)) + '</td><td>' + esc(l.name) + '</td><td>used</td><td class="mono">' + esc(fmtNum(fx.n)) + '</td><td>counted by hand up to this date (built in)</td><td></td></tr>' });
+  });
+  rows.sort(function (a, b) { return a.date < b.date ? 1 : (a.date > b.date ? -1 : 0); });
+  rows.forEach(function (r) {
+    if (r.html) { h += r.html; return; }
+    var p = r.p, a = ingNum(p.amount);
     h += '<tr>' + cellEd(esc(fmtDate(p.date)), { type: 'purchase', uid: p.id, field: 'date', input: 'date', cls: 'mono' })
       + cellEd(esc(p.ingredient || '\u2014'), { type: 'purchase', uid: p.id, field: 'ingredient' })
       + '<td class="muted">' + (a < 0 ? 'used' : 'bought') + '</td>'
@@ -9148,11 +9157,6 @@ function renderSupplyInventory() {
       + cellEd(esc(p.notes || ''), { type: 'purchase', uid: p.id, field: 'notes', input: 'textarea', cls: 'notes-cell' })
       + '<td class="row-actions"><button type="button" class="icon-btn" title="Edit" onclick="openPurchaseDrawer(\'' + esc(p.id) + '\')">&#9998;</button>'
       + '<button type="button" class="icon-btn" title="Delete" onclick="deletePurchase(\'' + esc(p.id) + '\')">&times;</button></td></tr>';
-  });
-  SUPPLY_LABELS.forEach(function (l) {
-    h += '<tr class="muted"><td class="mono">' + esc(fmtDate(LABEL_STOCK.purchased)) + '</td><td>' + esc(l.name) + '</td><td>bought</td><td class="mono">' + esc(fmtNum(LABEL_STOCK.bought[l.size] || 0)) + '</td><td>first label stock (built in)</td><td></td></tr>';
-    var fx = LABEL_STOCK.usedUpTo[l.size];
-    if (fx) h += '<tr class="muted"><td class="mono">' + esc(fmtDate(fx.date)) + '</td><td>' + esc(l.name) + '</td><td>used</td><td class="mono">' + esc(fmtNum(fx.n)) + '</td><td>counted by hand up to this date (built in)</td><td></td></tr>';
   });
   h += '</tbody></table></div></div>';
   body.innerHTML = h;
