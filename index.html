@@ -8391,7 +8391,7 @@ function bottleLastNum(id) {
   return isNaN(n) ? 999999 : n;
 }
 // Bottling table order: newest bottling date first; within a date the
-// source batch ID, then the spices (A→Z), then the bottle ID. Rows dragged by
+// source batch ID, then the spices (A→Z), then the notes (A→Z), then the bottle ID. Rows dragged by
 // hand keep their place within their date (bottlingManualOrder).
 function bottleSourceKey(b) { var ids = sourceEntries(b).map(function (e) { return e.id || e.uid; }).filter(Boolean); return (ids.length ? ids.join(', ') : String(b.relF1Id || '')).toUpperCase(); }
 function bottleSpicesKey(b) { return (b.flavours || []).map(function (x) { return String(x.name || '').trim().toLowerCase(); }).filter(Boolean).join(' '); }
@@ -8402,6 +8402,8 @@ function cmpBottles(a, b) {
   if (sa !== sb) return sa < sb ? -1 : 1;                                       // then source batch ID
   var fa = bottleSpicesKey(a), fb = bottleSpicesKey(b);
   if (fa !== fb) return fa < fb ? -1 : 1;                                       // then spices
+  var na = String(a.notes || '').trim().toLowerCase(), nb = String(b.notes || '').trim().toLowerCase();
+  if (na !== nb) return na < nb ? -1 : 1;                                       // then notes
   var ia = String(a.bottleId || ''), ib = String(b.bottleId || '');
   return ia < ib ? -1 : (ia > ib ? 1 : 0);
 }
