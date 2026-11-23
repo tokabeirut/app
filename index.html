@@ -8390,10 +8390,53 @@ function bottleLastNum(id) {
   var n = parseInt(seg, 10);
   return isNaN(n) ? 999999 : n;
 }
+// Bottling table order: newest bottling date first; within a date the
+// source batch ID, then the spices (A→Z), then the bottle ID. Rows dragged by
+// hand keep their place within their date (bottlingManualOrder).
+function bottleSourceKey(b) { var ids = sourceEntries(b).map(function (e) { return e.id || e.uid; }).filter(Boolean); return (ids.length ? ids.join(', ') : String(b.relF1Id || '')).toUpperCase(); }
+function bottleSpicesKey(b) { return (b.flavours || []).map(function (x) { return String(x.name || '').trim().toLowerCase(); }).filter(Boolean).join(' '); }
 function cmpBottles(a, b) {
   var da = String(a.bottlingDate || ''), db = String(b.bottlingDate || '');
   if (da !== db) return da < db ? 1 : -1;                                       // newest bottled date first
-  return bottleLastNum(b.bottleId) - bottleLastNum(a.bottleId);                 // then bottle number, descending
+  var sa = bottleSourceKey(a), sb = bottleSourceKey(b);
+  if (sa !== sb) return sa < sb ? -1 : 1;                                       // then source batch ID
+  var fa = bottleSpicesKey(a), fb = bottleSpicesKey(b);
+  if (fa !== fb) return fa < fb ? -1 : 1;                                       // then spices
+  var ia = String(a.bottleId || ''), ib = String(b.bottleId || '');
+  return ia < ib ? -1 : (ia > ib ? 1 : 0);
+}
+/* ---- Bottling: drag a row (or a group) to a new place within its date ----
+   Remembered on this device (like the tasting order). */
+function bottlingUnitKey(cl) { return cl.groupUid ? 'g:' + cl.groupUid : 'b:' + cl.bottles[0].uid; }
+function getBottlingOrder() { try { var s = lsGet('toka_bottling_order'); if (s) { var a = JSON.parse(s); if (Array.isArray(a)) return a; } } catch (e) {} return []; }
+function saveBottlingOrder(keys) {
+  // Keep keys of rows not shown right now (the other table, filtered rows).
+  var old = getBottlingOrder().filter(function (k) { return keys.indexOf(k) < 0; });
+  lsSet('toka_bottling_order', JSON.stringify(keys.concat(old)));
+}
+function bottlingOrderedClusters(list) {
+  var cl = clusterBottleGroups(list), pos = {}, saved = getBottlingOrder();
+  saved.forEach(function (k, i) { pos[k] = i; });
+  var nat = {}; cl.forEach(function (c, i) { nat[bottlingUnitKey(c)] = i; });
+  return cl.slice().sort(function (a, c) {
+    var da = String(a.bottles[0].bottlingDate || ''), dc = String(c.bottles[0].bottlingDate || '');
+    if (da !== dc) return da < dc ? 1 : -1;
+    var pa = pos[bottlingUnitKey(a)], pc = pos[bottlingUnitKey(c)];
+    if (pa != null && pc != null && pa !== pc) return pa - pc;
+    return nat[bottlingUnitKey(a)] - nat[bottlingUnitKey(c)];
+  });
+}
+var bottlingShownUnits = { active: [], archived: [] };
+function bottlingDrop(which, from, to) {
+  var units = bottlingShownUnits[which] || [];
+  if (from < 0 || to < 0 || from >= units.length || to >= units.length || from === to) return;
+  var dFrom = String(units[from].bottles[0].bottlingDate || ''), dTo = String(units[to].bottles[0].bottlingDate || '');
+  if (dFrom !== dTo) { alert('Rows can only be moved within the same bottling date.'); return; }
+  var keys = units.map(bottlingUnitKey);
+  var moved = keys.splice(from, 1)[0];
+  keys.splice(to, 0, moved);
+  saveBottlingOrder(keys);
+  renderBottles();
 }
 /* ---- Bottling table filters ----
    Click a column header (Batch ID, Bottled on, Fridged, Volume, Sugar,
@@ -8489,13 +8532,14 @@ function renderBottles() {
     tb.innerHTML = '<tr><td colspan="12" class="empty">' + (filtering && nActive ? 'No bottlings match the filters. <span class="pt-filter-clear-link" onclick="bfClearFilters()">Clear filters</span>' : 'No bottlings yet. Click \u201c+ add bottling\u201d to start.') + '</td></tr>';
     if (countEl) countEl.textContent = filtering && nActive ? 'No bottlings match the filters.' : 'No active bottlings.';
   } else {
-    var clusters = clusterBottleGroups(active);
+    var clusters = bottlingOrderedClusters(active);
+    bottlingShownUnits.active = clusters;
     var rows = '', prevD = null;
     for (var a = 0; a < clusters.length; a++) {
       var cl = clusters[a];
       var da = String(cl.bottles[0].bottlingDate || '');
       var newDate = a > 0 && da !== prevD;
-      rows += (cl.bottles.length > 1) ? bottleGroupRowsHtml(cl, newDate) : bottleRowHtml(cl.bottles[0], newDate);
+      rows += ((cl.bottles.length > 1) ? bottleGroupRowsHtml(cl, newDate) : bottleRowHtml(cl.bottles[0], newDate)).replace(/^<tr /, '<tr' + dragAttrs('bottling', a) + ' ');
       prevD = da;
     }
     tb.innerHTML = rows;
@@ -8509,13 +8553,14 @@ function renderBottles() {
   var atb = document.getElementById('b-archived-tbody');
   var acountEl = document.getElementById('b-archived-count');
   if (archived.length) {
-    var aclusters = clusterBottleGroups(archived);
+    var aclusters = bottlingOrderedClusters(archived);
+    bottlingShownUnits.archived = aclusters;
     var arows = '', prevAD = null;
     for (var j = 0; j < aclusters.length; j++) {
       var acl = aclusters[j];
       var ad = String(acl.bottles[0].bottlingDate || '');
       var aNewDate = j > 0 && ad !== prevAD;
-      arows += (acl.bottles.length > 1) ? bottleGroupRowsHtml(acl, aNewDate) : bottleRowHtml(acl.bottles[0], aNewDate);
+      arows += ((acl.bottles.length > 1) ? bottleGroupRowsHtml(acl, aNewDate) : bottleRowHtml(acl.bottles[0], aNewDate)).replace(/^<tr /, '<tr' + dragAttrs('bottlingArch', j) + ' ');
       prevAD = ad;
     }
     atb.innerHTML = arows;
@@ -14269,6 +14314,7 @@ function rowDrop(ev, table, toIdx, tr) {
   var from = dragCtx.idx; dragCtx = null;
   if (from === toIdx) return;
   var order, save, render;
+  if (table === 'bottling' || table === 'bottlingArch') { bottlingDrop(table === 'bottling' ? 'active' : 'archived', from, toIdx); return; }
   if (table === 'overview') { order = currentOverviewGroups().map(function (g) { return g.key; }); save = saveOverviewOrder; render = renderTasting; }
   else if (table === 'production') { order = productionTasks.map(function (t) { return t.id; }); save = savePtOrder; render = renderProduction; }
   else { order = currentActiveBottles().map(function (b) { return b.uid; }); save = saveActiveOrder; render = renderTasting; }
