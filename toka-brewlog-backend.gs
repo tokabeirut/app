@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '64 (first fermentation: starter SCOBY batch)';
+var VERSION = '65 (bottling: sugar syrup ml + syrup recipe)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -56,7 +56,8 @@ var BOTTLE_HEADERS = [
   'sugar_g', 'yeast_mg',
   'flavor1_name', 'flavor1_g', 'flavor2_name', 'flavor2_g',
   'flavor3_name', 'flavor3_g', 'flavor4_name', 'flavor4_g',
-  'count', 'group_key', 'notes', 'archived'
+  'count', 'group_key', 'notes', 'archived',
+  'syrup_ml'   // sugar syrup per bottle (ml); sugar_g then holds the sugar it contains
 ];
 var MAX_FLAVORS = 4;
 
@@ -248,6 +249,7 @@ function buildBottleRow_(b, ncols, map) {
   set('group_key', b.groupUid || '');
   set('notes', b.notes || '');
   set('archived', b.archived ? 'yes' : '');
+  set('syrup_ml', plain_(b.syrupMl));
   return row;
 }
 
@@ -294,7 +296,8 @@ function readAllBottles_() {
       count: g(r, 'count'),
       groupUid: g(r, 'group_key'),
       notes: g(r, 'notes'),
-      archived: truthy_(g(r, 'archived'))
+      archived: truthy_(g(r, 'archived')),
+      syrupMl: g(r, 'syrup_ml')
     });
   }
   out.sort(sortBottles_);
@@ -1236,6 +1239,16 @@ var INVOICE_FIELDS_ = [
   ['area', 'Invoice: neighbourhood, city']   // added later, so it sits last to keep the rows above in place
 ];
 var INVOICE_FIRST_ROW_ = 5;
+// Sugar syrup recipe (Daily operations): sugar g, water ml, total ml, method.
+// Kept in the script properties, so every device sees the same recipe.
+function getSyrupRecipe_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('SYRUP_RECIPE') || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function setSyrupRecipe_(r) {
+  var keep = { sugarG: r.sugarG == null ? '' : String(r.sugarG), waterMl: r.waterMl == null ? '' : String(r.waterMl), totalMl: r.totalMl == null ? '' : String(r.totalMl), method: r.method == null ? '' : String(r.method) };
+  PropertiesService.getScriptProperties().setProperty('SYRUP_RECIPE', JSON.stringify(keep));
+}
 function getInvoiceSettings_() {
   var sh = getSettingsSheet_();
   var vals = sh.getRange(INVOICE_FIRST_ROW_, 1, INVOICE_FIELDS_.length, 2).getValues();
@@ -1514,7 +1527,8 @@ function doGet(e) {
       customers: readAllCustomers_(),
       invoiceSettings: getInvoiceSettings_(),
       ingredientPurchases: readAllIngredientPurchases_(),
-      bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : ''
+      bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : '',
+      syrupRecipe: getSyrupRecipe_()
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION });
@@ -1806,6 +1820,7 @@ function handleAction_(body) {
   if (action === 'saveCustomer') { upsertCustomer_(body.customer || {}); return json_({ ok: true }); }
   if (action === 'deleteCustomer') { deleteRowsWhere_(getCustomersSheet_(), 'customer_pk', body.id); return json_({ ok: true }); }
   if (action === 'setInvoiceSettings') { setInvoiceSettings_(body.settings || {}); return json_({ ok: true }); }
+  if (action === 'setSyrupRecipe') { setSyrupRecipe_(body.recipe || {}); return json_({ ok: true }); }
 
   // ---- bottle inventory actions (Inventory > Bottle count) ----
   if (action === 'createBottleInvEntry' || action === 'updateBottleInvEntry' || action === 'deleteBottleInvEntry') {

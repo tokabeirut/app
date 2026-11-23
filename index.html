@@ -2549,7 +2549,7 @@
   </div>
   <div class="content-head">
     <div class="content-title">Bottle comparison</div>
-    <div class="content-sub">Pick two or three bottles (a bottle group counts as one) to see them side by side. Rows that differ are highlighted.</div>
+    <div class="content-sub">Pick bottles (a bottle group counts as one) to see them side by side. Rows that differ are highlighted.</div>
   </div>
   <div class="cmp-top">
     <div class="cmp-pickers" id="cmp-pickers"></div>
@@ -3298,8 +3298,11 @@
         <div class="hint subval">&nbsp;</div>
       </div>
       <div class="form-group">
-        <label>Sugar (g)</label>
-        <input type="number" id="b-sugar" min="0" step="any" placeholder="e.g. 5" oninput="onBottleContentInput()" />
+        <label>Sugar</label>
+        <div style="display:-webkit-flex;display:flex;gap:6px;">
+          <input type="number" id="b-sugar" min="0" step="any" placeholder="e.g. 8" oninput="onBottleContentInput()" style="-webkit-flex:1;flex:1;min-width:0;" />
+          <select id="b-sugar-unit" onchange="onBottleContentInput()" style="width:auto;-webkit-flex:0 0 auto;flex:0 0 auto;"><option value="ml">ml syrup</option><option value="g">g sugar</option></select>
+        </div>
         <div class="hint subval" id="b-sugar-per">&nbsp;</div>
       </div>
       <div class="form-group">
@@ -5148,6 +5151,7 @@ function applyAllData(res) {
     if (res.invoiceSettings && typeof res.invoiceSettings === 'object') invoiceSettings = res.invoiceSettings;
     if (Array.isArray(res.ingredientPurchases)) ingredientPurchases = res.ingredientPurchases;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
+    if (res.syrupRecipe && typeof res.syrupRecipe === 'object' && (res.syrupRecipe.sugarG || res.syrupRecipe.waterMl || res.syrupRecipe.totalMl)) syrupRecipe = res.syrupRecipe;
     planInfUnsaved = {}; planInfOriginal = {};
     for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
     planBrewUnsaved = {}; planBrewOriginal = {};
@@ -6808,9 +6812,13 @@ function refreshBottleHints() {
   document.getElementById('b-f2days-hint').innerHTML = (f2d != null) ? ('F2: ' + f2d + ' day' + (f2d === 1 ? '' : 's')) : '&nbsp;';
 
   var vol = val('b-volume');
-  var sp = per100(parseFloat(val('b-sugar')) * 1000, vol); // mg
+  var sf = bottleSugarFields();
+  var sp = per100(parseFloat(sf.sugarG) * 1000, vol); // mg
   var yp = per100(val('b-yeast'), vol);                    // already mg
-  document.getElementById('b-sugar-per').innerHTML = (sp != null) ? (fmtNum(sp) + ' mg / 100 ml') : '&nbsp;';
+  var sh = [];
+  if (sf.syrupMl !== '') sh.push(sf.sugarG !== '' ? fmtNum(parseFloat(sf.sugarG)) + ' g sugar' : 'no syrup recipe yet (Daily operations)');
+  if (sp != null) sh.push(fmtNum(sp) + ' mg / 100 ml');
+  document.getElementById('b-sugar-per').innerHTML = sh.length ? esc(sh.join(' \u00b7 ')) : '&nbsp;';
   document.getElementById('b-yeast-per').innerHTML = (yp != null) ? (fmtNum(yp) + ' mg / 100 ml') : '&nbsp;';
 }
 function onBottleDateInput() { refreshBottleNumberHint(); refreshBottleHints(); }
@@ -7024,6 +7032,7 @@ function openBottleDrawer() {
   document.getElementById('b-fridge-group').style.display = 'none';
   document.getElementById('b-volume').value = '';
   document.getElementById('b-sugar').value = '';
+  document.getElementById('b-sugar-unit').value = 'ml';
   document.getElementById('b-yeast').value = '';
   document.getElementById('b-notes').value = '';
   setFlavorRows([]);
@@ -7053,7 +7062,7 @@ function openBottleEdit(u) {
   document.getElementById('b-fridge').value = b.fridgeDate || '';
   document.getElementById('b-fridge-group').style.display = '';
   document.getElementById('b-volume').value = (b.volumeMl != null ? b.volumeMl : '');
-  document.getElementById('b-sugar').value = (b.sugarG != null ? b.sugarG : '');
+  setBottleSugarFields(b);
   document.getElementById('b-yeast').value = (b.yeastMg != null ? b.yeastMg : '');
   document.getElementById('b-notes').value = b.notes || '';
   setFlavorRows(b.flavours || []);
@@ -7087,7 +7096,7 @@ function openBottleGroupEdit(gUid) {
   document.getElementById('b-fridge').value = head.fridgeDate || '';
   document.getElementById('b-fridge-group').style.display = '';
   document.getElementById('b-volume').value = (head.volumeMl != null ? head.volumeMl : '');
-  document.getElementById('b-sugar').value = (head.sugarG != null ? head.sugarG : '');
+  setBottleSugarFields(head);
   document.getElementById('b-yeast').value = (head.yeastMg != null ? head.yeastMg : '');
   document.getElementById('b-notes').value = head.notes || '';
   setFlavorRows(head.flavours || []);
@@ -7272,7 +7281,61 @@ function showGroupConflictModal(messageHtml, cb) {
   keepBtn.addEventListener('click', onKeep);
   overwriteBtn.addEventListener('click', onOverwrite);
 }
+/* ---- sugar syrup: bottling sugar in ml of syrup ----
+   The recipe (Daily operations) gives the sugar per ml of syrup; a bottle's
+   syrup ml is turned into grams of sugar when it's saved (sugarG), so the
+   spice inventory, per-litre figures and the comparison keep working. */
+// Claire's syrup (23 Nov 2026): 680 g sugar + 480 g water → about 910 ml at
+// 0.75 g sugar / ml (2 ml small bottle = 1.5 g, 4 ml big = 3 g). Used until a
+// recipe is saved from Daily operations.
+var SYRUP_DEFAULT = { sugarG: '680', waterMl: '480', totalMl: '910', method: 'Dissolve 680 g sugar in 480 g boiled water. Let it cool, weigh it and top up with boiled water to about 1,160 g (≈ 910 ml). Check: 10 ml should weigh about 12.8 g. Keep in a sanitised, closed bottle in the fridge; use within 1–2 weeks. On bottling day warm only that day\'s portion to room temperature, then stir in the woken-up yeast just before filling the syringe.' };
+var syrupRecipe = JSON.parse(JSON.stringify(SYRUP_DEFAULT));
+var SYRUP_ML_PER_G = 0.63;   // dissolved sugar adds ~0.63 ml per g to the volume
+function syrupTotalMl(r) {
+  r = r || syrupRecipe;
+  var t = parseFloat(r.totalMl), w = parseFloat(r.waterMl), sg = parseFloat(r.sugarG);
+  if (t > 0) return t;
+  if (w > 0 && sg > 0) return w + sg * SYRUP_ML_PER_G;
+  return null;
+}
+function syrupGPerMl(r) {
+  r = r || syrupRecipe;
+  var sg = parseFloat(r.sugarG), t = syrupTotalMl(r);
+  return (sg > 0 && t > 0) ? sg / t : null;
+}
+function syrupToSugarG(ml) {
+  var v = parseFloat(ml), gpm = syrupGPerMl();
+  return (v >= 0 && gpm) ? String(Math.round(v * gpm * 100) / 100) : '';
+}
+// Sugar fields of the bottling form: {sugarG, syrupMl}.
+function bottleSugarFields() {
+  var v = val('b-sugar').trim(), unit = val('b-sugar-unit') || 'ml';
+  if (unit === 'ml') return { syrupMl: v, sugarG: v === '' ? '' : syrupToSugarG(v) };
+  return { syrupMl: '', sugarG: v };
+}
+function setBottleSugarFields(b) {
+  var hasSyrup = b && b.syrupMl !== '' && b.syrupMl != null;
+  var hasSugar = b && b.sugarG !== '' && b.sugarG != null;
+  document.getElementById('b-sugar-unit').value = (hasSyrup || !hasSugar) ? 'ml' : 'g';
+  document.getElementById('b-sugar').value = hasSyrup ? b.syrupMl : (hasSugar ? b.sugarG : '');
+}
+// Table cell: "8 ml syrup" (hover: grams of sugar) or the old "1.5 g".
+function bottleSugarCellHtml(b) {
+  if (b.syrupMl !== '' && b.syrupMl != null) {
+    var g = (b.sugarG !== '' && b.sugarG != null) ? fmtQty(b.sugarG, 'g') + ' sugar' : '';
+    return '<span class="tip-val"' + (g ? ' data-full="' + esc(g) + '"' : '') + '>' + esc(fmtQty(b.syrupMl, 'ml')) + '</span>';
+  }
+  return valWithPer(b.sugarG, 'g', b.volumeMl, 1000, 'mg', true);
+}
+function bottleSugarText(b) {
+  if (b.syrupMl !== '' && b.syrupMl != null) return fmtQty(b.syrupMl, 'ml') + ' syrup' + ((b.sugarG !== '' && b.sugarG != null) ? ' (' + fmtQty(b.sugarG, 'g') + ' sugar)' : '');
+  return (b.sugarG !== '' && b.sugarG != null) ? fmtQty(b.sugarG, 'g') : '';
+}
 function saveBottle() {
+  if (val('b-sugar-unit') === 'ml' && val('b-sugar').trim() !== '' && !syrupGPerMl()) {
+    alert('Fill in the sugar syrup recipe under Daily operations first, so the syrup can be turned into grams of sugar.');
+    return;
+  }
   var bottling = val('b-bottling');
   if (!bottling) { alert('Please set a bottling date.'); return; }
   var isEdit = !!editingBottleUid;
@@ -7296,7 +7359,8 @@ function saveBottle() {
       bottlingDate: bottling,
       fridgeDate: val('b-fridge'),
       volumeMl: val('b-volume').trim(),
-      sugarG: val('b-sugar').trim(),
+      sugarG: bottleSugarFields().sugarG,
+      syrupMl: bottleSugarFields().syrupMl,
       yeastMg: val('b-yeast').trim(),
       flavours: readFlavors(),
       notes: val('b-notes').trim()
@@ -7382,7 +7446,8 @@ function saveBottle() {
     bottlingDate: bottling,
     fridgeDate: val('b-fridge'),
     volumeMl: val('b-volume').trim(),
-    sugarG: val('b-sugar').trim(),
+    sugarG: bottleSugarFields().sugarG,
+    syrupMl: bottleSugarFields().syrupMl,
     yeastMg: val('b-yeast').trim(),
     flavours: readFlavors(),
     notes: val('b-notes').trim()
@@ -7455,15 +7520,17 @@ function saveBottle() {
 // New bottles from the Bottling page are also logged in Bottle inventory as
 // an automatic "filled" line (+ the matching empty-at-atelier decrement), so
 // "Filled bottles at atelier" counts them without a manual Fill.
+// The glass a bottling used, from how much went in: up to 375 ml is a small
+// bottle, up to 750 ml a big one (e.g. 500 ml filled into a 750 ml bottle).
 function bottleInvSizeLabel(vol) {
   var n = parseFloat(vol);
-  if (n === 375) return 'small (375ml)';
-  if (n === 750) return 'big (750ml)';
+  if (n > 0 && n <= 375) return 'small (375ml)';
+  if (n > 375 && n <= 750) return 'big (750ml)';
   return n ? (n + ' ml') : '';
 }
-// Only the sizes we sell (375 / 750 ml) go into Bottle inventory — 1000 ml
-// and any other size are left out. An empty volume means the 375 default.
-function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n === 375 || n === 750; }
+// Bottlings in our own glass (up to 750 ml) go into Bottle inventory; 1000 ml
+// and bigger bottles are left out. An empty volume means the 375 default.
+function bottleIsSellSize(vol) { var n = parseFloat(vol) || 375; return n > 0 && n <= 750; }
 function logBottlingInInventory(shared, qty, ids, cb) {
   qty = parseFloat(qty) || 0;
   if (qty <= 0 || !bottleIsSellSize(shared.volumeMl)) { if (cb) cb(true); return; }
@@ -7672,6 +7739,8 @@ function commitInline(type, uidv, field, value) {
   // drawer) can change how much of an infused spice it should contain —
   // recompute those amounts in the same save. Only rows that match the
   // infusion's own spice names are touched; a custom addition is left alone.
+  if (type === 'bottle' && field === 'syrupMl' && String(value).trim() !== '' && !syrupGPerMl()) { alert('Fill in the sugar syrup recipe under Daily operations first.'); rerenderType(type); return; }
+  if (type === 'bottle' && field === 'syrupMl') rec.sugarG = String(value).trim() === '' ? '' : syrupToSugarG(value);
   if (type === 'bottle' && field === 'volumeMl') {
     var infForVol = infusionSourceOf(rec);
     if (infForVol) rec.flavours = recomputeBottleFlavoursFromInfusion(rec, infForVol);
@@ -7708,6 +7777,7 @@ function commitGroupInline(gUid, field, value) {
   for (var i = 0; i < members.length; i++) {
     var m = members[i];
     m[field] = value;                 // optimistic
+    if (field === 'syrupMl') m.sugarG = String(value).trim() === '' ? '' : syrupToSugarG(value);
     if (field === 'volumeMl') {
       var inf = infusionSourceOf(m);
       if (inf) m.flavours = recomputeBottleFlavoursFromInfusion(m, inf);
@@ -8161,7 +8231,7 @@ function bottleRowHtml(b, newDate, groupUid, groupOpen) {
     + cellEd(fmtDate(b.bottlingDate), { type: 'bottle', uid: b.uid, field: 'bottlingDate', input: 'date' })
     + cellEd(fmtDate(b.fridgeDate), { type: 'bottle', uid: b.uid, field: 'fridgeDate', input: 'date' })
     + cellEd(fmtQty(b.volumeMl, 'ml'), { type: 'bottle', uid: b.uid, field: 'volumeMl', input: 'number', cls: 'num' })
-    + cellEd(valWithPer(b.sugarG, 'g', b.volumeMl, 1000, 'mg', true), { type: 'bottle', uid: b.uid, field: 'sugarG', input: 'number', cls: 'num' })
+    + cellEd(bottleSugarCellHtml(b), { type: 'bottle', uid: b.uid, field: (b.syrupMl !== '' && b.syrupMl != null) ? 'syrupMl' : 'sugarG', input: 'number', cls: 'num' })
     + cellEd(valWithPer(b.yeastMg, 'mg', b.volumeMl, 1, 'mg', true), { type: 'bottle', uid: b.uid, field: 'yeastMg', input: 'number', cls: 'num' })
     + '<td class="flav-cell"><div class="flav-inner">' + flavorCell(b, true) + '</div></td>'
     + cellEd((qty > 1 ? '<span class="count-badge">\u00d7' + qty + '</span>' : '1') + (aphroCount(b) ? ' <span class="aphro-note" title="' + fmtNum(aphroCount(b)) + ' aphrometer bottle' + (aphroCount(b) === 1 ? '' : 's') + '">' + APHRO_ICON + fmtNum(aphroCount(b)) + '</span>' : ''), { type: 'bottle', uid: b.uid, field: 'count', input: 'number', cls: 'num' })
@@ -8232,7 +8302,8 @@ function bottleGroupRowsHtml(cluster, newDate) {
   // a different amount is flagged clearly instead of blended away.
   function mixedTag(label) { return '<span class="bgroup-mixed" title="' + esc(label) + ' vary — unfold to see each bottle">mixed</span>'; }
   var volCell = allSame(list, 'volumeMl') ? fmtQty(head.volumeMl, 'ml') : mixedTag('Bottle volumes');
-  var sugarCell = allSame(list, 'sugarG') ? valWithPer(head.sugarG, 'g', head.volumeMl, 1000, 'mg', true) : mixedTag('Sugar amounts');
+  var grpSyrup = head.syrupMl !== '' && head.syrupMl != null;
+  var sugarCell = (allSame(list, 'sugarG') && allSame(list, 'syrupMl')) ? bottleSugarCellHtml(head) : mixedTag('Sugar amounts');
   var yeastCell = allSame(list, 'yeastMg') ? valWithPer(head.yeastMg, 'mg', head.volumeMl, 1, 'mg', true) : mixedTag('Yeast amounts');
   var groupLineageBtn = '';   // Lineage page removed
   var groupEditBtn = '<button class="edit-btn" title="Edit group" onclick="event.stopPropagation(); openBottleGroupEdit(\'' + esc(gUid) + '\')">✎</button>';
@@ -8249,7 +8320,7 @@ function bottleGroupRowsHtml(cluster, newDate) {
     + cellEd(bottlingCell, { type: 'bottlegroup', uid: gUid, field: 'bottlingDate', input: 'date', stopClick: true })
     + cellEd(fridgeCell, { type: 'bottlegroup', uid: gUid, field: 'fridgeDate', input: 'date', stopClick: true })
     + cellEd(volCell, { type: 'bottlegroup', uid: gUid, field: 'volumeMl', input: 'number', cls: 'num', stopClick: true })
-    + cellEd(sugarCell, { type: 'bottlegroup', uid: gUid, field: 'sugarG', input: 'number', cls: 'num', stopClick: true })
+    + cellEd(sugarCell, { type: 'bottlegroup', uid: gUid, field: grpSyrup ? 'syrupMl' : 'sugarG', input: 'number', cls: 'num', stopClick: true })
     + cellEd(yeastCell, { type: 'bottlegroup', uid: gUid, field: 'yeastMg', input: 'number', cls: 'num', stopClick: true })
     + '<td class="flav-cell"><div class="flav-inner">' + flavorCell(head, true) + '</div></td>'
     + '<td class="num"><span class="count-badge">\u00d7' + list.length + '</span></td>'
@@ -8336,7 +8407,7 @@ function bfValue(b, field) {
   if (field === 'date') return b.bottlingDate ? fmtDate(b.bottlingDate) : '\u2014';
   if (field === 'fridge') return b.fridgeDate ? fmtDate(b.fridgeDate) : 'not fridged yet';
   if (field === 'volume') return (b.volumeMl !== '' && b.volumeMl != null) ? fmtQty(b.volumeMl, 'ml') : '\u2014';
-  if (field === 'sugar') return (b.sugarG !== '' && b.sugarG != null) ? fmtQty(b.sugarG, 'g') : '\u2014';
+  if (field === 'sugar') return bottleSugarText(b) || '\u2014';
   if (field === 'yeast') return (b.yeastMg !== '' && b.yeastMg != null) ? fmtQty(b.yeastMg, 'mg') : '\u2014';
   if (field === 'spices') { var f = (b.flavours || []).map(function (x) { return String(x.name || '').trim(); }).filter(Boolean).join(' '); return f ? bivFlavourDisplay(f) : '\u2014'; }
   return '';
@@ -13960,7 +14031,7 @@ function bottleTastingTip(b) {
   rows += row('Fridged', b.fridgeDate ? esc(fmtDate(b.fridgeDate)) : '\u2014');
   if (seg.f1d != null || seg.f2d != null || seg.infd != null) rows += row('Ferment', esc(fmtFermDays(seg.f1d, seg.f2d, seg.infd)) + ' days');
   if (b.volumeMl !== '' && b.volumeMl != null) rows += row('Volume', esc(fmtQty(b.volumeMl, 'ml')));
-  if (b.sugarG !== '' && b.sugarG != null) rows += row('Sugar', esc(fmtQty(b.sugarG, 'g')));
+  if (bottleSugarText(b)) rows += row('Sugar', esc(bottleSugarText(b)));
   if (b.yeastMg !== '' && b.yeastMg != null) rows += row('Yeast', esc(fmtQty(b.yeastMg, 'mg')));
   var ft = flavourText(b); if (ft) rows += row('Flavour', esc(ft));
   var cnt = parseFloat(b.count); if (!isNaN(cnt) && cnt > 1) rows += row('Count', esc(String(b.count)));
@@ -15046,10 +15117,49 @@ function renderToday() {
   // order into: batches top-left, infusions bottom-left, strain top-right,
   // fridge bottom-right) while just stacking them on a phone-width screen —
   // see the .today-grid rules near .an-section in the stylesheet.
-  body.innerHTML = '<div class="today-grid">' + todayBrewPlan() + todayPlanInf() + todayStrainInf() + todayFridge() + '</div>';
+  body.innerHTML = '<div class="today-grid">' + todayBrewPlan() + todayPlanInf() + todayStrainInf() + todayFridge() + '</div><div id="syrup-card" style="margin-top:20px;"></div>';
   var sub = document.getElementById('today-sub');
   if (sub) sub.textContent = todayActiveF1().length + ' fermenting \u00b7 ' + todayActiveInf().length + ' infusing \u00b7 ' + todayActiveF2().length + ' carbonating';
   renderChecklist();
+  renderSyrupCard();
+}
+// Sugar syrup recipe card (Daily operations). Saved to the sheet's script
+// properties (setSyrupRecipe), so every device uses the same recipe; the
+// bottling form turns ml of syrup into grams of sugar with it.
+function renderSyrupCard() {
+  var el = document.getElementById('syrup-card'); if (!el) return;
+  var r = syrupRecipe || {}, gpm = syrupGPerMl(r), t = syrupTotalMl(r);
+  function fld(label, key, unit, ph) {
+    return '<div class="recipe-field"><label>' + label + '</label><div class="recipe-inp"><input type="number" min="0" step="any" id="syr-' + key + '" placeholder="' + ph + '" value="' + esc(r[key] == null ? '' : r[key]) + '" onchange="saveSyrupRecipe()" /><span>' + unit + '</span></div></div>';
+  }
+  var h = '<div class="an-section"><div class="sec-title">Sugar syrup</div>'
+    + '<div class="sec-note">The recipe for the syrup used at bottling. Bottling sugar in ml of syrup is turned into grams of sugar with it.</div>'
+    + '<div class="plan-card"><div class="brew-body"><div class="recipe-grid">'
+    + fld('Sugar', 'sugarG', 'g', 'e.g. 1000') + fld('Water', 'waterMl', 'ml', 'e.g. 500') + fld('Syrup it makes', 'totalMl', 'ml', t && !(parseFloat(r.totalMl) > 0) ? '\u2248 ' + Math.round(t) : 'optional')
+    + '</div>'
+    + '<div class="plan-src" id="syr-calc" style="margin-top:8px;">' + syrupCalcText() + '</div>'
+    + '<div class="form-group" style="margin-top:10px;"><label>Method</label><textarea id="syr-method" placeholder="e.g. heat the water, dissolve the sugar, let it cool, keep in the fridge" onchange="saveSyrupRecipe()">' + esc(r.method || '') + '</textarea></div>'
+    + '</div></div></div>';
+  el.innerHTML = h;
+}
+function syrupCalcText() {
+  var r = syrupRecipe || {}, gpm = syrupGPerMl(r);
+  return gpm ? esc('1 ml syrup = ' + fmtNum(Math.round(gpm * 1000) / 1000) + ' g sugar' + (parseFloat(r.totalMl) > 0 ? '' : ' (syrup volume estimated; measure it for a more exact number)')) : 'Fill in sugar and water to get the sugar per ml.';
+}
+function saveSyrupRecipe() {
+  var prev = syrupRecipe;
+  var next = { sugarG: val('syr-sugarG').trim(), waterMl: val('syr-waterMl').trim(), totalMl: val('syr-totalMl').trim(), method: val('syr-method').trim() };
+  syrupRecipe = next;
+  // Only the calculation line is refreshed (not the whole card), so the field
+  // you tab into keeps its focus.
+  var calc = document.getElementById('syr-calc'); if (calc) calc.innerHTML = syrupCalcText();
+  var tot = document.getElementById('syr-totalMl'), est = syrupTotalMl(next);
+  if (tot) tot.placeholder = (est && !(parseFloat(next.totalMl) > 0)) ? '\u2248 ' + Math.round(est) : 'optional';
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: 'setSyrupRecipe', recipe: next }, function (err, res) {
+    if (err || !res || !res.ok) { syrupRecipe = prev; renderSyrupCard(); setSyncStatus('error', 'save failed'); alert('Couldn\u2019t save the syrup recipe \u2014 the Apps Script backend may need redeploying (version 65).'); return; }
+    setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
 }
 
 /* ---- daily checklist (free-text, check-off-able, synced via Google Sheets) ----
