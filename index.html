@@ -5188,7 +5188,7 @@ function applyAllData(res) {
     if (res.invoiceSettings && typeof res.invoiceSettings === 'object') invoiceSettings = res.invoiceSettings;
     if (Array.isArray(res.ingredientPurchases)) ingredientPurchases = res.ingredientPurchases;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
-    if (res.syrupRecipe && typeof res.syrupRecipe === 'object' && (res.syrupRecipe.sugarG || res.syrupRecipe.waterMl || res.syrupRecipe.totalMl)) syrupRecipe = res.syrupRecipe;
+    if (res.syrupRecipe && typeof res.syrupRecipe === 'object' && res.syrupRecipe.method === SYRUP_FMT && res.syrupRecipe.sugarG) syrupRecipe = res.syrupRecipe;
     planInfUnsaved = {}; planInfOriginal = {};
     for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
     planBrewUnsaved = {}; planBrewOriginal = {};
@@ -7325,18 +7325,27 @@ function showGroupConflictModal(messageHtml, cb) {
    The recipe (Daily operations) gives the sugar per ml of syrup; a bottle's
    syrup ml is turned into grams of sugar when it's saved (sugarG), so the
    spice inventory, per-litre figures and the comparison keep working. */
-// Claire's syrup (23 Nov 2026): 680 g sugar + 480 g water → about 910 ml at
-// 0.75 g sugar / ml (2 ml small bottle = 1.5 g, 4 ml big = 3 g). Used until a
-// recipe is saved from Daily operations.
-var SYRUP_DEFAULT = { sugarG: '680', waterMl: '480', totalMl: '910', method: 'Dissolve 680 g sugar in 480 g boiled water. Let it cool, weigh it and top up with boiled water to about 1,160 g (≈ 910 ml). Check: 10 ml should weigh about 12.8 g. Keep in a sanitised, closed bottle in the fridge; use within 1–2 weeks. On bottling day warm only that day\'s portion to room temperature, then stir in the woken-up yeast just before filling the syringe.' };
+// Claire's syrup (25 Nov 2026): 250 g water + 350 g sugar, topped up to about
+// 600 g (≈ 470 ml) → about 0.75 g sugar / ml. Only the three amounts can be
+// changed in Daily operations; the method text is fixed and fills them in.
+// Stored as {waterMl: water g, sugarG, totalMl: total weight g, method:
+// 'fmt:weight'} (older recipes without that marker are ignored).
+var SYRUP_FMT = 'fmt:weight';
+var SYRUP_DEFAULT = { waterMl: '250', sugarG: '350', totalMl: '600', method: SYRUP_FMT };
 var syrupRecipe = JSON.parse(JSON.stringify(SYRUP_DEFAULT));
-var SYRUP_ML_PER_G = 0.63;   // dissolved sugar adds ~0.63 ml per g to the volume
-function syrupTotalMl(r) {
+var SYRUP_ML_PER_G = 0.628;  // dissolved sugar adds ~0.63 ml per g to the volume
+function syrupTotalG(r) {
   r = r || syrupRecipe;
   var t = parseFloat(r.totalMl), w = parseFloat(r.waterMl), sg = parseFloat(r.sugarG);
   if (t > 0) return t;
-  if (w > 0 && sg > 0) return w + sg * SYRUP_ML_PER_G;
-  return null;
+  return (w > 0 && sg > 0) ? w + sg : null;
+}
+// Volume of the finished syrup: its water (total weight − sugar) plus what the sugar adds.
+function syrupTotalMl(r) {
+  r = r || syrupRecipe;
+  var sg = parseFloat(r.sugarG), tg = syrupTotalG(r);
+  if (!(sg > 0) || !(tg > sg)) return null;
+  return (tg - sg) + sg * SYRUP_ML_PER_G;
 }
 function syrupGPerMl(r) {
   r = r || syrupRecipe;
@@ -15330,33 +15339,44 @@ function renderToday() {
 // bottling form turns ml of syrup into grams of sugar with it.
 function renderSyrupCard() {
   var el = document.getElementById('syrup-card'); if (!el) return;
-  var r = syrupRecipe || {}, gpm = syrupGPerMl(r), t = syrupTotalMl(r);
-  function fld(label, key, unit, ph) {
-    return '<div class="recipe-field"><label>' + label + '</label><div class="recipe-inp"><input type="number" min="0" step="any" id="syr-' + key + '" placeholder="' + ph + '" value="' + esc(r[key] == null ? '' : r[key]) + '" onchange="saveSyrupRecipe()" /><span>' + unit + '</span></div></div>';
+  var r = syrupRecipe || {};
+  function fld(label, key, unit) {
+    return '<div class="recipe-field"><label>' + label + '</label><div class="recipe-inp"><input type="number" min="0" step="any" id="syr-' + key + '" value="' + esc(r[key] == null ? '' : r[key]) + '" onchange="saveSyrupRecipe()" /><span>' + unit + '</span></div></div>';
   }
-  var h = '<div class="an-section"><div class="sec-title">Sugar syrup</div>'
+  el.innerHTML = '<div class="an-section"><div class="sec-title">Sugar syrup</div>'
     + '<div class="sec-note">The recipe for the syrup used at bottling. Bottling sugar in ml of syrup is turned into grams of sugar with it.</div>'
     + '<div class="plan-card"><div class="brew-body"><div class="recipe-grid">'
-    + fld('Sugar', 'sugarG', 'g', 'e.g. 1000') + fld('Water', 'waterMl', 'ml', 'e.g. 500') + fld('Syrup it makes', 'totalMl', 'ml', t && !(parseFloat(r.totalMl) > 0) ? '\u2248 ' + Math.round(t) : 'optional')
+    + fld('Water', 'waterMl', 'g') + fld('Sugar', 'sugarG', 'g') + fld('Total weight', 'totalMl', 'g')
     + '</div>'
     + '<div class="plan-src" id="syr-calc" style="margin-top:8px;">' + syrupCalcText() + '</div>'
-    + '<div class="form-group" style="margin-top:10px;"><label>Method</label><textarea id="syr-method" placeholder="e.g. heat the water, dissolve the sugar, let it cool, keep in the fridge" onchange="saveSyrupRecipe()">' + esc(r.method || '') + '</textarea></div>'
+    + '<div id="syr-method" style="margin-top:12px;line-height:1.6;">' + syrupMethodHtml() + '</div>'
     + '</div></div></div>';
-  el.innerHTML = h;
+}
+// Fixed method text with the amounts filled in.
+function syrupMethodHtml() {
+  var r = syrupRecipe || {}, ml = syrupTotalMl(r), tg = syrupTotalG(r);
+  function n(v) { return v ? esc(fmtNum(Math.round(v))) : '\u2026'; }
+  var w10 = (ml && tg) ? Math.round(tg / ml * 100) / 10 : null;
+  return '<ol style="margin:0 0 8px 18px;padding:0;">'
+    + '<li>Bring ' + n(parseFloat(r.waterMl)) + ' g of water to a boil to sanitize it.</li>'
+    + '<li>Dissolve ' + n(parseFloat(r.sugarG)) + ' g sugar in it.</li>'
+    + '<li>Let it cool, weigh it and top up with boiled water to about ' + n(tg) + ' g total weight (\u2248 ' + n(ml) + ' ml).</li>'
+    + '</ol>'
+    + '<div>Check: 10 ml should weigh about ' + (w10 ? esc(fmtNum(w10)) : '\u2026') + ' g.</div>'
+    + '<div>Keep in a sanitized, closed bottle in the fridge; use within 1\u20132 weeks. On bottling day warm only that day\u2019s portion to room temperature.</div>';
 }
 function syrupCalcText() {
-  var r = syrupRecipe || {}, gpm = syrupGPerMl(r);
-  return gpm ? esc('1 ml syrup = ' + fmtNum(Math.round(gpm * 1000) / 1000) + ' g sugar' + (parseFloat(r.totalMl) > 0 ? '' : ' (syrup volume estimated; measure it for a more exact number)')) : 'Fill in sugar and water to get the sugar per ml.';
+  var gpm = syrupGPerMl();
+  return gpm ? esc('1 ml syrup = ' + fmtNum(Math.round(gpm * 1000) / 1000) + ' g sugar') : 'Fill in water, sugar and total weight to get the sugar per ml.';
 }
 function saveSyrupRecipe() {
   var prev = syrupRecipe;
-  var next = { sugarG: val('syr-sugarG').trim(), waterMl: val('syr-waterMl').trim(), totalMl: val('syr-totalMl').trim(), method: val('syr-method').trim() };
+  var next = { waterMl: val('syr-waterMl').trim(), sugarG: val('syr-sugarG').trim(), totalMl: val('syr-totalMl').trim(), method: SYRUP_FMT };
   syrupRecipe = next;
-  // Only the calculation line is refreshed (not the whole card), so the field
-  // you tab into keeps its focus.
+  // Only the calculation and method text are refreshed (not the inputs), so
+  // the field you tab into keeps its focus.
   var calc = document.getElementById('syr-calc'); if (calc) calc.innerHTML = syrupCalcText();
-  var tot = document.getElementById('syr-totalMl'), est = syrupTotalMl(next);
-  if (tot) tot.placeholder = (est && !(parseFloat(next.totalMl) > 0)) ? '\u2248 ' + Math.round(est) : 'optional';
+  var meth = document.getElementById('syr-method'); if (meth) meth.innerHTML = syrupMethodHtml();
   setSyncStatus('saving', 'saving\u2026');
   apiPost({ action: 'setSyrupRecipe', recipe: next }, function (err, res) {
     if (err || !res || !res.ok) { syrupRecipe = prev; renderSyrupCard(); setSyncStatus('error', 'save failed'); alert('Couldn\u2019t save the syrup recipe \u2014 the Apps Script backend may need redeploying (version 65).'); return; }
