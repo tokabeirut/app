@@ -12652,7 +12652,7 @@ function recipePanelHtml() {
     return '<div class="recipe-field"><label>' + label + '</label><div class="recipe-inp"><input type="number" min="0" step="' + (step || 'any') + '" value="' + numPlain(r[key]) + '" onchange="setBrewRecipeField(\'' + key + '\', this.value)" /><span>' + unit + '</span></div></div>';
   }
   var h = '<div class="plan-card recipe-box' + (open ? '' : ' collapsed') + '" id="recipebox">';
-  h += '<div class="brew-body"><div class="plan-src" style="margin-bottom:10px;">Recipe ratios, per litre · used for every brew plan below.</div><div class="recipe-grid">';
+  h += '<div class="brew-body"><div class="plan-src" style="margin-bottom:10px;">Recipe ratios, per litre · used for every brew plan above.</div><div class="recipe-grid">';
   h += field('Hot water', 'hotPct', '% of total', '1');
   h += field('SCOBY', 'starterPct', '% of total', '1');
   h += field('Tea', 'teaPerL', 'g / L', '0.5');
@@ -12661,7 +12661,7 @@ function recipePanelHtml() {
   h += field('Batch size per boil', 'perBoil', 'L', '1');
   h += '</div>';
   h += '<div class="recipe-actions"><button type="button" class="brew-undo" onclick="resetBrewRecipe()">reset to defaults</button></div>';
-  h += '<div class="local-hint">Saved to the sheet \u00b7 the same on every device \u00b7 used for every brew plan below.</div>';
+  h += '<div class="local-hint">Saved to the sheet \u00b7 the same on every device \u00b7 used for every brew plan above.</div>';
   h += '</div></div>';
   return h;
 }
@@ -12908,15 +12908,15 @@ function setPlannedBrewDate(pid, v) {
 function todayBrewPlan() {
   // The recipe box is always shown (no open/close button).
   var h = '<div class="an-section"><div class="brew-plan-head"><div class="sec-title">Planned batches</div></div>';
-  h += recipePanelHtml();
-  h += '<div class="sec-note">Add a planned brew with the date you want to brew it — the recipe below scales to whatever target volume you set. Add as many as you like.</div>';
+  h += '<div class="sec-note">Add a planned brew with the date you want to brew it — the recipe at the bottom scales to whatever target volume you set. Add as many as you like.</div>';
   h += '<button type="button" class="btn-ghost" onclick="addPlannedBrew()" style="margin-bottom:10px;">+ add planned brew</button>';
   var plans = plannedBrews.slice().sort(function (a, c) { return String(a.date || '') < String(c.date || '') ? -1 : 1; });
+  // The recipe box sits under the planned brews.
   if (!plans.length) {
-    return h + '<div class="an-empty">No brews planned yet. Click "+ add planned brew" and pick a date.</div></div>';
+    return h + '<div class="an-empty">No brews planned yet. Click "+ add planned brew" and pick a date.</div>' + '<div style="margin-top:10px;">' + recipePanelHtml() + '</div></div>';
   }
   for (var i = 0; i < plans.length; i++) h += brewBoxHtml(plans[i]);
-  return h + '</div>';
+  return h + '<div style="margin-top:10px;">' + recipePanelHtml() + '</div></div>';
 }
 
 /* ---- planned infusions (Daily operations page) ----
