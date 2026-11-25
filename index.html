@@ -657,6 +657,13 @@
   .recipe-box.collapsed { display: none; }
   #today-body .recipe-headline { font-size: 1.05rem; }
   .recipe-grid { display: -webkit-grid; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-bottom: 10px; }
+  .recipe-grid.syr-grid { grid-template-columns: repeat(3, auto); -webkit-justify-content: start; justify-content: start; gap: 10px 28px; }
+  @media (max-width: 640px) { .recipe-grid.syr-grid { grid-template-columns: 1fr 1fr; } }
+  .syr-method { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .syr-method .prep-title { margin-top: 10px; }
+  .syr-method .prep-title:first-child { margin-top: 0; }
+  .syr-steps { list-style: decimal; }
+  #today-body .syr-method .prep-list li { font-size: 10pt; }
   .recipe-field label { display: block; font-size: 9pt; color: var(--ink-faint); margin-bottom: 4px; }
   .recipe-inp { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; gap: 6px; }
   .recipe-inp input { width: 68px; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; background: var(--surface); color: var(--ink); }
@@ -12661,7 +12668,6 @@ function recipePanelHtml() {
   h += field('Steep time', 'steep', 'min', '1');
   h += field('Batch size per boil', 'perBoil', 'L', '1');
   h += '</div>';
-  h += '<div class="local-hint">Saved to the sheet \u00b7 the same on every device.</div>';
   h += '</div>';
   return h;
 }
@@ -15393,26 +15399,33 @@ function renderSyrupCard() {
     return '<div class="recipe-field"><label>' + label + '</label><div class="recipe-inp"><input type="number" min="0" step="any" id="syr-' + key + '" value="' + esc(r[key] == null ? '' : r[key]) + '" onchange="saveSyrupRecipe()" /><span>' + unit + '</span></div></div>';
   }
   el.innerHTML = '<div class="an-section"><div class="sec-title">Sugar syrup</div>'
-    + '<div class="sec-note">The recipe for the syrup used at bottling. Bottling sugar in ml of syrup is turned into grams of sugar with it.</div>'
-    + '<div class="plan-card"><div class="brew-body"><div class="recipe-grid">'
-    + fld('Water', 'waterMl', 'g') + fld('Sugar', 'sugarG', 'g') + fld('Total weight', 'totalMl', 'g')
-    + '</div>'
-    + '<div class="plan-src" id="syr-calc" style="margin-top:8px;">' + syrupCalcText() + '</div>'
-    + '<div id="syr-method" style="margin-top:12px;line-height:1.6;">' + syrupMethodHtml() + '</div>'
+    + '<div class="sec-note">The syrup used at bottling. Bottling sugar in ml of syrup is turned into grams of sugar with it.</div>'
+    + '<div class="plan-card"><div class="brew-body">'
+    + '<div class="prep-title">Amounts</div>'
+    + '<div class="recipe-grid syr-grid">' + fld('Water', 'waterMl', 'g') + fld('Sugar', 'sugarG', 'g') + fld('Total weight', 'totalMl', 'g') + '</div>'
+    + '<div class="plan-src" id="syr-calc">' + syrupCalcText() + '</div>'
+    + '<div id="syr-method" class="syr-method">' + syrupMethodHtml() + '</div>'
     + '</div></div></div>';
 }
 // Fixed method text with the amounts filled in.
 function syrupMethodHtml() {
   var r = syrupRecipe || {}, ml = syrupTotalMl(r), tg = syrupTotalG(r);
-  function n(v) { return v ? esc(fmtNum(Math.round(v))) : '\u2026'; }
+  function n(v) { return '<span class="prep-num">' + (v ? esc(fmtNum(Math.round(v))) : '\u2026') + '</span>'; }
   var w10 = (ml && tg) ? Math.round(tg / ml * 100) / 10 : null;
-  return '<ol style="margin:0 0 8px 18px;padding:0;">'
+  return '<div class="prep-title">Method</div>'
+    + '<ol class="prep-list syr-steps">'
     + '<li>Bring ' + n(parseFloat(r.waterMl)) + ' g of water to a boil to sanitize it.</li>'
     + '<li>Dissolve ' + n(parseFloat(r.sugarG)) + ' g sugar in it.</li>'
     + '<li>Let it cool, weigh it and top up with boiled water to about ' + n(tg) + ' g total weight (\u2248 ' + n(ml) + ' ml).</li>'
     + '</ol>'
-    + '<div>Check: 10 ml should weigh about ' + (w10 ? esc(fmtNum(w10)) : '\u2026') + ' g.</div>'
-    + '<div>Keep in a sanitized, closed bottle in the fridge; use within 1\u20132 weeks. On bottling day warm only that day\u2019s portion to room temperature.</div>';
+    + '<div class="prep-title">Check</div>'
+    + '<ul class="prep-list"><li>10 ml should weigh about <span class="prep-num">' + (w10 ? esc(fmtNum(w10)) : '\u2026') + '</span> g.</li></ul>'
+    + '<div class="prep-title">Storage</div>'
+    + '<ul class="prep-list">'
+    + '<li>Keep in a sanitized, closed bottle in the fridge.</li>'
+    + '<li>Use within 1\u20132 weeks.</li>'
+    + '<li>On bottling day, warm only that day\u2019s portion to room temperature.</li>'
+    + '</ul>';
 }
 function syrupCalcText() {
   var gpm = syrupGPerMl();

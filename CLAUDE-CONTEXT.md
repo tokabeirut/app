@@ -237,3 +237,5 @@ subtotal={{ subtotal_price }}<br>
 - Planned batches (index v198): the recipe ratios sit inside each planned brew box, under its title and above Date (recipePanelHtml called from brewBoxHtml); no separate recipe box.
 - Recipe 'reset to defaults' button removed (index v199); every field change saves to the backend (setBrewRecipe).
 - Recipe subtitle line removed (index v200).
+- Sugar syrup card layout (index v201): sections Amounts (3 inputs in a row, 2 per row on phones) + '1 ml syrup = …' line, then Method (numbered), Check, Storage (bulleted), amounts highlighted like the brew preparation.
+- Recipe 'saved to the sheet' hint removed (index v202).
