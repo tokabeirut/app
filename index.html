@@ -12721,7 +12721,10 @@ function setBrewDone(pid, done) {
   p.done = !!done;
   renderToday();
   setSyncStatus('saving', 'saving\u2026');
-  apiPost({ action: 'updatePlannedBrew', plan: p }, function (err, res) {
+  // A plan that was never saved (still a draft) is created in the sheet now,
+  // instead of failing with "not found".
+  var isNew = !!planBrewUnsaved[pid];
+  apiPost({ action: isNew ? 'createPlannedBrew' : 'updatePlannedBrew', plan: p }, function (err, res) {
     if (err || !res || !res.ok) {
       p.done = prev;
       renderToday();
@@ -12729,7 +12732,9 @@ function setBrewDone(pid, done) {
       alert('Could not save that change. Check your connection and try again.');
       return;
     }
+    if (isNew) delete planBrewUnsaved[pid];
     planBrewOriginal[pid] = clonePlan(p);
+    renderToday();
     setSyncStatus('live', 'connected \u00b7 google sheets');
     if (p.done && !prev) openBatchFromPlan(p);
   });

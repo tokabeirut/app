@@ -239,3 +239,4 @@ subtotal={{ subtotal_price }}<br>
 - Recipe subtitle line removed (index v200).
 - Sugar syrup card layout (index v201): sections Amounts (3 inputs in a row, 2 per row on phones) + '1 ml syrup = …' line, then Method (numbered), Check, Storage (bulleted), amounts highlighted like the brew preparation.
 - Recipe 'saved to the sheet' hint removed (index v202).
+- Planned brew checkbox (index v203): ticking a plan that was never saved (draft) now creates it in the sheet (createPlannedBrew) instead of failing with 'not found', then opens the new-batch drawer.
