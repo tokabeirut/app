@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '65 (bottling: sugar syrup ml + syrup recipe)';
+var VERSION = '66 (brew recipe saved in the backend)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -1249,6 +1249,18 @@ function setSyrupRecipe_(r) {
   var keep = { sugarG: r.sugarG == null ? '' : String(r.sugarG), waterMl: r.waterMl == null ? '' : String(r.waterMl), totalMl: r.totalMl == null ? '' : String(r.totalMl), method: r.method == null ? '' : String(r.method) };
   PropertiesService.getScriptProperties().setProperty('SYRUP_RECIPE', JSON.stringify(keep));
 }
+// Brew recipe ratios (Daily operations > Planned batches): hotPct, starterPct,
+// teaPerL, sugarPerL, steep, perBoil. Empty = the app's defaults.
+var BREW_RECIPE_KEYS_ = ['hotPct', 'starterPct', 'teaPerL', 'sugarPerL', 'steep', 'perBoil'];
+function getBrewRecipe_() {
+  try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('BREW_RECIPE') || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function setBrewRecipe_(r) {
+  var keep = {};
+  BREW_RECIPE_KEYS_.forEach(function (k) { var v = parseFloat(r[k]); if (!isNaN(v) && v >= 0) keep[k] = v; });
+  PropertiesService.getScriptProperties().setProperty('BREW_RECIPE', JSON.stringify(keep));
+}
 function getInvoiceSettings_() {
   var sh = getSettingsSheet_();
   var vals = sh.getRange(INVOICE_FIRST_ROW_, 1, INVOICE_FIELDS_.length, 2).getValues();
@@ -1528,7 +1540,8 @@ function doGet(e) {
       invoiceSettings: getInvoiceSettings_(),
       ingredientPurchases: readAllIngredientPurchases_(),
       bottleMathSettings: gaBmObj ? JSON.stringify(gaBmObj) : '',
-      syrupRecipe: getSyrupRecipe_()
+      syrupRecipe: getSyrupRecipe_(),
+      brewRecipe: getBrewRecipe_()
     });
   }
   return json_({ ok: true, status: 'toka-brewlog backend live', version: VERSION });
@@ -1821,6 +1834,7 @@ function handleAction_(body) {
   if (action === 'deleteCustomer') { deleteRowsWhere_(getCustomersSheet_(), 'customer_pk', body.id); return json_({ ok: true }); }
   if (action === 'setInvoiceSettings') { setInvoiceSettings_(body.settings || {}); return json_({ ok: true }); }
   if (action === 'setSyrupRecipe') { setSyrupRecipe_(body.recipe || {}); return json_({ ok: true }); }
+  if (action === 'setBrewRecipe') { setBrewRecipe_(body.recipe || {}); return json_({ ok: true }); }
 
   // ---- bottle inventory actions (Inventory > Bottle count) ----
   if (action === 'createBottleInvEntry' || action === 'updateBottleInvEntry' || action === 'deleteBottleInvEntry') {

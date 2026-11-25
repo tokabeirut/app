@@ -5189,6 +5189,7 @@ function applyAllData(res) {
     if (Array.isArray(res.ingredientPurchases)) ingredientPurchases = res.ingredientPurchases;
     bottleMathSettingsRaw = res.bottleMathSettings || '';
     if (res.syrupRecipe && typeof res.syrupRecipe === 'object' && res.syrupRecipe.method === SYRUP_FMT && res.syrupRecipe.sugarG) syrupRecipe = res.syrupRecipe;
+    if (res.brewRecipe && typeof res.brewRecipe === 'object') { brewRecipeShared = res.brewRecipe; migrateLocalBrewRecipe(); }
     planInfUnsaved = {}; planInfOriginal = {};
     for (var pii = 0; pii < plannedInfusions.length; pii++) planInfOriginal[plannedInfusions[pii].id] = clonePlan(plannedInfusions[pii]);
     planBrewUnsaved = {}; planBrewOriginal = {};
@@ -12598,21 +12599,44 @@ function todayInfSection() {
 }
 
 /* ---- brew-the-next-batch plan ---- */
+// The brew recipe is saved in the backend (script property BREW_RECIPE, via
+// setBrewRecipe), so every device uses the same one. brewRecipeShared is what
+// the backend returned; until it has one, a recipe saved on this device
+// earlier (toka_brew_recipe) is used and pushed up once.
+var BREW_RECIPE_KEYS = ['hotPct', 'starterPct', 'teaPerL', 'sugarPerL', 'steep', 'perBoil'];
+var brewRecipeShared = null;
+function brewRecipeHasValues(o) { return !!o && BREW_RECIPE_KEYS.some(function (k) { return o[k] !== '' && o[k] != null && !isNaN(parseFloat(o[k])); }); }
 function getBrewRecipe() {
   var d = { hotPct: HOT_FRACTION * 100, starterPct: STARTER_FRACTION * 100, teaPerL: TEA_G_PER_L, sugarPerL: SUGAR_G_PER_L, steep: 5, perBoil: LITRES_PER_BOIL };
-  try {
-    var s = lsGet('toka_brew_recipe');
-    if (s) { var o = JSON.parse(s) || {}; ['hotPct', 'starterPct', 'teaPerL', 'sugarPerL', 'steep', 'perBoil'].forEach(function (k) { var v = parseFloat(o[k]); if (!isNaN(v) && v >= 0) d[k] = v; }); }
-  } catch (e) {}
+  var o = null;
+  if (brewRecipeHasValues(brewRecipeShared)) o = brewRecipeShared;
+  else { try { var s = lsGet('toka_brew_recipe'); if (s) o = JSON.parse(s) || null; } catch (e) {} }
+  if (o) BREW_RECIPE_KEYS.forEach(function (k) { var v = parseFloat(o[k]); if (!isNaN(v) && v >= 0) d[k] = v; });
   return d;
+}
+function saveBrewRecipe(r) {
+  var prev = brewRecipeShared;
+  brewRecipeShared = r;
+  renderToday();
+  setSyncStatus('saving', 'saving\u2026');
+  apiPost({ action: 'setBrewRecipe', recipe: r }, function (err, res) {
+    if (err || !res || !res.ok) { brewRecipeShared = prev; renderToday(); setSyncStatus('error', 'save failed'); alert('Couldn\u2019t save the recipe \u2014 the Apps Script backend may need redeploying (version 66).'); return; }
+    setSyncStatus('live', 'connected \u00b7 google sheets');
+  });
 }
 function setBrewRecipeField(field, value) {
   var r = getBrewRecipe(), v = parseFloat(value);
   if (!isNaN(v) && v >= 0) r[field] = v;
-  lsSet('toka_brew_recipe', JSON.stringify(r));
-  renderToday();
+  saveBrewRecipe(r);
 }
-function resetBrewRecipe() { lsSet('toka_brew_recipe', ''); renderToday(); }
+function resetBrewRecipe() { lsSet('toka_brew_recipe', ''); saveBrewRecipe({}); }
+// After loading: a recipe only saved on this device goes up to the backend once.
+function migrateLocalBrewRecipe() {
+  if (brewRecipeHasValues(brewRecipeShared)) return;
+  var local = null; try { var s = lsGet('toka_brew_recipe'); if (s) local = JSON.parse(s); } catch (e) {}
+  if (!brewRecipeHasValues(local)) return;
+  apiPost({ action: 'setBrewRecipe', recipe: local }, function (err, res) { if (!err && res && res.ok) brewRecipeShared = local; });
+}
 function toggleRecipePanel() {
   var el = document.getElementById('recipebox'); if (!el) return;
   el.classList.toggle('collapsed');
@@ -12637,7 +12661,7 @@ function recipePanelHtml() {
   h += field('Batch size per boil', 'perBoil', 'L', '1');
   h += '</div>';
   h += '<div class="recipe-actions"><button type="button" class="brew-undo" onclick="resetBrewRecipe()">reset to defaults</button></div>';
-  h += '<div class="local-hint">Saved on this device \u00b7 used for every brew plan below until you change it.</div>';
+  h += '<div class="local-hint">Saved to the sheet \u00b7 the same on every device \u00b7 used for every brew plan below.</div>';
   h += '</div></div>';
   return h;
 }
