@@ -12623,7 +12623,7 @@ function toggleRecipePanel() {
 }
 function recipePanelHtml() {
   var r = getBrewRecipe();
-  var open = lsGet('toka_recipe_open') === '1';
+  var open = true;   // always shown
   function field(label, key, unit, step) {
     return '<div class="recipe-field"><label>' + label + '</label><div class="recipe-inp"><input type="number" min="0" step="' + (step || 'any') + '" value="' + numPlain(r[key]) + '" onchange="setBrewRecipeField(\'' + key + '\', this.value)" /><span>' + unit + '</span></div></div>';
   }
@@ -12701,7 +12701,32 @@ function setBrewDone(pid, done) {
     }
     planBrewOriginal[pid] = clonePlan(p);
     setSyncStatus('live', 'connected \u00b7 google sheets');
+    if (p.done && !prev) openBatchFromPlan(p);
   });
+}
+// Checking a planned brew off opens a new Fermentation batch filled in from
+// the plan (date, tea, sugar, water and SCOBY scaled to the target volume,
+// the plan's notes). The plan has no vessel or SCOBY source, so the drawer
+// stays open to pick those and save.
+function openBatchFromPlan(p) {
+  var c = brewCalc(null, brewTarget(p));
+  function r1(v) { return Math.round(v * 10) / 10; }
+  openDrawer();
+  document.getElementById('f-date').value = p.date || todayISO();
+  document.getElementById('f-tea').value = Math.round(c.teaTotal);
+  document.getElementById('f-sugar').value = Math.round(c.sugarTotal) / 1000;
+  document.getElementById('f-steep').value = c.steep;
+  document.getElementById('f-hot').value = r1(c.hot);
+  document.getElementById('f-cold').value = r1(c.cold);
+  document.getElementById('f-starter').value = r1(c.starter);
+  var labels = { hot: 'hot water', tea: 'tea', sugar: 'sugar', cold: 'cold water', starter: 'SCOBY' };
+  var notes = Object.keys(labels).filter(function (k) { return p.notes && String(p.notes[k] || '').trim(); })
+    .map(function (k) { return labels[k] + ': ' + String(p.notes[k]).trim(); });
+  document.getElementById('f-notes').value = notes.join('\n');
+  maybeAutoId();
+  if (typeof syncStarterTotal === 'function') { try { syncStarterTotal(); } catch (e) {} }
+  document.getElementById('f-starter').value = r1(c.starter);
+  document.getElementById('drawer-title').textContent = 'New batch from your plan';
 }
 function rn(s) { return '<span class="prep-num">' + s + '</span>'; }
 function setPlanNote(pid, field, value) {
@@ -12857,9 +12882,8 @@ function setPlannedBrewDate(pid, v) {
   renderToday();
 }
 function todayBrewPlan() {
-  var recipeOpen = lsGet('toka_recipe_open') === '1';
-  var h = '<div class="an-section"><div class="brew-plan-head"><div class="sec-title">Planned batches</div>'
-    + '<button type="button" id="recipe-toggle-btn" class="recipe-open-btn' + (recipeOpen ? ' open' : '') + '" onclick="toggleRecipePanel()">Recipe <span class="brew-tri" aria-hidden="true">▸</span></button></div>';
+  // The recipe box is always shown (no open/close button).
+  var h = '<div class="an-section"><div class="brew-plan-head"><div class="sec-title">Planned batches</div></div>';
   h += recipePanelHtml();
   h += '<div class="sec-note">Add a planned brew with the date you want to brew it — the recipe below scales to whatever target volume you set. Add as many as you like.</div>';
   h += '<button type="button" class="btn-ghost" onclick="addPlannedBrew()" style="margin-bottom:10px;">+ add planned brew</button>';
