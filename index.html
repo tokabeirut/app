@@ -5858,7 +5858,25 @@ function setArchived(u, flag) {
 
 /* ---- render ---- */
 var VESSEL_ORDER = ['TANK 1', 'TANK 2', 'TANK 3', 'JAR 1', 'JAR 2', 'JAR 3', 'JAR 4', 'JAR 5', 'JAR 6', 'JAR 7', 'JAR 8'];
-function vesselRank(v) { var i = VESSEL_ORDER.indexOf(String(v || '').toUpperCase().trim()); return i < 0 ? 999 : i; } // unknown -> bottom
+// Vessel order: TANK 1 > TANK 2 > … > JAR 1 > JAR 2 > … > any other kind by
+// its number (e.g. BUCKET 1 > BUCKET 2); no vessel at the bottom.
+function vesselRank(v) {
+  var t = String(v || '').toUpperCase().trim();
+  if (!t) return 99999;
+  var m = t.match(/^(.*?)\s*(\d+)\s*$/), kind = m ? m[1].trim() : t, num = m ? parseInt(m[2], 10) : 0;
+  var group = kind === 'TANK' ? 0 : (kind === 'JAR' ? 1 : 2);
+  return group * 10000 + Math.min(num, 9999);
+}
+// Same order; other kinds are grouped by name (A→Z), then by number.
+function vesselKind(v) { var t = String(v || '').toUpperCase().trim(), m = t.match(/^(.*?)\s*(\d+)\s*$/); return m ? m[1].trim() : t; }
+function cmpVessel(a, b) {
+  var ra = vesselRank(a), rb = vesselRank(b);
+  // Other kinds (not tank/jar) are grouped by name first: BUCKET 1, BUCKET 2, KEG 1…
+  if (ra >= 20000 && rb >= 20000 && ra < 99999 && rb < 99999 && vesselKind(a) !== vesselKind(b)) return vesselKind(a) < vesselKind(b) ? -1 : 1;
+  if (ra !== rb) return ra - rb;
+  var sa = String(a || '').toUpperCase(), sb = String(b || '').toUpperCase();
+  return sa < sb ? -1 : (sa > sb ? 1 : 0);
+}
 function cmpBatches(a, b) {
   var da = String(a.date || ''), db = String(b.date || '');
   if (da !== db) return da < db ? 1 : -1;              // newer date on top
@@ -5867,7 +5885,7 @@ function cmpBatches(a, b) {
   var va = vesselRank((pa || a).vessel), vb = vesselRank((pb || b).vessel);
   if (va !== vb) return va - vb;                       // Tank 1 > Tank 2 > Tank 3 > Jar 1 ... > Jar 8
   if (!!pa !== !!pb) return pa ? 1 : -1;               // parent before its branches
-  return vesselRank(a.vessel) - vesselRank(b.vessel);
+  return cmpVessel(a.vessel, b.vessel);
 }
 
 // Compact archive/restore icon (box with a down/up arrow), à la WhatsApp.
@@ -6515,7 +6533,7 @@ function setInfusionArchived(u, flag) {
 function cmpInfusions(a, b) {
   var da = String(a.startDate || ''), db = String(b.startDate || '');
   if (da !== db) return da < db ? 1 : -1;   // newest start date on top
-  return 0;
+  return cmpVessel(a.vessel, b.vessel);      // then Tank 1 > Tank 2 > … > Jar 1 > … > others
 }
 // sep: ', ' by default (tooltips, Daily operations); '<br>' in the Infusion
 // table so each spice is on its own line.
@@ -11878,7 +11896,7 @@ function groupReadings(list) {
   groups.sort(function (a, b) {
     var da = a.readings.length ? String(a.readings[0].date) : '', db = b.readings.length ? String(b.readings[0].date) : '';
     if (da !== db) return da < db ? 1 : -1;                                   // newest test day first
-    return vesselRank(a.subject.vessel) - vesselRank(b.subject.vessel);       // then Tank 1 > ... > Jar 8
+    return cmpVessel(a.subject.vessel, b.subject.vessel);       // then Tank 1 > ... > Jar 8 > others
   });
   return groups;
 }
