@@ -235,3 +235,5 @@ subtotal={{ subtotal_price }}<br>
 - Daily operations (index v195): checking a planned brew as brewed (first time) opens the new Fermentation batch drawer pre-filled from the plan (openBatchFromPlan: date, tea, sugar, steep, hot/cold water, SCOBY from brewCalc at the target volume; plan notes into notes) — pick vessel / SCOBY source and save. The recipe box under 'Planned batches' is always shown (open/close button removed).
 - Brew recipe (Daily operations, index v196, backend v66): saved in the backend (script property BREW_RECIPE; action setBrewRecipe; getAll returns brewRecipe). A recipe that was only in this device's localStorage (toka_brew_recipe) is pushed up once when the backend has none. Syrup recipe was already in the backend (v65, SYRUP_RECIPE).
 - Planned batches (index v198): the recipe ratios sit inside each planned brew box, under its title and above Date (recipePanelHtml called from brewBoxHtml); no separate recipe box.
+- Recipe 'reset to defaults' button removed (index v199); every field change saves to the backend (setBrewRecipe).
+- Recipe subtitle line removed (index v200).

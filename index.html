@@ -12653,7 +12653,7 @@ function recipePanelHtml() {
   }
   // Shown inside each planned brew, between its title and the date.
   var h = '<div class="recipe-inline" style="padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border);">';
-  h += '<div class="prep-title" style="margin-top:0;">Recipe</div><div class="plan-src" style="margin-bottom:10px;">Ratios per litre \u00b7 the same for every planned brew.</div><div class="recipe-grid">';
+  h += '<div class="prep-title" style="margin-top:0;">Recipe</div><div class="recipe-grid">';
   h += field('Hot water', 'hotPct', '% of total', '1');
   h += field('SCOBY', 'starterPct', '% of total', '1');
   h += field('Tea', 'teaPerL', 'g / L', '0.5');
@@ -12661,7 +12661,6 @@ function recipePanelHtml() {
   h += field('Steep time', 'steep', 'min', '1');
   h += field('Batch size per boil', 'perBoil', 'L', '1');
   h += '</div>';
-  h += '<div class="recipe-actions"><button type="button" class="brew-undo" onclick="resetBrewRecipe()">reset to defaults</button></div>';
   h += '<div class="local-hint">Saved to the sheet \u00b7 the same on every device.</div>';
   h += '</div>';
   return h;
