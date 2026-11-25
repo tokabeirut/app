@@ -240,3 +240,4 @@ subtotal={{ subtotal_price }}<br>
 - Sugar syrup card layout (index v201): sections Amounts (3 inputs in a row, 2 per row on phones) + '1 ml syrup = …' line, then Method (numbered), Check, Storage (bulleted), amounts highlighted like the brew preparation.
 - Recipe 'saved to the sheet' hint removed (index v202).
 - Planned brew checkbox (index v203): ticking a plan that was never saved (draft) now creates it in the sheet (createPlannedBrew) instead of failing with 'not found', then opens the new-batch drawer.
+- Planned brews (index v204, backend v67): Vessel and SCOBY source fields between Date and Target volume (stored in the daily-ops sheet columns vessel / source_f1_pk). Ticking a plan as brewed with a vessel set creates the Fermentation batch straight away (drawer pre-filled then saveBatch; SCOBY source with the recipe's SCOBY litres); without a vessel the drawer stays open. No second batch if one already exists for that date + vessel.

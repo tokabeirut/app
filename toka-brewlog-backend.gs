@@ -26,7 +26,7 @@ var READINGS_SHEET = 'Labo';
 var PRODUCTION_SHEET = 'Production timeline';
 var DAILY_OPS_SHEET = 'Daily operations';
 
-var VERSION = '66 (brew recipe saved in the backend)';
+var VERSION = '67 (planned brews: vessel + SCOBY source)';
 
 var HEADERS = [
   'batch_pk', 'batch_id', 'creation_date', 'vessel', 'total_l',
@@ -582,6 +582,8 @@ function buildPlannedBrewRow_(p, ncols, map) {
   set('note_cold', notes.cold || '');
   set('note_starter', notes.starter || '');
   set('done', p.done ? 'yes' : '');
+  set('vessel', p.vessel || '');
+  set('source_f1_pk', p.starterUid || '');   // SCOBY source batch
   return row;
 }
 
@@ -607,7 +609,9 @@ function readAllPlannedBrews_() {
         cold: g(r, 'note_cold'),
         starter: g(r, 'note_starter')
       },
-      done: truthy_(g(r, 'done'))
+      done: truthy_(g(r, 'done')),
+      vessel: g(r, 'vessel'),
+      starterUid: g(r, 'source_f1_pk')   // SCOBY source batch
     });
   }
   return out;

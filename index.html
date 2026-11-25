@@ -12741,10 +12741,15 @@ function setBrewDone(pid, done) {
 }
 // Checking a planned brew off opens a new Fermentation batch filled in from
 // the plan (date, tea, sugar, water and SCOBY scaled to the target volume,
-// the plan's notes). The plan has no vessel or SCOBY source, so the drawer
-// stays open to pick those and save.
+// the plan's notes, its vessel and SCOBY source). With a vessel in the plan
+// it's saved straight away; without one the drawer stays open to pick it.
 function openBatchFromPlan(p) {
   var c = brewCalc(null, brewTarget(p));
+  // Already brewed into a batch (same date and vessel)? Don't make a second one.
+  if (p.vessel && batches.some(function (b) { return String(b.date || '') === String(p.date || '') && String(b.vessel || '').toUpperCase() === String(p.vessel).toUpperCase(); })) {
+    alert('There is already a batch in ' + p.vessel + ' on ' + fmtDate(p.date) + ' on the Fermentation page.');
+    return;
+  }
   function r1(v) { return Math.round(v * 10) / 10; }
   openDrawer();
   document.getElementById('f-date').value = p.date || todayISO();
@@ -12758,10 +12763,13 @@ function openBatchFromPlan(p) {
   var notes = Object.keys(labels).filter(function (k) { return p.notes && String(p.notes[k] || '').trim(); })
     .map(function (k) { return labels[k] + ': ' + String(p.notes[k]).trim(); });
   document.getElementById('f-notes').value = notes.join('\n');
+  if (p.vessel) document.getElementById('f-vessel').value = String(p.vessel).toUpperCase();
+  renderStarterSources(p.starterUid ? [{ uid: p.starterUid, l: String(r1(c.starter)) }] : [], '');
   maybeAutoId();
-  if (typeof syncStarterTotal === 'function') { try { syncStarterTotal(); } catch (e) {} }
   document.getElementById('f-starter').value = r1(c.starter);
   document.getElementById('drawer-title').textContent = 'New batch from your plan';
+  // With a vessel picked in the plan, nothing is missing: save it right away.
+  if (p.vessel) saveBatch();
 }
 function rn(s) { return '<span class="prep-num">' + s + '</span>'; }
 function setPlanNote(pid, field, value) {
@@ -12845,6 +12853,11 @@ function brewBoxHtml(p) {
   h += '<div class="brew-body">';
   h += recipePanelHtml();
   h += '<div class="plan-field-row"><label class="plan-field-label">Date</label><div class="plan-field-input"><input type="date" value="' + esc(p.date || '') + '" onchange="setPlannedBrewDate(\'' + pid + '\', this.value)" /></div></div>';
+  // Vessel and SCOBY source: what the Fermentation batch needs besides the recipe.
+  h += '<div class="plan-field-row"><label class="plan-field-label">Vessel</label><div class="plan-field-input"><select onchange="setPlannedBrewField(\'' + pid + '\', \'vessel\', this.value)"><option value="">&mdash;</option>'
+     + VESSEL_OPTS.split(',').map(function (v) { return '<option value="' + esc(v) + '"' + (String(p.vessel || '').toUpperCase() === v ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join('')
+     + '</select></div></div>';
+  h += '<div class="plan-field-row"><label class="plan-field-label">SCOBY source</label><div class="plan-field-input"><select onchange="setPlannedBrewField(\'' + pid + '\', \'starterUid\', this.value)">' + starterFromOptionsHtml(p.starterUid || '', '') + '</select></div></div>';
   h += '<div class="plan-field-row"><label class="plan-field-label">Target volume</label><div class="plan-field-input plan-vol-inline">'
      + '<input type="number" min="1" step="1" value="' + numPlain(V) + '" onchange="setBrewTarget(\'' + pid + '\', this.value)" />'
      + '<span class="plan-vol-unit">L</span></div></div>';
@@ -12911,6 +12924,11 @@ function removePlannedBrew(pid) {
     }
     setSyncStatus('live', 'connected \u00b7 google sheets');
   });
+}
+function setPlannedBrewField(pid, field, v) {
+  var p = findPlannedBrew(pid); if (!p) return;
+  p[field] = v || '';
+  renderToday();
 }
 function setPlannedBrewDate(pid, v) {
   var p = findPlannedBrew(pid); if (!p) return;
