@@ -14138,6 +14138,37 @@ function cmpData(u) {
   var br = own.length ? own[own.length - 1] : null;
   d.btlBrix = cmpReadingText(br, 'brix', '%');
   d.btlPh = cmpReadingText(br, 'ph', '');
+  // Start of each stage = a reading taken on the day it started. Without one,
+  // the end of the stage before is shown instead, marked "≈" (hover says which).
+  function approx(txt, why) { return txt ? '<span class="muted" title="' + esc(why) + '">\u2248 ' + esc(txt) + '</span>' : ''; }
+  function fallback(vals, why) { return cmpJoin(vals.map(function (t) { return approx(t, why); })); }
+  // INF start: the infusion's reading on its start date, else the F1's last
+  // reading up to the infusion start.
+  var infStartR = infs.map(function (inf) { var L = anOwnReadingsFor(inf).filter(function (r) { return r.date && String(r.date) === String(inf.startDate || ''); }); return L[0] || null; });
+  var infStartFb = infs.map(function (inf) { var e = []; f1s.forEach(function (b) { var L = cmpF1ReadingsUntil(b, inf.startDate || ''); if (L.length) e.push(L[L.length - 1]); }); return e[e.length - 1] || null; });
+  function infStart(field, unit) {
+    if (!infs.length) return '';
+    var got = cmpJoin(infStartR.map(function (r) { return cmpReadingText(r, field, unit); }));
+    return got || fallback(infStartFb.map(function (r) { return cmpReadingText(r, field, unit); }), 'no infusion reading on its start day \u2014 end of F1');
+  }
+  d.infStartBrix = infStart('brix', '%');
+  d.infStartPh = infStart('ph', '');
+  // BOT start: a bottle reading on the bottling day, else the infusion's end
+  // (or the F1's end when there was no infusion). BOT end: the latest bottle
+  // reading after the bottling day.
+  var bd = String(head.bottlingDate || '');
+  var botStartR = own.filter(function (r) { return r.date && String(r.date) === bd; })[0] || null;
+  var botEndR = own.filter(function (r) { return r.date && String(r.date) > bd; }).pop() || null;
+  function botStart(field, unit) {
+    var t = cmpReadingText(botStartR, field, unit);
+    if (t) return esc(t);
+    if (infs.length) return fallback(infEnd.map(function (r) { return cmpReadingText(r, field, unit); }), 'no bottle reading on the bottling day \u2014 end of infusion');
+    return fallback(lastR.map(function (r) { return cmpReadingText(r, field, unit); }), 'no bottle reading on the bottling day \u2014 end of F1');
+  }
+  d.botStartBrix = botStart('brix', '%');
+  d.botStartPh = botStart('ph', '');
+  d.botEndBrix = cmpReadingText(botEndR, 'brix', '%');
+  d.botEndPh = cmpReadingText(botEndR, 'ph', '');
   d.btlTemp = cmpReadingText(br, 'temp', '°C');
   d.btlDate = br && br.date ? cmpFmtDate(br.date) : '';
 
@@ -14179,14 +14210,16 @@ var CMP_ROWS = [
   { k: 'teaPerL', l: 'Tea per litre' },
   { k: 'sugarPerL', l: 'Sugar per litre' },
   { sec: 'Labo' },
-  { k: 'scobyEndBrix', l: 'SCOBY end Brix' },
-  { k: 'f1StartBrix', l: 'F1 start Brix' },
-  { k: 'infEndBrix', l: 'INF end Brix', inf: true },
-  { k: 'btlBrix', l: 'BOT Brix' },
-  { k: 'scobyEndPh', l: 'SCOBY end pH' },
-  { k: 'f1StartPh', l: 'F1 start pH' },
-  { k: 'infEndPh', l: 'INF end pH', inf: true },
-  { k: 'btlPh', l: 'BOT pH' }
+  { k: 'scobyEndBrix', l: '\u00b0Bx SCOBY' },
+  { k: 'f1StartBrix', l: '\u00b0Bx start F1' },
+  { k: 'infStartBrix', l: '\u00b0Bx start INF', inf: true },
+  { k: 'botStartBrix', l: '\u00b0Bx start BOT' },
+  { k: 'botEndBrix', l: '\u00b0Bx end BOT' },
+  { k: 'scobyEndPh', l: 'pH SCOBY' },
+  { k: 'f1StartPh', l: 'pH start F1' },
+  { k: 'infStartPh', l: 'pH start INF', inf: true },
+  { k: 'botStartPh', l: 'pH start BOT' },
+  { k: 'botEndPh', l: 'pH end BOT' }
 ];
 
 function renderCompare() {
