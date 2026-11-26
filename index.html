@@ -13031,7 +13031,9 @@ function setPlanInfDone(pid, done) {
   p.done = !!done;
   renderToday();
   setSyncStatus('saving', 'saving\u2026');
-  apiPost({ action: 'updatePlannedInfusion', plan: p }, function (err, res) {
+  // A plan that was never saved (still a draft) is created in the sheet now.
+  var isNew = !!planInfUnsaved[pid];
+  apiPost({ action: isNew ? 'createPlannedInfusion' : 'updatePlannedInfusion', plan: p }, function (err, res) {
     if (err || !res || !res.ok) {
       p.done = prev;
       renderToday();
@@ -13039,6 +13041,7 @@ function setPlanInfDone(pid, done) {
       alert('Could not save that change. Check your connection and try again.');
       return;
     }
+    if (isNew) { delete planInfUnsaved[pid]; renderToday(); }
     if (p.done && !prev && !p.linkedInfusionUid) promotePlannedInfusionToRecord(p);
     planInfOriginal[pid] = clonePlan(p);
     setSyncStatus('live', 'connected \u00b7 google sheets');
